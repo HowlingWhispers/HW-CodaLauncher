@@ -209,8 +209,15 @@ internal sealed class InstallService
         Directory.CreateDirectory(AppPaths.MinecraftRoot);
         Directory.CreateDirectory(AppPaths.LogsRoot);
 
-        progress("Downloading current CodaLoader...");
-        await InstallLoaderAsync(progress, ct);
+        if (!LoaderReady)
+        {
+            progress("Downloading current CodaLoader...");
+            await InstallLoaderAsync(progress, ct);
+        }
+        else
+        {
+            progress("CodaLoader already installed; keeping current loader.");
+        }
 
         progress("Downloading mandatory CML base pack...");
         await InstallBasePackAsync(feed.BasePack, progress, ct);

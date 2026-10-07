@@ -310,7 +310,7 @@ internal sealed class InstallService
 
         try
         {
-            await DownloadAsync(new Uri(url), zip, ct);
+            await DownloadAsync(new Uri(url), zip, ct, progress);
             ZipFile.ExtractToDirectory(zip, staging, true);
 
             progress("Installing CodaLoader...");
@@ -363,7 +363,8 @@ internal sealed class InstallService
             ? CmlBaseResourcesSha256
             : resource.Sha256;
 
-        Uri? uri = await FindReleaseAssetAsync(CmlBaseResourcesAssetName, ct);
+        progress($"Searching HW-CodaLoader Releases for {CmlBaseResourcesAssetName}...");
+        Uri? uri = await FindReleaseAssetAsync(CmlBaseResourcesAssetName, ct, progress);
 
         if (uri is null
             && CurrentFeedBase is not null
@@ -373,6 +374,7 @@ internal sealed class InstallService
                 ? absolute
                 : new Uri(CurrentFeedBase, resource.Url.TrimStart('/'));
             progress("CML Base Resources not attached to HW-CodaLoader release; trying launcher feed fallback...");
+            progress($"Resolved fallback URL: {uri}");
         }
 
         if (uri is null)
@@ -388,22 +390,40 @@ internal sealed class InstallService
 
         try
         {
-            await DownloadAsync(uri, zip, ct);
+            progress($"Downloading from: {uri}");
+            progress($"Temporary download target: {zip}");
+            await DownloadAsync(uri, zip, ct, progress);
+
+            var size = new FileInfo(zip).Length;
+            progress($"Download complete: {size:N0} bytes.");
 
             var actual = Sha256(zip);
+            progress($"SHA-256 actual: {actual}");
+            progress($"SHA-256 expected: {expectedSha}");
             if (!actual.Equals(expectedSha, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException(
                     $"CML Base Resources failed SHA-256 verification. Expected {expectedSha}, got {actual}.");
 
+            progress($"Extracting ZIP to: {staging}");
             ZipFile.ExtractToDirectory(zip, staging, true);
+            progress("ZIP extraction completed.");
+
+            var topLevel = Directory.Exists(staging)
+                ? string.Join(", ", Directory.EnumerateFileSystemEntries(staging)
+                    .Select(Path.GetFileName)
+                    .Where(name => !string.IsNullOrWhiteSpace(name)))
+                : "(staging directory missing)";
+            progress($"Extracted top-level entries: {topLevel}");
+
             if (!Directory.Exists(Path.Combine(staging, "branding"))
                 || !Directory.Exists(Path.Combine(staging, "music", "default")))
                 throw new InvalidDataException(
                     "CML Base Resources is missing required branding or default music.");
 
-            progress("Installing resource pack: CML Base Resources...");
+            progress($"Installing resource pack to: {AppPaths.CmlBaseResourcesRoot}");
             ReplaceDirectory(staging, AppPaths.CmlBaseResourcesRoot);
             File.WriteAllText(AppPaths.CmlBaseResourcesMarker, version);
+            progress($"Installed marker version: {version}");
         }
         finally
         {
@@ -411,36 +431,56 @@ internal sealed class InstallService
         }
     }
 
-    private static async Task<Uri?> FindReleaseAssetAsync(string assetName, CancellationToken ct)
+    private static async Task<Uri?> FindReleaseAssetAsync(
+        string assetName,
+        CancellationToken ct,
+        Action<string>? progress = null)
     {
+        progress?.Invoke($"Release API: {ReleasesApi}");
         using var response = await Http.GetAsync(ReleasesApi, ct);
+        progress?.Invoke($"Release API HTTP {(int)response.StatusCode} {response.ReasonPhrase}");
         response.EnsureSuccessStatusCode();
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
 
+        var releaseCount = 0;
         foreach (var release in doc.RootElement.EnumerateArray())
         {
             if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
+            releaseCount++;
+            var tag = release.TryGetProperty("tag_name", out var tagValue)
+                ? tagValue.GetString() ?? "(untagged)"
+                : "(untagged)";
 
             foreach (var asset in release.GetProperty("assets").EnumerateArray())
             {
                 var candidate = asset.GetProperty("name").GetString() ?? "";
                 if (!candidate.Equals(assetName, StringComparison.OrdinalIgnoreCase)) continue;
 
+                progress?.Invoke($"Found {assetName} on release {tag}.");
                 var url = asset.GetProperty("browser_download_url").GetString();
                 if (Uri.TryCreate(url, UriKind.Absolute, out var uri)) return uri;
             }
         }
 
+        progress?.Invoke($"Checked {releaseCount} non-draft release(s); {assetName} was not found.");
         return null;
     }
 
     public Uri? CurrentFeedBase { get; set; }
 
-    private static async Task DownloadAsync(Uri uri, string target, CancellationToken ct)
+    private static async Task DownloadAsync(
+        Uri uri,
+        string target,
+        CancellationToken ct,
+        Action<string>? progress = null)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         using var response = await Http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
+        progress?.Invoke($"HTTP {(int)response.StatusCode} {response.ReasonPhrase}");
+        if (response.Content.Headers.ContentLength is long length)
+            progress?.Invoke($"Server Content-Length: {length:N0} bytes.");
+        progress?.Invoke($"Content-Type: {response.Content.Headers.ContentType?.ToString() ?? "(none)"}");
         response.EnsureSuccessStatusCode();
         await using var input = await response.Content.ReadAsStreamAsync(ct);
         await using var output = File.Create(target);

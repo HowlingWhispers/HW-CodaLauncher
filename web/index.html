@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CodaLauncher</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell">
+<aside>
+  <div class="brand"><div class="mark">🐺</div><div><b>CODA</b><small>Howling Whispers</small></div></div>
+  <nav>
+    <button class="nav active" data-view="home">⌂ <span>Home</span></button>
+    <button class="nav" data-view="mods">◇ <span>Mods</span></button>
+    <button class="nav" data-view="profile">◉ <span>Profile</span></button>
+    <button class="nav" data-view="settings">⚙ <span>Settings</span></button>
+    <button class="nav" data-view="logs">≡ <span>Logs</span></button>
+  </nav>
+  <div class="foot"><span id="feed-pill" class="pill offline">NEWS OFFLINE</span><small id="version">CodaLauncher</small></div>
+</aside>
+
+<main>
+<section class="view active" id="home">
+  <header><div><em>CODA CONTROL CENTER</em><h1>Ready when you are.</h1></div><button id="refresh" class="quiet">↻ Refresh</button></header>
+  <div class="hero">
+    <div class="hero-copy">
+      <div class="chips"><span id="loader-chip">CML checking…</span><span>Minecraft 26.4 Snapshot 3</span><span id="mod-chip">0 mods</span></div>
+      <h2>Howling Whispers Minecraft</h2>
+      <p id="loader-summary">Choose your CodaLoader folder once, then CodaLauncher becomes the front door.</p>
+      <div class="actions"><button id="play" class="play">PLAY ▶</button><button id="open-loader" class="quiet">Open loader folder</button></div>
+      <div id="launch-message"></div>
+    </div>
+    <div class="coda"><div class="halo"></div><div class="wolf">🐺</div><b>Coda</b><small>clipboard online</small></div>
+  </div>
+  <div class="section-title"><div><em>FROM HOWLING WHISPERS</em><h3>News</h3></div><small id="feed-note"></small></div>
+  <div id="news" class="news"></div>
+</section>
+
+<section class="view" id="mods">
+  <header><div><em>CML</em><h1>Installed mods</h1></div></header>
+  <div class="panel"><div class="panel-head"><div><b>run\mods</b><small>Read directly from your CodaLoader installation.</small></div><span id="mods-count" class="pill"></span></div><div id="mods-list"></div></div>
+</section>
+
+<section class="view" id="profile">
+  <header><div><em>FUTURE CML IDENTITY</em><h1>Your profile</h1></div></header>
+  <div class="cards">
+    <article><div class="avatar">🐺</div><b>CML Avatar</b><small>Custom editor later.</small></article>
+    <article><label>CML Account</label><b id="p-cml">Not configured</b><small>Howling Whispers identity</small></article>
+    <article><label>Minecraft ownership</label><b id="p-mc">Not verified</b><small>Official ownership proof only</small></article>
+    <article><label>Discord</label><b id="p-discord">Not linked</b><small>Future /link discord home</small></article>
+  </div>
+</section>
+
+<section class="view" id="settings">
+  <header><div><em>LOCAL CONFIGURATION</em><h1>Settings</h1></div></header>
+  <div class="panel settings">
+    <label><span>CodaLoader folder</span><input id="loader-path" type="text" placeholder="C:\Games\CodaLoader"><small>Folder containing CodaLoader.jar and Launch-CodaLoader.bat.</small></label>
+    <label><span>Launcher feed URL</span><input id="feed-url" type="text" placeholder="http://SERVER_IP:3220"><small>CodaLauncher appends /api/feed automatically.</small></label>
+    <label class="toggle"><div><span>Close after PLAY</span><small>Leave off if you want launcher logs visible.</small></div><input id="close-after" type="checkbox"></label>
+    <div class="coming"><b>Coming next</b><small>Java/runtime · RAM · update channel · music · branding</small></div>
+    <button id="save" class="save">Save settings</button>
+  </div>
+</section>
+
+<section class="view" id="logs">
+  <header><div><em>LOCAL ONLY</em><h1>Launcher logs</h1></div></header>
+  <div class="terminal"><pre id="log-output">Waiting for CodaLauncher…</pre></div>
+</section>
+</main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

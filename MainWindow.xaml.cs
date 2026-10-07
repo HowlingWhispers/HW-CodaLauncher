@@ -8,7 +8,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class MainWindow : Window
 {
-    private const string Version = "0.4.0-pack-deps";
+    private const string Version = "0.4.1-dependency-status";
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();
@@ -285,8 +285,9 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _logs.Add("Install/repair failed: " + ex.Message);
-            Send(new { type = "installStatus", busy = false, ok = false, message = ex.Message });
+            var message = FriendlyInstallError(ex);
+            _logs.Add("Install/repair failed: " + message);
+            Send(new { type = "installStatus", busy = false, ok = false, message });
             await SendState();
         }
         finally
@@ -345,13 +346,14 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _logs.Add("Resourcepack install/repair failed: " + ex.Message);
+            var message = FriendlyInstallError(ex);
+            _logs.Add("Resourcepack install/repair failed: " + message);
             Send(new
             {
                 type = "installStatus",
                 busy = false,
                 ok = false,
-                message = ex.Message
+                message
             });
             await SendState();
         }
@@ -392,6 +394,18 @@ public partial class MainWindow : Window
                 RequiredBy = ["cml-base"]
             });
         }
+    }
+
+    private static string FriendlyInstallError(Exception ex)
+    {
+        if (ex.Message.Contains("404", StringComparison.OrdinalIgnoreCase))
+        {
+            return "CML Base Resources v1 is not published yet. "
+                + "The launcher is working, but the required resource pack is missing "
+                + "from both HW-CodaLoader Releases and the Howling Whispers launcher feed.";
+        }
+
+        return ex.Message;
     }
 
     private static Uri? FeedBaseUri(string raw)

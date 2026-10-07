@@ -898,6 +898,9 @@ internal sealed class LauncherService
     private readonly LogBuffer _logs;
     private readonly Action<string> _sendLine;
 
+    public event Action<int>? SessionStarted;
+    public event Action<int, int>? SessionExited;
+
     public LauncherService(LogBuffer logs, Action<string> sendLine)
     {
         _logs = logs;
@@ -929,12 +932,22 @@ internal sealed class LauncherService
         var process = new Process { StartInfo = info, EnableRaisingEvents = true };
         process.OutputDataReceived += (_, e) => Forward(e.Data, false);
         process.ErrorDataReceived += (_, e) => Forward(e.Data, true);
-        process.Exited += (_, _) => Forward($"CodaLoader process {process.Id} exited.", false);
+        process.Exited += (_, _) =>
+        {
+            var exitCode = -1;
+            try { exitCode = process.ExitCode; } catch { }
+
+            Forward($"CodaLoader process {process.Id} exited with code {exitCode}.", false);
+            SessionExited?.Invoke(process.Id, exitCode);
+            process.Dispose();
+        };
 
         if (!process.Start()) throw new InvalidOperationException("Windows did not start CodaLoader.");
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
+
         Forward($"CodaLoader started from {loaderDirectory}.", false);
+        SessionStarted?.Invoke(process.Id);
         return process.Id;
     }
 

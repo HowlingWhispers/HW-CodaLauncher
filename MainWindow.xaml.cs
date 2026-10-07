@@ -8,7 +8,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class MainWindow : Window
 {
-    private const string Version = "0.3.1-install-lock";
+    private const string Version = "0.4.0-pack-deps";
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();
@@ -160,12 +160,16 @@ public partial class MainWindow : Window
         _lastFeed = feed;
         _installer.CurrentFeedBase = FeedBaseUri(feedUrl);
 
+        EnsureCmlBaseCatalog(feed);
+
         var loaderReady = LoaderLocator.IsReady(loader);
-        if (string.IsNullOrWhiteSpace(feed.BasePack.Version))
-            feed.BasePack.Version = "1";
-        if (string.IsNullOrWhiteSpace(feed.BasePack.Sha256))
-            feed.BasePack.Sha256 = "13152d503929d55fd685dfaffbbd2b4df66a13619a907deff85097b10de66bf8";
-        var basePackReady = _installer.BasePackReady(feed.BasePack);
+        var pack = feed.Packs.First(item =>
+            item.Id.Equals("cml-base", StringComparison.OrdinalIgnoreCase));
+        var resource = feed.ResourcePacks.First(item =>
+            item.Id.Equals("cml-base-resources", StringComparison.OrdinalIgnoreCase));
+
+        var resourcePackReady = _installer.CmlBaseResourcesReady(resource.Version);
+        var basePackReady = _installer.CmlBasePackReady(pack.Version, resource.Version);
         var readyToPlay = loaderReady && basePackReady;
         var news = _systemNews.Concat(feed.News).ToList();
 
@@ -181,20 +185,38 @@ public partial class MainWindow : Window
                 readyToPlay,
                 installRoot = AppPaths.InstallRoot,
                 minecraftRoot = AppPaths.MinecraftRoot,
-                basePackVersion = feed.BasePack.Version,
+                basePackVersion = pack.Version,
                 packs = new[]
                 {
                     new
                     {
-                        id = "cml-base",
-                        name = "CML Base",
-                        description = "Required foundation pack for Howling Whispers Minecraft. Provides official presentation assets and shared defaults.",
-                        required = true,
+                        id = pack.Id,
+                        name = pack.Name,
+                        description = pack.Description,
+                        required = pack.Required,
                         installed = basePackReady,
-                        installedVersion = basePackReady ? feed.BasePack.Version : "",
-                        availableVersion = feed.BasePack.Version,
-                        source = "HW-CodaLoader Releases",
+                        installedVersion = basePackReady ? pack.Version : "",
+                        availableVersion = pack.Version,
+                        source = "CML Pack Catalog",
+                        dependencies = pack.ResourcePacks,
                         status = basePackReady ? "Installed" : "Required"
+                    }
+                },
+                resourcePacks = new[]
+                {
+                    new
+                    {
+                        id = resource.Id,
+                        name = resource.Name,
+                        description = resource.Description,
+                        required = resource.Required,
+                        installed = resourcePackReady,
+                        installedVersion = resourcePackReady ? resource.Version : "",
+                        availableVersion = resource.Version,
+                        requiredBy = resource.RequiredBy,
+                        source = "HW-CodaLoader Releases / launcher feed",
+                        contents = new[] { "Title banner", "4 panorama scenes", "Menu music", "Splash/default presentation assets" },
+                        status = resourcePackReady ? "Installed" : "Required"
                     }
                 },
                 modCount = mods.Count(m => m.Valid),
@@ -207,6 +229,8 @@ public partial class MainWindow : Window
                     feed.Launcher,
                     feed.Codaloader,
                     feed.BasePack,
+                    feed.Packs,
+                    feed.ResourcePacks,
                     news,
                     feed.Online,
                     feed.Error
@@ -268,6 +292,39 @@ public partial class MainWindow : Window
         }
     }
 
+    private static void EnsureCmlBaseCatalog(LauncherFeed feed)
+    {
+        if (!feed.Packs.Any(item =>
+                item.Id.Equals("cml-base", StringComparison.OrdinalIgnoreCase)))
+        {
+            feed.Packs.Add(new PackCatalogInfo
+            {
+                Id = "cml-base",
+                Name = "CML Base",
+                Version = "1",
+                Required = true,
+                Description = "Required foundation pack for Howling Whispers Minecraft.",
+                ResourcePacks = ["cml-base-resources"]
+            });
+        }
+
+        if (!feed.ResourcePacks.Any(item =>
+                item.Id.Equals("cml-base-resources", StringComparison.OrdinalIgnoreCase)))
+        {
+            feed.ResourcePacks.Add(new ResourcePackCatalogInfo
+            {
+                Id = "cml-base-resources",
+                Name = "CML Base Resources",
+                Version = "1",
+                Required = true,
+                Description = "Official title banner, panorama scenes, menu music, splashes and shared presentation assets.",
+                Url = "/assets/CML-Base-Resources-v1.zip",
+                Sha256 = "031f3b05d3efaf9b40436fedfee64cecfd92cf8d259edc3b637a633905231838",
+                RequiredBy = ["cml-base"]
+            });
+        }
+    }
+
     private static Uri? FeedBaseUri(string raw)
     {
         if (string.IsNullOrWhiteSpace(raw)) return null;
@@ -277,9 +334,16 @@ public partial class MainWindow : Window
     private Task Play()
     {
         var loader = LoaderLocator.Resolve(_settings.LoaderPath);
-        if (!LoaderLocator.IsReady(loader) || !_installer.BasePackReady(_lastFeed.BasePack))
+        EnsureCmlBaseCatalog(_lastFeed);
+        var pack = _lastFeed.Packs.First(item =>
+            item.Id.Equals("cml-base", StringComparison.OrdinalIgnoreCase));
+        var resource = _lastFeed.ResourcePacks.First(item =>
+            item.Id.Equals("cml-base-resources", StringComparison.OrdinalIgnoreCase));
+
+        if (!LoaderLocator.IsReady(loader)
+            || !_installer.CmlBasePackReady(pack.Version, resource.Version))
         {
-            Send(new { type = "launchStatus", ok = false, message = "Install/repair CodaLoader and the mandatory CML base pack first." });
+            Send(new { type = "launchStatus", ok = false, message = "Install/repair CML Base and its required resource pack first." });
             return Task.CompletedTask;
         }
 

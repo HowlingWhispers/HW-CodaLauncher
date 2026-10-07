@@ -65,7 +65,7 @@
 <section class="view" id="profile">
   <header><div><em>FUTURE CML IDENTITY</em><h1>Your profile</h1></div></header>
   <div class="cards">
-    <article><div class="avatar">🐺</div><b>CML Avatar</b><small>Custom editor later.</small></article>
+    <article><img class="profile-face" src="assets/coda-face.svg" alt="Coda"><b>CML Avatar</b><small>Custom editor later.</small></article>
     <article><label>CML Account</label><b id="p-cml">Not configured</b><small>Howling Whispers identity</small></article>
     <article><label>Minecraft ownership</label><b id="p-mc">Not verified</b><small>Official ownership proof only</small></article>
     <article><label>Discord</label><b id="p-discord">Not linked</b><small>Future /link discord home</small></article>
@@ -73,7 +73,7 @@
 </section>
 
 <section class="view" id="settings">
-  <header><div><em>CODA'S CLIPBOARD</em><h1>Settings</h1></div></header>
+  <header><div><em>CODA'S CLIPBOARD</em><h1>Settings</h1><small class="header-note">The useful knobs. Coda keeps the dangerous-looking ones out of your way.</small></div></header>
   <div class="panel settings">
     <label><span>CodaLoader folder override</span><input id="loader-path" type="text" placeholder="Leave blank for managed install"><small>Default: %APPDATA%\.howlingshispers\loader</small></label>
     <label><span>Launcher feed URL</span><input id="feed-url" type="text" placeholder="https://thehowlingwhispers.com/launcher"><small>Defaults to https://thehowlingwhispers.com/launcher. CodaLauncher appends /api/feed automatically.</small></label>
@@ -84,7 +84,7 @@
 </section>
 
 <section class="view" id="logs">
-  <header><div><em>CODA'S PAPER TRAIL</em><h1>Logs</h1></div></header>
+  <header><div><em>CODA'S PAPER TRAIL</em><h1>Logs</h1><small class="header-note">Something acting strange? This is where Coda leaves the paperwork.</small></div></header>
   <div class="terminal"><pre id="log-output">Nothing interesting has happened yet.</pre></div>
 </section>
 </main>

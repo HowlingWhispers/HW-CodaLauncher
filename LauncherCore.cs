@@ -485,7 +485,9 @@ internal static class SelfUpdater
         info.ArgumentList.Add(Environment.ProcessId.ToString());
         info.ArgumentList.Add(staging);
         info.ArgumentList.Add(installRoot);
-        Process.Start(info) ?? throw new InvalidOperationException("Could not start staged CodaLauncher updater.");
+        var updaterProcess = Process.Start(info);
+        if (updaterProcess is null)
+            throw new InvalidOperationException("Could not start staged CodaLauncher updater.");
     }
 
     public static bool TryRunApplyMode(string[] args)

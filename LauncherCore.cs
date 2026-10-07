@@ -176,6 +176,11 @@ internal sealed class FeedService
     };
 }
 
+internal sealed record CodaLoaderReleaseInfo(
+    string Version,
+    string BundleUrl,
+    string BundleName);
+
 internal sealed class InstallService
 {
     private const string ReleasesApi =
@@ -227,14 +232,23 @@ internal sealed class InstallService
         Directory.CreateDirectory(AppPaths.ResourcePacksRoot);
         Directory.CreateDirectory(AppPaths.LogsRoot);
 
-        if (!LoaderReady)
+        var latestLoader = await GetLatestLoaderReleaseAsync(ct);
+        var installedLoaderVersion = ReadInstalledLoaderVersion();
+
+        if (!LoaderReady
+            || !string.Equals(
+                installedLoaderVersion,
+                latestLoader.Version,
+                StringComparison.OrdinalIgnoreCase))
         {
-            progress("Downloading current CodaLoader...");
-            await InstallLoaderAsync(progress, ct);
+            progress(installedLoaderVersion is null
+                ? $"Installing CodaLoader {latestLoader.Version}..."
+                : $"Updating CodaLoader {installedLoaderVersion} -> {latestLoader.Version}...");
+            await InstallLoaderAsync(latestLoader, progress, ct);
         }
         else
         {
-            progress("CodaLoader already installed; keeping current loader.");
+            progress($"CodaLoader {installedLoaderVersion} is current; keeping installed loader.");
         }
 
         var resource = ResolveCmlBaseResources(feed);
@@ -270,50 +284,91 @@ internal sealed class InstallService
         progress("CML Base Resources ready.");
     }
 
-    private async Task InstallLoaderAsync(Action<string> progress, CancellationToken ct)
+    private async Task<CodaLoaderReleaseInfo> GetLatestLoaderReleaseAsync(CancellationToken ct)
     {
         using var response = await Http.GetAsync(ReleasesApi, ct);
         response.EnsureSuccessStatusCode();
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
 
-        JsonElement? selected = null;
         foreach (var release in doc.RootElement.EnumerateArray())
         {
             if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
-            selected = release;
-            break;
-        }
-        if (selected is null)
-            throw new InvalidOperationException("No CodaLoader release is available.");
 
-        string? url = null;
-        string? name = null;
-        foreach (var asset in selected.Value.GetProperty("assets").EnumerateArray())
+            var tag = release.GetProperty("tag_name").GetString() ?? "";
+            var version = tag.StartsWith('v') ? tag[1..] : tag;
+
+            foreach (var asset in release.GetProperty("assets").EnumerateArray())
+            {
+                var candidate = asset.GetProperty("name").GetString() ?? "";
+                if (!candidate.StartsWith("CodaLoader-v", StringComparison.OrdinalIgnoreCase)
+                    || !candidate.EndsWith("-win64.zip", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var url = asset.GetProperty("browser_download_url").GetString();
+                if (!string.IsNullOrWhiteSpace(url))
+                    return new CodaLoaderReleaseInfo(version, url, candidate);
+            }
+        }
+
+        throw new InvalidOperationException(
+            "No current HW-CodaLoader release with a Windows bundle is available.");
+    }
+
+    private static string? ReadInstalledLoaderVersion()
+    {
+        if (!LoaderLocator.IsReady(AppPaths.LoaderRoot)) return null;
+
+        try
         {
-            var candidate = asset.GetProperty("name").GetString() ?? "";
-            if (!candidate.StartsWith("CodaLoader-v", StringComparison.OrdinalIgnoreCase)
-                || !candidate.EndsWith("-win64.zip", StringComparison.OrdinalIgnoreCase))
-                continue;
-            name = candidate;
-            url = asset.GetProperty("browser_download_url").GetString();
-            break;
+            var jar = Path.Combine(AppPaths.LoaderRoot, "CodaLoader.jar");
+            var info = new ProcessStartInfo("java")
+            {
+                WorkingDirectory = AppPaths.LoaderRoot,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            info.ArgumentList.Add("-jar");
+            info.ArgumentList.Add(jar);
+            info.ArgumentList.Add("--version");
+
+            using var process = Process.Start(info);
+            if (process is null) return null;
+            if (!process.WaitForExit(10_000))
+            {
+                try { process.Kill(true); } catch { }
+                return null;
+            }
+
+            if (process.ExitCode != 0) return null;
+            var version = process.StandardOutput.ReadToEnd().Trim();
+            return string.IsNullOrWhiteSpace(version) ? null : version;
         }
+        catch
+        {
+            return null;
+        }
+    }
 
-        if (url is null || name is null)
-            throw new InvalidOperationException("The newest CodaLoader release has no Windows bundle.");
-
+    private async Task InstallLoaderAsync(
+        CodaLoaderReleaseInfo release,
+        Action<string> progress,
+        CancellationToken ct)
+    {
         var tempRoot = Path.Combine(Path.GetTempPath(), "CodaLauncher", Guid.NewGuid().ToString("N"));
-        var zip = Path.Combine(tempRoot, name);
+        var zip = Path.Combine(tempRoot, release.BundleName);
         var staging = Path.Combine(tempRoot, "loader");
         Directory.CreateDirectory(tempRoot);
 
         try
         {
-            await DownloadAsync(new Uri(url), zip, ct, progress);
+            progress($"Downloading CodaLoader {release.Version} from HW-CodaLoader Releases...");
+            await DownloadAsync(new Uri(release.BundleUrl), zip, ct, progress);
             ZipFile.ExtractToDirectory(zip, staging, true);
 
-            progress("Installing CodaLoader...");
+            progress($"Installing CodaLoader {release.Version}...");
             ReplaceDirectory(staging, AppPaths.LoaderRoot);
         }
         finally

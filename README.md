@@ -2,9 +2,13 @@
 
 CodaLauncher is the desktop control center for CodaLoader and the Howling Whispers Minecraft ecosystem.
 
-## 0.5.4 Coda Headshot
+## 0.5.5 Approved Coda Portrait
 
-- Generated Coda portrait: icy-white fur, cyan and pale-blue accents, blue eyes.
+- Uses the approved Coda portrait supplied by the project owner, preserved without regenerating or editing the image.
+- Transparent artwork displays in full, with her ears and clipboard intact.
+- While open, checks for launcher updates every five minutes, when returning to the window, and on Refresh.
+- An UPDATE AVAILABLE banner opens Coda's update terminal on request; game sessions and installs can finish first.
+- Runtime and package versions are aligned so an updated launcher recognizes its installed version.
 - Local portrait asset shared by Home and the current Profile placeholder.
 - Startup update terminal stages verified files and waits for **REBOOT CODALAUNCHER**.
 - Release tags and downloadable assets are immutable; each version points to its build commit.

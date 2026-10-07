@@ -2,6 +2,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 
 namespace HowlingWhispers.CodaLauncher;
@@ -21,6 +22,13 @@ public partial class MainWindow : Window
     private readonly SemaphoreSlim _installGate = new(1, 1);
     private volatile bool _gameRunning;
     private volatile int _gameProcessId;
+    private readonly DispatcherTimer _updateTimer = new() { Interval = TimeSpan.FromMinutes(5) };
+    private readonly CancellationTokenSource _windowLifetime = new();
+    private LauncherUpdateInfo? _availableLauncherUpdate;
+    private DateTime _lastLauncherUpdateCheck = DateTime.MinValue;
+    private bool _checkingLauncherUpdate;
+    private bool _updateWindowOpen;
+    private bool _uiReady;
 
     public MainWindow()
     {
@@ -29,6 +37,16 @@ public partial class MainWindow : Window
         _launcher.SessionStarted += OnSessionStarted;
         _launcher.SessionExited += OnSessionExited;
         Loaded += OnLoaded;
+        _updateTimer.Tick += async (_, _) => await CheckLauncherUpdateAsync();
+        Activated += async (_, _) =>
+        {
+            if (_uiReady) await CheckLauncherUpdateAsync();
+        };
+        Closed += (_, _) =>
+        {
+            _updateTimer.Stop();
+            _windowLifetime.Cancel();
+        };
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -73,8 +91,17 @@ public partial class MainWindow : Window
             switch (action)
             {
                 case "ready":
-                case "refresh":
+                    _uiReady = true;
+                    _updateTimer.Start();
+                    _ = CheckLauncherUpdateAsync(force: true);
                     await SendState();
+                    break;
+                case "refresh":
+                    _ = CheckLauncherUpdateAsync(force: true);
+                    await SendState();
+                    break;
+                case "updateLauncher":
+                    await OpenLauncherUpdateAsync();
                     break;
                 case "saveSettings":
                     if (root.TryGetProperty("settings", out var s))
@@ -143,6 +170,7 @@ public partial class MainWindow : Window
             data = new
             {
                 launcherVersion = App.LauncherVersion,
+                launcherUpdateVersion = _availableLauncherUpdate?.Version,
                 loaderPath = loader ?? "",
                 loaderReady,
                 loaderCurrent = managed.LoaderCurrent,
@@ -524,6 +552,74 @@ public partial class MainWindow : Window
 
             await SendState();
         });
+    }
+
+
+    private async Task CheckLauncherUpdateAsync(bool force = false)
+    {
+        if (_checkingLauncherUpdate || _updateWindowOpen || _windowLifetime.IsCancellationRequested)
+            return;
+        if (!force && DateTime.UtcNow - _lastLauncherUpdateCheck < TimeSpan.FromMinutes(1))
+            return;
+
+        _checkingLauncherUpdate = true;
+        _lastLauncherUpdateCheck = DateTime.UtcNow;
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_windowLifetime.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(8));
+            _availableLauncherUpdate = await SelfUpdater.CheckAsync(App.LauncherVersion, timeout.Token);
+            if (!_windowLifetime.IsCancellationRequested) SendLauncherUpdateNotice();
+        }
+        catch (OperationCanceledException)
+        {
+            // An unavailable update service must not interrupt the launcher or game.
+        }
+        catch (Exception ex)
+        {
+            _logs.Add("Background launcher update check failed: " + ex.Message);
+        }
+        finally
+        {
+            _checkingLauncherUpdate = false;
+        }
+    }
+
+    private void SendLauncherUpdateNotice() => Send(new
+    {
+        type = "launcherUpdate",
+        version = _availableLauncherUpdate?.Version,
+        busy = _updateWindowOpen
+    });
+
+    private async Task OpenLauncherUpdateAsync()
+    {
+        if (_updateWindowOpen || _gameRunning || _availableLauncherUpdate is null)
+        {
+            SendLauncherUpdateNotice();
+            return;
+        }
+        if (!await _installGate.WaitAsync(0))
+        {
+            SendLauncherUpdateNotice();
+            return;
+        }
+
+        _updateWindowOpen = true;
+        SendLauncherUpdateNotice();
+        try
+        {
+            var updater = new UpdateWindow(_availableLauncherUpdate) { Owner = this };
+            updater.ShowDialog();
+            if (updater.RestartRequested)
+                Application.Current.Shutdown();
+        }
+        finally
+        {
+            _updateWindowOpen = false;
+            _installGate.Release();
+            if (!_windowLifetime.IsCancellationRequested) SendLauncherUpdateNotice();
+        }
     }
 
     private void OpenLoaderFolder()

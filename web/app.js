@@ -1,10 +1,33 @@
 const post=(action,extra={})=>window.chrome.webview.postMessage({action,...extra});
 let state=null;
 let installBusy=false;
+let launcherUpdateVersion=null;
+let launcherUpdateBusy=false;
 const $=id=>document.getElementById(id);
+
+function renderLauncherUpdateNotice(){
+  const notice=$('launcher-update-notice');
+  notice.hidden=!launcherUpdateVersion;
+  const gameRunning=!!state?.gameRunning;
+  $('launcher-update-copy').textContent=launcherUpdateVersion
+    ? 'Coda found CodaLauncher '+launcherUpdateVersion+'. '+(gameRunning
+      ? 'Ready to update when Minecraft closes.'
+      : 'Fresh paperwork is ready whenever you are.')
+    : '';
+  const button=$('update-launcher');
+  button.disabled=launcherUpdateBusy||installBusy||gameRunning;
+  button.textContent=launcherUpdateBusy?'UPDATING…':'UPDATE LAUNCHER';
+}
+$('update-launcher').onclick=()=>{
+  if(launcherUpdateBusy||installBusy||state?.gameRunning) return;
+  launcherUpdateBusy=true;
+  renderLauncherUpdateNotice();
+  post('updateLauncher');
+};
 
 function setInstallBusy(busy,message=''){
   installBusy=busy;
+  renderLauncherUpdateNotice();
   const home=$('play');
   if(home){
     home.disabled=busy;
@@ -38,7 +61,13 @@ window.chrome.webview.addEventListener('message',e=>{
   const m=e.data;
   if(m.type==='state'){
     state=m.data;
+    launcherUpdateVersion=state.launcherUpdateVersion||null;
     render();
+  }
+  if(m.type==='launcherUpdate'){
+    launcherUpdateVersion=m.version||null;
+    launcherUpdateBusy=!!m.busy;
+    renderLauncherUpdateNotice();
   }
   if(m.type==='log') appendLog(m.line);
   if(m.type==='installStatus'){
@@ -64,6 +93,7 @@ window.chrome.webview.addEventListener('message',e=>{
   if(m.type==='error') $('launch-message').textContent=m.message;
 });
 function render(){
+  renderLauncherUpdateNotice();
   $('version').textContent='CodaLauncher '+state.launcherVersion;
   $('home-heading').textContent=state.gameRunning?'World session active.':'Ready when you are.';
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';

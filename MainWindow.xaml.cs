@@ -8,7 +8,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class MainWindow : Window
 {
-    private const string Version = "0.4.1-dependency-status";
+    private const string Version = "0.4.2-deep-diagnostics";
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();

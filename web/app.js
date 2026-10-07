@@ -59,7 +59,11 @@ function render(){
   document.querySelectorAll('.resourcepack-action').forEach(btn=>{
     btn.disabled=installBusy;
     if(installBusy) btn.textContent='WORKING…';
-    btn.onclick=requestInstall;
+    btn.onclick=()=>{
+      if(installBusy) return;
+      setInstallBusy(true,'Preparing Resourcepack install…');
+      post('installResourcePack');
+    };
   });
   $('mods-count').textContent=state.mods.length+' jar'+(state.mods.length===1?'':'s');
   $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Ready':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No CML mods found</b><small>run\\mods is empty or the loader path is not configured.</small></div></div>';

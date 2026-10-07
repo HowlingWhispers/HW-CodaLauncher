@@ -2,13 +2,22 @@
 
 CodaLauncher is the desktop control center for CodaLoader and the Howling Whispers Minecraft ecosystem.
 
-## 0.5.1 Coda Voice
+## 0.5.4 Coda Headshot
+
+- Generated Coda portrait: icy-white fur, cyan and pale-blue accents, blue eyes.
+- Local portrait asset shared by Home and the current Profile placeholder.
+- Startup update terminal stages verified files and waits for **REBOOT CODALAUNCHER**.
+- Release tags and downloadable assets are immutable; each version points to its build commit.
+
+## Launcher
 
 - WPF native shell with a local HTML/CSS/JavaScript interface rendered through WebView2.
 - Home screen with CodaLoader readiness, Minecraft target, mod count and PLAY.
 - News cards from the Howling Whispers launcher feed with offline fallback.
 - CodaLoader is sourced from HW-CodaLoader Releases. CML Base is modeled as a Pack with dependency resolution.
-- Packs tab begins with **CML Base**, the required foundation pack. Future project packs can expand into full modpack-style bundles.\n- INSTALL/REPAIR is single-flight in both the WebView and native backend.\n- REPAIR does not re-download CodaLoader when only CML Base is missing.
+- Packs tab begins with **CML Base**, the required foundation pack. Future project packs can expand into full modpack-style bundles.
+- INSTALL/REPAIR is single-flight in both the WebView and native backend.
+- REPAIR does not re-download CodaLoader when only CML Base is missing.
 - Failed automatic launcher updates generate a local News card with a manual release link, independent of the server news feed.
 - CML mod discovery from run/mods/*.jar and coda.mod.json.
 - Placeholder Profile area for future CML account, Minecraft ownership, Discord linking and avatar work.

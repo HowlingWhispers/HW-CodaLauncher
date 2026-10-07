@@ -8,66 +8,76 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: codalauncher-release
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: windows-latest
     env:
-      CODA_VERSION: 0.5.3-updater-smoke-test
-      CODA_TAG: v0.5.3-updater-smoke-test
-      CODA_ZIP: CodaLauncher-v0.5.3-updater-smoke-test-win64.zip
+      CODA_VERSION: 0.5.4-coda-headshot
+      CODA_TAG: v0.5.4-coda-headshot
+      CODA_ZIP: CodaLauncher-v0.5.4-coda-headshot-win64.zip
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
-      - name: Publish
-        shell: pwsh
-        run: |
-          dotnet restore
-          dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
-          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath "dist/$env:CODA_ZIP" -Force
-          $sha = (Get-FileHash "dist/$env:CODA_ZIP" -Algorithm SHA256).Hash.ToLowerInvariant()
-          @"
-          {
-            "schema": 1,
-            "version": "$env:CODA_VERSION",
-            "bundle": "$env:CODA_ZIP",
-            "sha256": "$sha"
-          }
-          "@ | Set-Content -Encoding UTF8 dist/launcher-update.json
-      - name: Publish prerelease
+      - name: Check immutable release
+        id: release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f $env:CODA_TAG $env:GITHUB_SHA
-          git push origin "refs/tags/$env:CODA_TAG" --force
-
+          $existing = git rev-parse --verify "refs/tags/$env:CODA_TAG" 2>$null
+          if ($existing -and $existing -ne $env:GITHUB_SHA) {
+            throw "Version $env:CODA_TAG already belongs to another commit. Bump the release version instead of replacing it."
+          }
+          gh release view $env:CODA_TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            "publish=false" >> $env:GITHUB_OUTPUT
+          } else {
+            "publish=true" >> $env:GITHUB_OUTPUT
+          }
+          $global:LASTEXITCODE = 0
+      - uses: actions/setup-dotnet@v4
+        if: steps.release.outputs.publish == 'true'
+        with:
+          dotnet-version: "8.0.x"
+      - name: Publish
+        if: steps.release.outputs.publish == 'true'
+        shell: pwsh
+        run: |
+          dotnet restore
+          if ($LASTEXITCODE -ne 0) { throw "Restore failed" }
+          dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
+          if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
+          if (!(Test-Path dist/CodaLauncher/CodaLauncher.exe)) { throw "CodaLauncher.exe missing" }
+          if (!(Test-Path dist/CodaLauncher/web/assets/coda-headshot.png)) { throw "Coda headshot missing" }
+          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath "dist/$env:CODA_ZIP"
+          $sha = (Get-FileHash "dist/$env:CODA_ZIP" -Algorithm SHA256).Hash.ToLowerInvariant()
+          @{
+            schema = 1
+            version = $env:CODA_VERSION
+            bundle = $env:CODA_ZIP
+            sha256 = $sha
+          } | ConvertTo-Json | Set-Content -Encoding UTF8 dist/launcher-update.json
+      - name: Publish prerelease
+        if: steps.release.outputs.publish == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
           @"
-          # CodaLauncher v0.5.3 Updater Smoke Test
+          # CodaLauncher v0.5.4 Coda Headshot
 
-          Small validation release for the new Coda update terminal.
+          Coda's generated headshot replaces the geometric placeholder on Home and the current Profile placeholder.
 
-          No feature changes beyond the version bump. This release exists so 0.5.2 can exercise the complete visible updater path in a real update:
-
-          - detect a newer launcher at startup
-          - show Coda's update terminal
-          - display live download progress
-          - verify the SHA-256
-          - stage the update safely
-          - wait for REBOOT CODALAUNCHER
-          - apply the staged files and reopen as 0.5.3
-
-          If that path works, the updater has passed its first real smoke test.
+          - Icy-white fur, cyan and pale-blue accents, blue eyes.
+          - Portrait bundled locally, so it works offline.
+          - Existing update terminal downloads, verifies and stages this release, then waits for REBOOT CODALAUNCHER.
+          - Release tags and assets are immutable and point to the commit used for the build.
           "@ | Set-Content release-notes.md
 
-          if (gh release view $env:CODA_TAG 2>$null) {
-            gh release upload $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --clobber
-            gh release edit $env:CODA_TAG --prerelease --title "CodaLauncher v0.5.3 Updater Smoke Test" --notes-file release-notes.md
-          } else {
-            gh release create $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.5.3 Updater Smoke Test" --notes-file release-notes.md
-          }
+          gh release create $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.5.4 Coda Headshot" --notes-file release-notes.md
+          if ($LASTEXITCODE -ne 0) { throw "Release publication failed" }

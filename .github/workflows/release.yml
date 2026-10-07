@@ -21,13 +21,13 @@ jobs:
         run: |
           dotnet restore
           dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
-          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.2.2-default-feed-win64.zip -Force
-          $sha = (Get-FileHash dist/CodaLauncher-v0.2.2-default-feed-win64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.2.3-release-basepack-win64.zip -Force
+          $sha = (Get-FileHash dist/CodaLauncher-v0.2.3-release-basepack-win64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
           @"
           {
             "schema": 1,
-            "version": "0.2.2-default-feed",
-            "bundle": "CodaLauncher-v0.2.2-default-feed-win64.zip",
+            "version": "0.2.3-release-basepack",
+            "bundle": "CodaLauncher-v0.2.3-release-basepack-win64.zip",
             "sha256": "$sha"
           }
           "@ | Set-Content -Encoding UTF8 dist/launcher-update.json
@@ -36,10 +36,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v0.2.2-default-feed"
-          $zip = "dist/CodaLauncher-v0.2.2-default-feed-win64.zip"
+          $tag = "v0.2.3-release-basepack"
+          $zip = "dist/CodaLauncher-v0.2.3-release-basepack-win64.zip"
           @"
-          # CodaLauncher v0.2.2 Default Feed
+          # CodaLauncher v0.2.3 Release Base Pack
 
           First installer-capable CodaLauncher milestone.
 
@@ -51,7 +51,9 @@ jobs:
           - mandatory CML base-pack download and SHA-256 verification from launcher feed
           - CML mod scanning, news, settings and logs
 
-          CodaLauncher now defaults its launcher feed to https://thehowlingwhispers.com/launcher, so fresh installs do not require a manual feed URL.
+          CodaLauncher now downloads the mandatory CML Base Pack from HW-CodaLoader GitHub Releases first, with the launcher feed only as a fallback.
+
+          Fresh installs therefore use GitHub Releases for both CodaLoader and the mandatory base pack.
 
           CodaLauncher also updates itself through a SHA-256 verified staged copy of its own EXE, with no BAT helper or console window.
 
@@ -59,7 +61,7 @@ jobs:
           "@ | Set-Content release-notes.md
           if (gh release view $tag 2>$null) {
             gh release upload $tag $zip dist/launcher-update.json --clobber
-            gh release edit $tag --prerelease --title "CodaLauncher v0.2.2 Default Feed" --notes-file release-notes.md
+            gh release edit $tag --prerelease --title "CodaLauncher v0.2.3 Release Base Pack" --notes-file release-notes.md
           } else {
-            gh release create $tag $zip dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.2.2 Default Feed" --notes-file release-notes.md
+            gh release create $tag $zip dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.2.3 Release Base Pack" --notes-file release-notes.md
           }

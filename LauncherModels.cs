@@ -10,9 +10,9 @@ public sealed class LauncherSettings
 public sealed class CmlBasePackInfo
 {
     public bool Required { get; set; } = true;
-    public string Version { get; set; } = "";
+    public string Version { get; set; } = "1";
     public string Url { get; set; } = "";
-    public string Sha256 { get; set; } = "";
+    public string Sha256 { get; set; } = "13152d503929d55fd685dfaffbbd2b4df66a13619a907deff85097b10de66bf8";
 }
 
 public sealed record ModInfo(string FileName, string Id, string Name, string Version, bool Valid, string? Error);

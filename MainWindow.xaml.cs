@@ -8,7 +8,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class MainWindow : Window
 {
-    private const string Version = "0.2.2-default-feed";
+    private const string Version = "0.2.3-release-basepack";
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();
@@ -146,6 +146,10 @@ public partial class MainWindow : Window
         _installer.CurrentFeedBase = FeedBaseUri(feedUrl);
 
         var loaderReady = LoaderLocator.IsReady(loader);
+        if (string.IsNullOrWhiteSpace(feed.BasePack.Version))
+            feed.BasePack.Version = "1";
+        if (string.IsNullOrWhiteSpace(feed.BasePack.Sha256))
+            feed.BasePack.Sha256 = "13152d503929d55fd685dfaffbbd2b4df66a13619a907deff85097b10de66bf8";
         var basePackReady = _installer.BasePackReady(feed.BasePack);
         var readyToPlay = loaderReady && basePackReady;
 

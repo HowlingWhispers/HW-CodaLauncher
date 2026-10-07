@@ -95,7 +95,7 @@ internal sealed class ModScanner
     public IReadOnlyList<ModInfo> Scan(string? loaderDirectory)
     {
         if (string.IsNullOrWhiteSpace(loaderDirectory)) return [];
-        var mods = Path.Combine(loaderDirectory, "run", "mods");
+        var mods = Path.Combine(loaderDirectory, "mods");
         if (!Directory.Exists(mods)) return [];
         return Directory.EnumerateFiles(mods, "*.jar").OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase).Select(Read).ToList();
     }
@@ -175,7 +175,11 @@ internal sealed class FeedService
 internal sealed class InstallService
 {
     private const string ReleasesApi =
-        "https://api.github.com/repos/HowlingWhispers/HW-CodaLoader/releases?per_page=10";
+        "https://api.github.com/repos/HowlingWhispers/HW-CodaLoader/releases?per_page=20";
+    private const string BasePackAssetName = "CML-BasePack-v1.zip";
+    private const string BasePackVersion = "1";
+    private const string BasePackSha256 =
+        "13152d503929d55fd685dfaffbbd2b4df66a13619a907deff85097b10de66bf8";
 
     private static readonly HttpClient Http = CreateHttp();
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
@@ -208,19 +212,8 @@ internal sealed class InstallService
         progress("Downloading current CodaLoader...");
         await InstallLoaderAsync(progress, ct);
 
-        if (feed.BasePack.Required)
-        {
-            if (string.IsNullOrWhiteSpace(feed.BasePack.Url)
-                || string.IsNullOrWhiteSpace(feed.BasePack.Sha256)
-                || string.IsNullOrWhiteSpace(feed.BasePack.Version))
-            {
-                throw new InvalidOperationException(
-                    "The launcher feed does not currently provide the mandatory CML base pack.");
-            }
-
-            progress("Downloading mandatory CML base pack...");
-            await InstallBasePackAsync(feed.BasePack, progress, ct);
-        }
+        progress("Downloading mandatory CML base pack...");
+        await InstallBasePackAsync(feed.BasePack, progress, ct);
 
         var bundledHello = Path.Combine(AppPaths.LoaderRoot, "run", "mods", "hello-coda.jar");
         var gameMods = Path.Combine(AppPaths.MinecraftRoot, "mods");
@@ -285,19 +278,34 @@ internal sealed class InstallService
     }
 
     private async Task InstallBasePackAsync(
-        CmlBasePackInfo info,
+        CmlBasePackInfo feedInfo,
         Action<string> progress,
         CancellationToken ct)
     {
-        var feedBase = CurrentFeedBase
-            ?? throw new InvalidOperationException("Launcher feed base URL is unavailable.");
+        var version = string.IsNullOrWhiteSpace(feedInfo.Version) ? BasePackVersion : feedInfo.Version;
+        var expectedSha = string.IsNullOrWhiteSpace(feedInfo.Sha256) ? BasePackSha256 : feedInfo.Sha256;
 
-        var uri = Uri.TryCreate(info.Url, UriKind.Absolute, out var absolute)
-            ? absolute
-            : new Uri(feedBase, info.Url.TrimStart('/'));
+        Uri? uri = await FindReleaseAssetAsync(BasePackAssetName, ct);
+
+        if (uri is null
+            && CurrentFeedBase is not null
+            && !string.IsNullOrWhiteSpace(feedInfo.Url))
+        {
+            uri = Uri.TryCreate(feedInfo.Url, UriKind.Absolute, out var absolute)
+                ? absolute
+                : new Uri(CurrentFeedBase, feedInfo.Url.TrimStart('/'));
+            progress("CML base pack not attached to HW-CodaLoader release; trying launcher feed fallback...");
+        }
+
+        if (uri is null)
+        {
+            throw new InvalidOperationException(
+                "CML-BasePack-v1.zip is not attached to any current HW-CodaLoader GitHub Release. "
+                + "Attach that asset to HW-CodaLoader Releases before installing.");
+        }
 
         var tempRoot = Path.Combine(Path.GetTempPath(), "CodaLauncher", Guid.NewGuid().ToString("N"));
-        var zip = Path.Combine(tempRoot, "CML-BasePack.zip");
+        var zip = Path.Combine(tempRoot, BasePackAssetName);
         var staging = Path.Combine(tempRoot, "base");
         Directory.CreateDirectory(tempRoot);
 
@@ -306,9 +314,9 @@ internal sealed class InstallService
             await DownloadAsync(uri, zip, ct);
 
             var actual = Sha256(zip);
-            if (!actual.Equals(info.Sha256, StringComparison.OrdinalIgnoreCase))
+            if (!actual.Equals(expectedSha, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException(
-                    $"CML base pack failed SHA-256 verification. Expected {info.Sha256}, got {actual}.");
+                    $"CML base pack failed SHA-256 verification. Expected {expectedSha}, got {actual}.");
 
             ZipFile.ExtractToDirectory(zip, staging, true);
             if (!Directory.Exists(Path.Combine(staging, "branding"))
@@ -317,12 +325,36 @@ internal sealed class InstallService
 
             progress("Installing CML base pack...");
             ReplaceDirectory(staging, AppPaths.BasePackRoot);
-            File.WriteAllText(AppPaths.BasePackMarker, info.Version);
+            File.WriteAllText(AppPaths.BasePackMarker, version);
         }
         finally
         {
             TryDeleteDirectory(tempRoot);
         }
+    }
+
+    private static async Task<Uri?> FindReleaseAssetAsync(string assetName, CancellationToken ct)
+    {
+        using var response = await Http.GetAsync(ReleasesApi, ct);
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+
+        foreach (var release in doc.RootElement.EnumerateArray())
+        {
+            if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
+
+            foreach (var asset in release.GetProperty("assets").EnumerateArray())
+            {
+                var candidate = asset.GetProperty("name").GetString() ?? "";
+                if (!candidate.Equals(assetName, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var url = asset.GetProperty("browser_download_url").GetString();
+                if (Uri.TryCreate(url, UriKind.Absolute, out var uri)) return uri;
+            }
+        }
+
+        return null;
     }
 
     public Uri? CurrentFeedBase { get; set; }

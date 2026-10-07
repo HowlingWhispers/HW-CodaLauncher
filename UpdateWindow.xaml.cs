@@ -17,7 +17,7 @@ public partial class UpdateWindow : Window
     public bool RestartRequested { get; private set; }
     public bool ContinueWithoutUpdate { get; private set; }
 
-    public UpdateWindow(LauncherUpdateInfo update)
+    internal UpdateWindow(LauncherUpdateInfo update)
     {
         _update = update;
         InitializeComponent();

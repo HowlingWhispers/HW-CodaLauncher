@@ -8,7 +8,6 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class MainWindow : Window
 {
-    private const string Version = "0.5.1-coda-voice";
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();
@@ -39,8 +38,6 @@ public partial class MainWindow : Window
             _settings = _settingsStore.Load();
             _logs.Add("CodaLauncher starting.");
             Directory.CreateDirectory(AppPaths.WebViewData);
-
-            _ = CheckLauncherUpdateAsync();
 
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: AppPaths.WebViewData);
             await Browser.EnsureCoreWebView2Async(environment);
@@ -115,47 +112,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task CheckLauncherUpdateAsync()
-    {
-        LauncherUpdateInfo? update = null;
-        try
-        {
-            update = await SelfUpdater.CheckAsync(Version, CancellationToken.None);
-            if (update is null) return;
-
-            _logs.Add($"Launcher update available: {update.Version}");
-            Dispatcher.Invoke(() => Send(new
-            {
-                type = "launcherUpdate",
-                available = true,
-                version = update.Version
-            }));
-
-            await SelfUpdater.StageAndRestartAsync(
-                update,
-                message => _logs.Add(message),
-                CancellationToken.None);
-
-            Dispatcher.Invoke(Close);
-        }
-        catch (Exception ex)
-        {
-            _logs.Add("Launcher update check failed: " + ex.Message);
-            if (update is not null)
-            {
-                _systemNews.RemoveAll(item => item.Id == "launcher-update-manual");
-                _systemNews.Insert(0, new NewsItem
-                {
-                    Id = "launcher-update-manual",
-                    Date = DateTime.Now.ToString("yyyy-MM-dd"),
-                    Title = $"CodaLauncher {update.Version} needs a manual update",
-                    Text = "Automatic updating could not finish. Open the release page to download the current launcher manually.",
-                    Link = update.ReleaseUrl
-                });
-            }
-        }
-    }
-
     private async Task SendState()
     {
         var loader = LoaderLocator.Resolve(_settings.LoaderPath);
@@ -186,7 +142,7 @@ public partial class MainWindow : Window
             type = "state",
             data = new
             {
-                launcherVersion = Version,
+                launcherVersion = App.LauncherVersion,
                 loaderPath = loader ?? "",
                 loaderReady,
                 loaderCurrent = managed.LoaderCurrent,

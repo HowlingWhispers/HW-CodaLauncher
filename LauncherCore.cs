@@ -690,6 +690,16 @@ internal sealed record LauncherUpdateInfo(
     string BundleName,
     string ReleaseUrl);
 
+internal sealed record LauncherUpdateProgress(
+    string Stage,
+    string Message,
+    int? Percent = null);
+
+internal sealed record PreparedLauncherUpdate(
+    string Version,
+    string StagingDirectory,
+    string InstallRoot);
+
 internal static class SelfUpdater
 {
     private const string ReleasesApi =
@@ -752,9 +762,9 @@ internal static class SelfUpdater
         return null;
     }
 
-    public static async Task StageAndRestartAsync(
+    public static async Task<PreparedLauncherUpdate> DownloadAndStageAsync(
         LauncherUpdateInfo update,
-        Action<string> progress,
+        Action<LauncherUpdateProgress> progress,
         CancellationToken ct)
     {
         var installRoot = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
@@ -763,36 +773,91 @@ internal static class SelfUpdater
         var staging = Path.Combine(tempRoot, "staging");
         Directory.CreateDirectory(tempRoot);
 
-        progress($"Downloading CodaLauncher {update.Version}...");
+        progress(new LauncherUpdateProgress(
+            "download",
+            $"Downloading CodaLauncher {update.Version}...",
+            0));
+
         using (var response = await Http.GetAsync(update.BundleUrl, HttpCompletionOption.ResponseHeadersRead, ct))
         {
             response.EnsureSuccessStatusCode();
+            var total = response.Content.Headers.ContentLength;
+
             await using var input = await response.Content.ReadAsStreamAsync(ct);
             await using var output = File.Create(zip);
-            await input.CopyToAsync(output, ct);
+
+            var buffer = new byte[128 * 1024];
+            long copied = 0;
+            var lastPercent = -1;
+
+            while (true)
+            {
+                var read = await input.ReadAsync(buffer.AsMemory(0, buffer.Length), ct);
+                if (read == 0) break;
+
+                await output.WriteAsync(buffer.AsMemory(0, read), ct);
+                copied += read;
+
+                if (total is > 0)
+                {
+                    var percent = Math.Clamp((int)(copied * 100L / total.Value), 0, 100);
+                    if (percent != lastPercent)
+                    {
+                        lastPercent = percent;
+                        progress(new LauncherUpdateProgress(
+                            "download",
+                            $"Downloading CodaLauncher {update.Version}... {percent}%",
+                            percent));
+                    }
+                }
+            }
         }
+
+        progress(new LauncherUpdateProgress(
+            "verify",
+            "Download complete. Verifying the official copy...",
+            100));
 
         var actual = Sha256(zip);
         if (!actual.Equals(update.Sha256, StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException(
                 $"Launcher update failed SHA-256 verification. Expected {update.Sha256}, got {actual}.");
 
+        progress(new LauncherUpdateProgress(
+            "stage",
+            "Official copy verified. Staging the update...",
+            100));
+
         ZipFile.ExtractToDirectory(zip, staging, true);
         var stagedExe = Path.Combine(staging, "CodaLauncher.exe");
         if (!File.Exists(stagedExe))
             throw new InvalidDataException("Staged launcher update does not contain CodaLauncher.exe.");
 
-        progress("Applying launcher update...");
+        progress(new LauncherUpdateProgress(
+            "ready",
+            "Update ready. Reboot CodaLauncher when you're ready.",
+            100));
+
+        return new PreparedLauncherUpdate(update.Version, staging, installRoot);
+    }
+
+    public static void StartApplyAndRestart(PreparedLauncherUpdate update)
+    {
+        var stagedExe = Path.Combine(update.StagingDirectory, "CodaLauncher.exe");
+        if (!File.Exists(stagedExe))
+            throw new InvalidDataException("Staged launcher update is no longer available.");
+
         var info = new ProcessStartInfo(stagedExe)
         {
-            WorkingDirectory = staging,
+            WorkingDirectory = update.StagingDirectory,
             UseShellExecute = false,
             CreateNoWindow = true
         };
         info.ArgumentList.Add("--apply-update");
         info.ArgumentList.Add(Environment.ProcessId.ToString());
-        info.ArgumentList.Add(staging);
-        info.ArgumentList.Add(installRoot);
+        info.ArgumentList.Add(update.StagingDirectory);
+        info.ArgumentList.Add(update.InstallRoot);
+
         var updaterProcess = Process.Start(info);
         if (updaterProcess is null)
             throw new InvalidOperationException("Could not start staged CodaLauncher updater.");

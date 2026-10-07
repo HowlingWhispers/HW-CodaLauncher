@@ -1,4 +1,4 @@
-name: Publish CodaLauncher prototype
+name: Publish CodaLauncher prerelease
 
 on:
   push:
@@ -11,8 +11,14 @@ permissions:
 jobs:
   publish:
     runs-on: windows-latest
+    env:
+      CODA_VERSION: 0.5.2-update-terminal
+      CODA_TAG: v0.5.2-update-terminal
+      CODA_ZIP: CodaLauncher-v0.5.2-update-terminal-win64.zip
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
@@ -21,13 +27,13 @@ jobs:
         run: |
           dotnet restore
           dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
-          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.5.1-coda-voice-win64.zip -Force
-          $sha = (Get-FileHash dist/CodaLauncher-v0.5.1-coda-voice-win64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath "dist/$env:CODA_ZIP" -Force
+          $sha = (Get-FileHash "dist/$env:CODA_ZIP" -Algorithm SHA256).Hash.ToLowerInvariant()
           @"
           {
             "schema": 1,
-            "version": "0.5.1-coda-voice",
-            "bundle": "CodaLauncher-v0.5.1-coda-voice-win64.zip",
+            "version": "$env:CODA_VERSION",
+            "bundle": "$env:CODA_ZIP",
             "sha256": "$sha"
           }
           "@ | Set-Content -Encoding UTF8 dist/launcher-update.json
@@ -36,34 +42,32 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v0.5.1-coda-voice"
-          $zip = "dist/CodaLauncher-v0.5.1-coda-voice-win64.zip"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f $env:CODA_TAG $env:GITHUB_SHA
+          git push origin "refs/tags/$env:CODA_TAG" --force
+
           @"
-          # CodaLauncher v0.5.1 Coda Voice
+          # CodaLauncher v0.5.2 Update Terminal
 
-          Installer diagnostics milestone.
+          Coda now makes launcher updates visible instead of silently disappearing into an update handoff.
 
-          Includes:
-          - INSTALL / REPAIR / PLAY primary flow
-          - managed install under %APPDATA%\.howlingshispers
-          - Minecraft workspace at %APPDATA%\.howlingshispers\minecraft
-          - current CodaLoader release download from GitHub
-          - CML Pack dependency resolution with SHA-256 verified Resourcepacks
-          - CML mod scanning, news, settings and logs
+          - startup update check happens before the normal launcher opens
+          - updates download in a dedicated Coda terminal
+          - live download progress is visible
+          - SHA-256 verification remains mandatory
+          - Coda talks the player through download, verification and staging
+          - the installed launcher is untouched until the verified update is staged
+          - Coda waits for the player to press REBOOT CODALAUNCHER
+          - failed updates can continue into the existing launcher without replacing files
+          - prerelease tags are kept aligned with the commit that produced the downloadable assets
 
-          Adds the first real Packs screen with CML Base as the required foundation pack.\n\n          INSTALL/REPAIR now locks immediately in the UI and native backend so repeated clicks cannot start parallel installers. REPAIR also keeps an already-installed CodaLoader when only CML Base is missing.
-
-          CodaLauncher downloads CML Base from HW-CodaLoader GitHub Releases first, with the launcher feed only as a fallback.
-
-          If an automatic CodaLauncher self-update cannot finish, the launcher creates its own local News card linking to the release page, so manual-update notices do not depend on server news.
-
-          CodaLauncher also updates itself through a SHA-256 verified staged copy of its own EXE, with no BAT helper or console window.
-
-          Required components remain fully managed behind one player action. This release adds Coda's launcher voice, a dedicated white/cyan Coda portrait, and live Minecraft session states. While the game is open the launcher shows RUNNING and "Minecraft is running. Coda is on standby." When the session ends it distinguishes a normal close from an unexpected non-zero exit and points the player toward Logs when needed.
+          Buttons stay clear. Coda handles the paperwork.
           "@ | Set-Content release-notes.md
-          if (gh release view $tag 2>$null) {
-            gh release upload $tag $zip dist/launcher-update.json --clobber
-            gh release edit $tag --prerelease --title "CodaLauncher v0.5.1 Coda Voice" --notes-file release-notes.md
+
+          if (gh release view $env:CODA_TAG 2>$null) {
+            gh release upload $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --clobber
+            gh release edit $env:CODA_TAG --prerelease --title "CodaLauncher v0.5.2 Update Terminal" --notes-file release-notes.md
           } else {
-            gh release create $tag $zip dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.5.1 Coda Voice" --notes-file release-notes.md
+            gh release create $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.5.2 Update Terminal" --notes-file release-notes.md
           }

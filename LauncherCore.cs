@@ -21,7 +21,9 @@ internal static class AppPaths
     public static string CmlBaseResourcesRoot => Path.Combine(ResourcePacksRoot, "cml-base-resources");
     public static string LogsRoot => Path.Combine(InstallRoot, "logs");
     public static string CmlBasePackMarker => Path.Combine(CmlBasePackRoot, ".installed-version");
+    public static string CmlBasePackFingerprint => Path.Combine(CmlBasePackRoot, ".installed-fingerprint");
     public static string CmlBaseResourcesMarker => Path.Combine(CmlBaseResourcesRoot, ".installed-version");
+    public static string CmlBaseResourcesSha256 => Path.Combine(CmlBaseResourcesRoot, ".installed-sha256");
 
     private static string LocalRoot { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -181,6 +183,21 @@ internal sealed record CodaLoaderReleaseInfo(
     string BundleUrl,
     string BundleName);
 
+internal sealed record ManagedInstallStatus(
+    bool LoaderInstalled,
+    bool LoaderCurrent,
+    string? InstalledLoaderVersion,
+    string LatestLoaderVersion,
+    bool ResourceInstalled,
+    bool ResourceCurrent,
+    bool PackInstalled,
+    bool PackCurrent)
+{
+    public bool Installed => LoaderInstalled && ResourceInstalled && PackInstalled;
+    public bool Current => LoaderCurrent && ResourceCurrent && PackCurrent;
+    public bool UpdatesAvailable => Installed && !Current;
+}
+
 internal sealed class InstallService
 {
     private const string ReleasesApi =
@@ -199,26 +216,72 @@ internal sealed class InstallService
 
     public bool LoaderReady => LoaderLocator.IsReady(AppPaths.LoaderRoot);
 
-    public bool CmlBaseResourcesReady(string version)
+    public bool CmlBaseResourcesReady(string version, string sha256)
     {
-        if (string.IsNullOrWhiteSpace(version)) return false;
-        if (!File.Exists(AppPaths.CmlBaseResourcesMarker)) return false;
-        return string.Equals(
-            File.ReadAllText(AppPaths.CmlBaseResourcesMarker).Trim(),
-            version,
-            StringComparison.Ordinal);
+        if (string.IsNullOrWhiteSpace(version) || string.IsNullOrWhiteSpace(sha256)) return false;
+        if (!File.Exists(AppPaths.CmlBaseResourcesMarker)
+            || !File.Exists(AppPaths.CmlBaseResourcesSha256))
+            return false;
+
+        var installedVersion = File.ReadAllText(AppPaths.CmlBaseResourcesMarker).Trim();
+        var installedSha = File.ReadAllText(AppPaths.CmlBaseResourcesSha256).Trim();
+
+        return string.Equals(installedVersion, version, StringComparison.Ordinal)
+            && string.Equals(installedSha, sha256, StringComparison.OrdinalIgnoreCase);
     }
 
-    public bool CmlBasePackReady(string packVersion, string resourceVersion)
+    public bool CmlBasePackReady(
+        string packVersion,
+        ResourcePackCatalogInfo resource)
     {
         if (string.IsNullOrWhiteSpace(packVersion)) return false;
-        if (!File.Exists(AppPaths.CmlBasePackMarker)) return false;
-        if (!string.Equals(
-                File.ReadAllText(AppPaths.CmlBasePackMarker).Trim(),
-                packVersion,
-                StringComparison.Ordinal))
+        if (!File.Exists(AppPaths.CmlBasePackMarker)
+            || !File.Exists(AppPaths.CmlBasePackFingerprint))
             return false;
-        return CmlBaseResourcesReady(resourceVersion);
+
+        var installedVersion = File.ReadAllText(AppPaths.CmlBasePackMarker).Trim();
+        var installedFingerprint = File.ReadAllText(AppPaths.CmlBasePackFingerprint).Trim();
+        var expectedFingerprint = PackFingerprint(packVersion, resource);
+
+        return string.Equals(installedVersion, packVersion, StringComparison.Ordinal)
+            && string.Equals(installedFingerprint, expectedFingerprint, StringComparison.OrdinalIgnoreCase)
+            && CmlBaseResourcesReady(resource.Version, resource.Sha256);
+    }
+
+    public async Task<ManagedInstallStatus> CheckManagedStateAsync(
+        LauncherFeed feed,
+        CancellationToken ct)
+    {
+        var latestLoader = await GetLatestLoaderReleaseAsync(ct);
+        var installedLoaderVersion = ReadInstalledLoaderVersion();
+        var loaderInstalled = LoaderReady;
+        var loaderCurrent = loaderInstalled
+            && string.Equals(
+                installedLoaderVersion,
+                latestLoader.Version,
+                StringComparison.OrdinalIgnoreCase);
+
+        var resource = ResolveCmlBaseResources(feed);
+        var resourceInstalled = File.Exists(AppPaths.CmlBaseResourcesMarker);
+        var resourceCurrent = CmlBaseResourcesReady(resource.Version, resource.Sha256);
+
+        var pack = feed.Packs.FirstOrDefault(item =>
+            item.Id.Equals("cml-base", StringComparison.OrdinalIgnoreCase));
+        var packVersion = string.IsNullOrWhiteSpace(pack?.Version)
+            ? CmlBasePackVersion
+            : pack!.Version;
+        var packInstalled = File.Exists(AppPaths.CmlBasePackMarker);
+        var packCurrent = CmlBasePackReady(packVersion, resource);
+
+        return new ManagedInstallStatus(
+            loaderInstalled,
+            loaderCurrent,
+            installedLoaderVersion,
+            latestLoader.Version,
+            resourceInstalled,
+            resourceCurrent,
+            packInstalled,
+            packCurrent);
     }
 
     public async Task InstallOrRepairAsync(
@@ -253,12 +316,26 @@ internal sealed class InstallService
 
         var resource = ResolveCmlBaseResources(feed);
         progress("Resolving CML Base dependencies...");
-        progress("Downloading required resource pack: CML Base Resources...");
-        await InstallCmlBaseResourcesAsync(resource, progress, ct);
+        if (!CmlBaseResourcesReady(resource.Version, resource.Sha256))
+        {
+            progress("Updating required resource pack: CML Base Resources...");
+            await InstallCmlBaseResourcesAsync(resource, progress, ct);
+        }
+        else
+        {
+            progress("CML Base Resources is current.");
+        }
+
+        var pack = feed.Packs.FirstOrDefault(item =>
+            item.Id.Equals("cml-base", StringComparison.OrdinalIgnoreCase));
+        var packVersion = string.IsNullOrWhiteSpace(pack?.Version)
+            ? CmlBasePackVersion
+            : pack!.Version;
 
         Directory.CreateDirectory(AppPaths.CmlBasePackRoot);
-        File.WriteAllText(AppPaths.CmlBasePackMarker, CmlBasePackVersion);
-        progress("CML Base pack dependencies satisfied.");
+        File.WriteAllText(AppPaths.CmlBasePackMarker, packVersion);
+        File.WriteAllText(AppPaths.CmlBasePackFingerprint, PackFingerprint(packVersion, resource));
+        progress("CML Base is current.");
 
         var bundledHello = Path.Combine(AppPaths.LoaderRoot, "run", "mods", "hello-coda.jar");
         var gameMods = Path.Combine(AppPaths.MinecraftRoot, "mods");
@@ -279,7 +356,13 @@ internal sealed class InstallService
         Directory.CreateDirectory(AppPaths.ResourcePacksRoot);
 
         var resource = ResolveCmlBaseResources(feed);
-        progress("Downloading resource pack: CML Base Resources...");
+        if (CmlBaseResourcesReady(resource.Version, resource.Sha256))
+        {
+            progress("CML Base Resources is already current.");
+            return;
+        }
+
+        progress("Updating resource pack: CML Base Resources...");
         await InstallCmlBaseResourcesAsync(resource, progress, ct);
         progress("CML Base Resources ready.");
     }
@@ -375,6 +458,21 @@ internal sealed class InstallService
         {
             TryDeleteDirectory(tempRoot);
         }
+    }
+
+    private static string PackFingerprint(
+        string packVersion,
+        ResourcePackCatalogInfo resource)
+    {
+        var canonical = string.Join("|",
+            packVersion,
+            resource.Id,
+            resource.Version,
+            resource.Sha256.ToLowerInvariant());
+
+        return Convert.ToHexString(
+            SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(canonical)))
+            .ToLowerInvariant();
     }
 
     private static ResourcePackCatalogInfo ResolveCmlBaseResources(LauncherFeed feed)
@@ -478,7 +576,8 @@ internal sealed class InstallService
             progress($"Installing resource pack to: {AppPaths.CmlBaseResourcesRoot}");
             ReplaceDirectory(staging, AppPaths.CmlBaseResourcesRoot);
             File.WriteAllText(AppPaths.CmlBaseResourcesMarker, version);
-            progress($"Installed marker version: {version}");
+            File.WriteAllText(AppPaths.CmlBaseResourcesSha256, expectedSha);
+            progress($"Installed resource state: version {version}, SHA-256 {expectedSha}");
         }
         finally
         {

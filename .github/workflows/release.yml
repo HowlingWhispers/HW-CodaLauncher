@@ -21,13 +21,13 @@ jobs:
         run: |
           dotnet restore
           dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
-          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.4.1-dependency-status-win64.zip -Force
-          $sha = (Get-FileHash dist/CodaLauncher-v0.4.1-dependency-status-win64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.4.2-deep-diagnostics-win64.zip -Force
+          $sha = (Get-FileHash dist/CodaLauncher-v0.4.2-deep-diagnostics-win64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
           @"
           {
             "schema": 1,
-            "version": "0.4.1-dependency-status",
-            "bundle": "CodaLauncher-v0.4.1-dependency-status-win64.zip",
+            "version": "0.4.2-deep-diagnostics",
+            "bundle": "CodaLauncher-v0.4.2-deep-diagnostics-win64.zip",
             "sha256": "$sha"
           }
           "@ | Set-Content -Encoding UTF8 dist/launcher-update.json
@@ -36,12 +36,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v0.4.1-dependency-status"
-          $zip = "dist/CodaLauncher-v0.4.1-dependency-status-win64.zip"
+          $tag = "v0.4.2-deep-diagnostics"
+          $zip = "dist/CodaLauncher-v0.4.2-deep-diagnostics-win64.zip"
           @"
-          # CodaLauncher v0.4.1 Dependency Status
+          # CodaLauncher v0.4.2 Deep Diagnostics
 
-          First installer-capable CodaLauncher milestone.
+          Installer diagnostics milestone.
 
           Includes:
           - INSTALL / REPAIR / PLAY primary flow
@@ -59,11 +59,11 @@ jobs:
 
           CodaLauncher also updates itself through a SHA-256 verified staged copy of its own EXE, with no BAT helper or console window.
 
-          CML identity, Discord linking, Minecraft ownership verification, RAM/runtime controls and avatar editing are placeholders for later milestones.
+          Resourcepack download diagnostics now log release lookup, resolved URL, HTTP status, content length/type, temporary path, SHA-256, extraction path and extracted top-level entries.
           "@ | Set-Content release-notes.md
           if (gh release view $tag 2>$null) {
             gh release upload $tag $zip dist/launcher-update.json --clobber
-            gh release edit $tag --prerelease --title "CodaLauncher v0.4.1 Dependency Status" --notes-file release-notes.md
+            gh release edit $tag --prerelease --title "CodaLauncher v0.4.2 Deep Diagnostics" --notes-file release-notes.md
           } else {
-            gh release create $tag $zip dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.4.1 Dependency Status" --notes-file release-notes.md
+            gh release create $tag $zip dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.4.2 Deep Diagnostics" --notes-file release-notes.md
           }

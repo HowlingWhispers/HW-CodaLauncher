@@ -20,11 +20,15 @@ public partial class MainWindow : Window
     private LauncherFeed _lastFeed = new();
     private readonly List<NewsItem> _systemNews = [];
     private readonly SemaphoreSlim _installGate = new(1, 1);
+    private volatile bool _gameRunning;
+    private volatile int _gameProcessId;
 
     public MainWindow()
     {
         InitializeComponent();
         _launcher = new LauncherService(_logs, line => Dispatcher.Invoke(() => Send(new { type = "log", line })));
+        _launcher.SessionStarted += OnSessionStarted;
+        _launcher.SessionExited += OnSessionExited;
         Loaded += OnLoaded;
     }
 
@@ -193,6 +197,8 @@ public partial class MainWindow : Window
                 managedCurrent = managed.Current,
                 updatesAvailable = managed.UpdatesAvailable,
                 readyToPlay,
+                gameRunning = _gameRunning,
+                gameProcessId = _gameRunning ? _gameProcessId : 0,
                 installRoot = AppPaths.InstallRoot,
                 minecraftRoot = AppPaths.MinecraftRoot,
                 basePackVersion = pack.Version,
@@ -429,6 +435,18 @@ public partial class MainWindow : Window
 
     private async Task Play()
     {
+        if (_gameRunning)
+        {
+            Send(new
+            {
+                type = "sessionStatus",
+                running = true,
+                crashed = false,
+                message = "Minecraft is already running. Coda is on standby."
+            });
+            return;
+        }
+
         if (!await _installGate.WaitAsync(0))
         {
             Send(new
@@ -448,7 +466,7 @@ public partial class MainWindow : Window
                 type = "installStatus",
                 busy = true,
                 ok = true,
-                message = "Checking CodaLoader and required Packs..."
+                message = "Coda is checking the essentials..."
             });
 
             await _installer.InstallOrRepairAsync(
@@ -478,17 +496,10 @@ public partial class MainWindow : Window
                 type = "installStatus",
                 busy = true,
                 ok = true,
-                message = "Everything is current. Launching Minecraft..."
+                message = "Everything is where it belongs. Coda is opening Minecraft..."
             });
 
-            var pid = _launcher.Launch(loader!);
-            Send(new
-            {
-                type = "installStatus",
-                busy = false,
-                ok = true,
-                message = $"CodaLoader started as process {pid}."
-            });
+            _launcher.Launch(loader!);
 
             if (_settings.CloseAfterLaunch) Close();
             else await SendState();
@@ -510,6 +521,53 @@ public partial class MainWindow : Window
         {
             _installGate.Release();
         }
+    }
+
+    private void OnSessionStarted(int processId)
+    {
+        _gameRunning = true;
+        _gameProcessId = processId;
+
+        Dispatcher.Invoke(() =>
+        {
+            _logs.Add("Minecraft session active.");
+            Send(new
+            {
+                type = "sessionStatus",
+                running = true,
+                crashed = false,
+                message = "Minecraft is running. Coda is on standby."
+            });
+        });
+    }
+
+    private void OnSessionExited(int processId, int exitCode)
+    {
+        _gameRunning = false;
+        _gameProcessId = 0;
+
+        Dispatcher.BeginInvoke(async () =>
+        {
+            var crashed = exitCode != 0;
+            var message = crashed
+                ? "Minecraft closed unexpectedly. Coda left the logs on the desk."
+                : "Minecraft closed. Ready when you are.";
+
+            _logs.Add(crashed
+                ? $"Minecraft session ended unexpectedly with exit code {exitCode}."
+                : "Minecraft session closed normally.");
+
+            Send(new
+            {
+                type = "sessionStatus",
+                running = false,
+                crashed,
+                exitCode,
+                message
+            });
+
+            await SendState();
+        });
     }
 
     private void OpenLoaderFolder()

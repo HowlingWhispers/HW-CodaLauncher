@@ -15,9 +15,13 @@ internal static class AppPaths
 
     public static string MinecraftRoot => Path.Combine(InstallRoot, "minecraft");
     public static string LoaderRoot => Path.Combine(InstallRoot, "loader");
-    public static string BasePackRoot => Path.Combine(InstallRoot, "cml-base");
+    public static string PacksRoot => Path.Combine(InstallRoot, "packs");
+    public static string ResourcePacksRoot => Path.Combine(InstallRoot, "resourcepacks");
+    public static string CmlBasePackRoot => Path.Combine(PacksRoot, "cml-base");
+    public static string CmlBaseResourcesRoot => Path.Combine(ResourcePacksRoot, "cml-base-resources");
     public static string LogsRoot => Path.Combine(InstallRoot, "logs");
-    public static string BasePackMarker => Path.Combine(BasePackRoot, ".installed-version");
+    public static string CmlBasePackMarker => Path.Combine(CmlBasePackRoot, ".installed-version");
+    public static string CmlBaseResourcesMarker => Path.Combine(CmlBaseResourcesRoot, ".installed-version");
 
     private static string LocalRoot { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -176,10 +180,11 @@ internal sealed class InstallService
 {
     private const string ReleasesApi =
         "https://api.github.com/repos/HowlingWhispers/HW-CodaLoader/releases?per_page=20";
-    private const string BasePackAssetName = "CML-BasePack-v1.zip";
-    private const string BasePackVersion = "1";
-    private const string BasePackSha256 =
-        "13152d503929d55fd685dfaffbbd2b4df66a13619a907deff85097b10de66bf8";
+    private const string CmlBasePackVersion = "1";
+    private const string CmlBaseResourcesAssetName = "CML-Base-Resources-v1.zip";
+    private const string CmlBaseResourcesVersion = "1";
+    private const string CmlBaseResourcesSha256 =
+        "031f3b05d3efaf9b40436fedfee64cecfd92cf8d259edc3b637a633905231838";
 
     private static readonly HttpClient Http = CreateHttp();
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
@@ -189,15 +194,26 @@ internal sealed class InstallService
 
     public bool LoaderReady => LoaderLocator.IsReady(AppPaths.LoaderRoot);
 
-    public bool BasePackReady(CmlBasePackInfo info)
+    public bool CmlBaseResourcesReady(string version)
     {
-        if (!info.Required) return true;
-        if (string.IsNullOrWhiteSpace(info.Version)) return false;
-        if (!File.Exists(AppPaths.BasePackMarker)) return false;
+        if (string.IsNullOrWhiteSpace(version)) return false;
+        if (!File.Exists(AppPaths.CmlBaseResourcesMarker)) return false;
         return string.Equals(
-            File.ReadAllText(AppPaths.BasePackMarker).Trim(),
-            info.Version,
+            File.ReadAllText(AppPaths.CmlBaseResourcesMarker).Trim(),
+            version,
             StringComparison.Ordinal);
+    }
+
+    public bool CmlBasePackReady(string packVersion, string resourceVersion)
+    {
+        if (string.IsNullOrWhiteSpace(packVersion)) return false;
+        if (!File.Exists(AppPaths.CmlBasePackMarker)) return false;
+        if (!string.Equals(
+                File.ReadAllText(AppPaths.CmlBasePackMarker).Trim(),
+                packVersion,
+                StringComparison.Ordinal))
+            return false;
+        return CmlBaseResourcesReady(resourceVersion);
     }
 
     public async Task InstallOrRepairAsync(
@@ -207,6 +223,8 @@ internal sealed class InstallService
     {
         Directory.CreateDirectory(AppPaths.InstallRoot);
         Directory.CreateDirectory(AppPaths.MinecraftRoot);
+        Directory.CreateDirectory(AppPaths.PacksRoot);
+        Directory.CreateDirectory(AppPaths.ResourcePacksRoot);
         Directory.CreateDirectory(AppPaths.LogsRoot);
 
         if (!LoaderReady)
@@ -219,8 +237,14 @@ internal sealed class InstallService
             progress("CodaLoader already installed; keeping current loader.");
         }
 
-        progress("Downloading mandatory CML base pack...");
-        await InstallBasePackAsync(feed.BasePack, progress, ct);
+        var resource = ResolveCmlBaseResources(feed);
+        progress("Resolving CML Base dependencies...");
+        progress("Downloading required resource pack: CML Base Resources...");
+        await InstallCmlBaseResourcesAsync(resource, progress, ct);
+
+        Directory.CreateDirectory(AppPaths.CmlBasePackRoot);
+        File.WriteAllText(AppPaths.CmlBasePackMarker, CmlBasePackVersion);
+        progress("CML Base pack dependencies satisfied.");
 
         var bundledHello = Path.Combine(AppPaths.LoaderRoot, "run", "mods", "hello-coda.jar");
         var gameMods = Path.Combine(AppPaths.MinecraftRoot, "mods");
@@ -284,36 +308,68 @@ internal sealed class InstallService
         }
     }
 
-    private async Task InstallBasePackAsync(
-        CmlBasePackInfo feedInfo,
+    private static ResourcePackCatalogInfo ResolveCmlBaseResources(LauncherFeed feed)
+    {
+        var catalog = feed.ResourcePacks.FirstOrDefault(item =>
+            item.Id.Equals("cml-base-resources", StringComparison.OrdinalIgnoreCase));
+
+        if (catalog is not null)
+        {
+            if (string.IsNullOrWhiteSpace(catalog.Version))
+                catalog.Version = CmlBaseResourcesVersion;
+            if (string.IsNullOrWhiteSpace(catalog.Sha256))
+                catalog.Sha256 = CmlBaseResourcesSha256;
+            return catalog;
+        }
+
+        return new ResourcePackCatalogInfo
+        {
+            Id = "cml-base-resources",
+            Name = "CML Base Resources",
+            Version = CmlBaseResourcesVersion,
+            Required = true,
+            Description = "Official CML title branding, panorama scenes, menu music, splashes and shared presentation assets.",
+            Url = string.IsNullOrWhiteSpace(feed.BasePack.Url)
+                ? "/assets/CML-Base-Resources-v1.zip"
+                : feed.BasePack.Url,
+            Sha256 = CmlBaseResourcesSha256,
+            RequiredBy = ["cml-base"]
+        };
+    }
+
+    private async Task InstallCmlBaseResourcesAsync(
+        ResourcePackCatalogInfo resource,
         Action<string> progress,
         CancellationToken ct)
     {
-        var version = string.IsNullOrWhiteSpace(feedInfo.Version) ? BasePackVersion : feedInfo.Version;
-        var expectedSha = string.IsNullOrWhiteSpace(feedInfo.Sha256) ? BasePackSha256 : feedInfo.Sha256;
+        var version = string.IsNullOrWhiteSpace(resource.Version)
+            ? CmlBaseResourcesVersion
+            : resource.Version;
+        var expectedSha = string.IsNullOrWhiteSpace(resource.Sha256)
+            ? CmlBaseResourcesSha256
+            : resource.Sha256;
 
-        Uri? uri = await FindReleaseAssetAsync(BasePackAssetName, ct);
+        Uri? uri = await FindReleaseAssetAsync(CmlBaseResourcesAssetName, ct);
 
         if (uri is null
             && CurrentFeedBase is not null
-            && !string.IsNullOrWhiteSpace(feedInfo.Url))
+            && !string.IsNullOrWhiteSpace(resource.Url))
         {
-            uri = Uri.TryCreate(feedInfo.Url, UriKind.Absolute, out var absolute)
+            uri = Uri.TryCreate(resource.Url, UriKind.Absolute, out var absolute)
                 ? absolute
-                : new Uri(CurrentFeedBase, feedInfo.Url.TrimStart('/'));
-            progress("CML base pack not attached to HW-CodaLoader release; trying launcher feed fallback...");
+                : new Uri(CurrentFeedBase, resource.Url.TrimStart('/'));
+            progress("CML Base Resources not attached to HW-CodaLoader release; trying launcher feed fallback...");
         }
 
         if (uri is null)
         {
             throw new InvalidOperationException(
-                "CML-BasePack-v1.zip is not attached to any current HW-CodaLoader GitHub Release. "
-                + "Attach that asset to HW-CodaLoader Releases before installing.");
+                "CML-Base-Resources-v1.zip is not available from HW-CodaLoader Releases or the launcher feed.");
         }
 
         var tempRoot = Path.Combine(Path.GetTempPath(), "CodaLauncher", Guid.NewGuid().ToString("N"));
-        var zip = Path.Combine(tempRoot, BasePackAssetName);
-        var staging = Path.Combine(tempRoot, "base");
+        var zip = Path.Combine(tempRoot, CmlBaseResourcesAssetName);
+        var staging = Path.Combine(tempRoot, "resourcepack");
         Directory.CreateDirectory(tempRoot);
 
         try
@@ -323,16 +379,17 @@ internal sealed class InstallService
             var actual = Sha256(zip);
             if (!actual.Equals(expectedSha, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException(
-                    $"CML base pack failed SHA-256 verification. Expected {expectedSha}, got {actual}.");
+                    $"CML Base Resources failed SHA-256 verification. Expected {expectedSha}, got {actual}.");
 
             ZipFile.ExtractToDirectory(zip, staging, true);
             if (!Directory.Exists(Path.Combine(staging, "branding"))
                 || !Directory.Exists(Path.Combine(staging, "music", "default")))
-                throw new InvalidDataException("CML base pack is missing branding or default music.");
+                throw new InvalidDataException(
+                    "CML Base Resources is missing required branding or default music.");
 
-            progress("Installing CML base pack...");
-            ReplaceDirectory(staging, AppPaths.BasePackRoot);
-            File.WriteAllText(AppPaths.BasePackMarker, version);
+            progress("Installing resource pack: CML Base Resources...");
+            ReplaceDirectory(staging, AppPaths.CmlBaseResourcesRoot);
+            File.WriteAllText(AppPaths.CmlBaseResourcesMarker, version);
         }
         finally
         {
@@ -657,7 +714,7 @@ internal sealed class LauncherService
         info.ArgumentList.Add("--root");
         info.ArgumentList.Add(AppPaths.MinecraftRoot);
         info.ArgumentList.Add("--base-pack");
-        info.ArgumentList.Add(AppPaths.BasePackRoot);
+        info.ArgumentList.Add(AppPaths.CmlBaseResourcesRoot);
         info.Environment["CODA_NO_PAUSE"] = "1";
         info.Environment["CODA_LAUNCHED_BY"] = "CodaLauncher";
 

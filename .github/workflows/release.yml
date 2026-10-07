@@ -21,32 +21,32 @@ jobs:
         run: |
           dotnet restore
           dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
-          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.1.0-prototype-win64.zip -Force
+          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.2.0-installer-win64.zip -Force
       - name: Publish prerelease
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v0.1.0-prototype"
-          $zip = "dist/CodaLauncher-v0.1.0-prototype-win64.zip"
+          $tag = "v0.2.0-installer"
+          $zip = "dist/CodaLauncher-v0.2.0-installer-win64.zip"
           @"
-          # CodaLauncher v0.1.0 Prototype
+          # CodaLauncher v0.2.0 Installer
 
-          First runnable Windows prototype for the Howling Whispers CodaLauncher.
+          First installer-capable CodaLauncher milestone.
 
           Includes:
-          - native WPF shell with WebView2 UI
-          - Home / News / Mods / Profile / Settings / Logs
-          - CodaLoader folder discovery and PLAY handoff
-          - CML mod scanning through coda.mod.json
-          - optional HW launcher-feed integration with offline fallback
-          - local settings and launcher/CodaLoader logs
+          - INSTALL / REPAIR / PLAY primary flow
+          - managed install under %APPDATA%\.howlingshispers
+          - Minecraft workspace at %APPDATA%\.howlingshispers\minecraft
+          - current CodaLoader release download from GitHub
+          - mandatory CML base-pack download and SHA-256 verification from launcher feed
+          - CML mod scanning, news, settings and logs
 
           CML identity, Discord linking, Minecraft ownership verification, launcher-owned updating, RAM/runtime controls and avatar editing are placeholders for later milestones.
           "@ | Set-Content release-notes.md
           if (gh release view $tag 2>$null) {
             gh release upload $tag $zip --clobber
-            gh release edit $tag --prerelease --title "CodaLauncher v0.1.0 Prototype" --notes-file release-notes.md
+            gh release edit $tag --prerelease --title "CodaLauncher v0.2.0 Installer" --notes-file release-notes.md
           } else {
-            gh release create $tag $zip --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.1.0 Prototype" --notes-file release-notes.md
+            gh release create $tag $zip --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.2.0 Installer" --notes-file release-notes.md
           }

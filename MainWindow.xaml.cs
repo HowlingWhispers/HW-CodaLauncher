@@ -8,14 +8,16 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class MainWindow : Window
 {
-    private const string Version = "0.1.0-prototype";
+    private const string Version = "0.2.0-installer";
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();
     private readonly FeedService _feeds = new();
     private readonly ModScanner _mods = new();
     private readonly LauncherService _launcher;
+    private readonly InstallService _installer = new();
     private LauncherSettings _settings = new();
+    private LauncherFeed _lastFeed = new();
 
     public MainWindow()
     {
@@ -78,6 +80,9 @@ public partial class MainWindow : Window
                         await SendState();
                     }
                     break;
+                case "install":
+                    await InstallOrRepair();
+                    break;
                 case "play":
                     await Play();
                     break;
@@ -100,8 +105,14 @@ public partial class MainWindow : Window
     private async Task SendState()
     {
         var loader = LoaderLocator.Resolve(_settings.LoaderPath);
-        var mods = _mods.Scan(loader);
+        var mods = _mods.Scan(AppPaths.MinecraftRoot);
         var feed = await _feeds.FetchAsync(_settings.FeedUrl, CancellationToken.None);
+        _lastFeed = feed;
+        _installer.CurrentFeedBase = FeedBaseUri(_settings.FeedUrl);
+
+        var loaderReady = LoaderLocator.IsReady(loader);
+        var basePackReady = _installer.BasePackReady(feed.BasePack);
+        var readyToPlay = loaderReady && basePackReady;
 
         Send(new
         {
@@ -110,7 +121,12 @@ public partial class MainWindow : Window
             {
                 launcherVersion = Version,
                 loaderPath = loader ?? "",
-                loaderReady = LoaderLocator.IsReady(loader),
+                loaderReady,
+                basePackReady,
+                readyToPlay,
+                installRoot = AppPaths.InstallRoot,
+                minecraftRoot = AppPaths.MinecraftRoot,
+                basePackVersion = feed.BasePack.Version,
                 modCount = mods.Count(m => m.Valid),
                 mods,
                 feed,
@@ -121,12 +137,51 @@ public partial class MainWindow : Window
         });
     }
 
+    private async Task InstallOrRepair()
+    {
+        try
+        {
+            Send(new { type = "installStatus", busy = true, ok = true, message = "Preparing install..." });
+            await _installer.InstallOrRepairAsync(
+                _lastFeed,
+                message =>
+                {
+                    _logs.Add(message);
+                    Dispatcher.Invoke(() => Send(new
+                    {
+                        type = "installStatus",
+                        busy = true,
+                        ok = true,
+                        message
+                    }));
+                },
+                CancellationToken.None);
+
+            _settings.LoaderPath = AppPaths.LoaderRoot;
+            _settingsStore.Save(_settings);
+            Send(new { type = "installStatus", busy = false, ok = true, message = "CML install ready." });
+            await SendState();
+        }
+        catch (Exception ex)
+        {
+            _logs.Add("Install/repair failed: " + ex.Message);
+            Send(new { type = "installStatus", busy = false, ok = false, message = ex.Message });
+            await SendState();
+        }
+    }
+
+    private static Uri? FeedBaseUri(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        return Uri.TryCreate(raw.TrimEnd('/') + "/", UriKind.Absolute, out var uri) ? uri : null;
+    }
+
     private Task Play()
     {
         var loader = LoaderLocator.Resolve(_settings.LoaderPath);
-        if (!LoaderLocator.IsReady(loader))
+        if (!LoaderLocator.IsReady(loader) || !_installer.BasePackReady(_lastFeed.BasePack))
         {
-            Send(new { type = "launchStatus", ok = false, message = "Choose a valid CodaLoader folder in Settings first." });
+            Send(new { type = "launchStatus", ok = false, message = "Install/repair CodaLoader and the mandatory CML base pack first." });
             return Task.CompletedTask;
         }
 

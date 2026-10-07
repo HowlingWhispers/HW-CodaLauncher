@@ -7,6 +7,14 @@ public sealed class LauncherSettings
     public bool CloseAfterLaunch { get; set; }
 }
 
+public sealed class CmlBasePackInfo
+{
+    public bool Required { get; set; } = true;
+    public string Version { get; set; } = "";
+    public string Url { get; set; } = "";
+    public string Sha256 { get; set; } = "";
+}
+
 public sealed record ModInfo(string FileName, string Id, string Name, string Version, bool Valid, string? Error);
 
 public sealed class LauncherFeed
@@ -16,6 +24,7 @@ public sealed class LauncherFeed
     public string Project { get; set; } = "Howling Whispers";
     public LauncherFeedInfo Launcher { get; set; } = new();
     public CodaLoaderFeedInfo Codaloader { get; set; } = new();
+    public CmlBasePackInfo BasePack { get; set; } = new();
     public List<NewsItem> News { get; set; } = [];
     public bool Online { get; set; }
     public string? Error { get; set; }

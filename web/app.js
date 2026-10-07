@@ -3,17 +3,22 @@ let state=null;
 const $=id=>document.getElementById(id);
 document.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.view).classList.add('active');}));
 $('refresh').onclick=()=>post('refresh');
-$('play').onclick=()=>post('play');
+$('play').onclick=()=>post(state&&state.readyToPlay?'play':'install');
 $('open-loader').onclick=()=>post('openLoaderFolder');
 $('save').onclick=()=>post('saveSettings',{settings:{loaderPath:$('loader-path').value.trim(),feedUrl:$('feed-url').value.trim(),closeAfterLaunch:$('close-after').checked}});
-window.chrome.webview.addEventListener('message',e=>{const m=e.data;if(m.type==='state'){state=m.data;render();}if(m.type==='log')appendLog(m.line);if(m.type==='launchStatus'){const box=$('launch-message');box.textContent=m.message;box.style.color=m.ok?'#8df0bb':'#ffb28a';}if(m.type==='error')$('launch-message').textContent=m.message;});
+window.chrome.webview.addEventListener('message',e=>{const m=e.data;if(m.type==='state'){state=m.data;render();}if(m.type==='log')appendLog(m.line);if(m.type==='installStatus'){const box=$('launch-message');box.textContent=m.message;box.style.color=m.ok?'#8df0bb':'#ffb28a';$('play').disabled=!!m.busy;}if(m.type==='launchStatus'){const box=$('launch-message');box.textContent=m.message;box.style.color=m.ok?'#8df0bb':'#ffb28a';}if(m.type==='error')$('launch-message').textContent=m.message;});
 function render(){
   $('version').textContent='CodaLauncher '+state.launcherVersion;
   $('loader-chip').textContent=state.loaderReady?'CML READY':'CML NOT CONFIGURED';
   $('loader-chip').className=state.loaderReady?'good':'bad';
+  $('pack-chip').textContent=state.basePackReady?'BASE PACK READY':'BASE PACK REQUIRED';
+  $('pack-chip').className=state.basePackReady?'good':'bad';
   $('mod-chip').textContent=state.modCount+' mod'+(state.modCount===1?'':'s');
-  $('play').disabled=!state.loaderReady;
-  $('loader-summary').textContent=state.loaderReady?state.loaderPath:'Choose your CodaLoader folder once, then CodaLauncher becomes the front door.';
+  $('play').disabled=false;
+  $('play').textContent=state.readyToPlay?'PLAY ▶':(state.loaderReady?'REPAIR':'INSTALL');
+  $('loader-summary').textContent=state.readyToPlay
+    ? state.minecraftRoot
+    : 'Install CodaLoader, Minecraft workspace and the mandatory Howling Whispers base pack.';
   const feed=state.feed;$('feed-pill').textContent=feed.online?'NEWS ONLINE':'NEWS OFFLINE';$('feed-pill').className='pill '+(feed.online?'online':'offline');$('feed-note').textContent=feed.online?'Live launcher feed':'Local fallback';
   $('news').innerHTML=(feed.news||[]).map(n=>'<article><time>'+esc(n.date||'')+'</time><b>'+esc(n.title||'Untitled')+'</b><p>'+esc(n.text||'')+'</p></article>').join('');
   $('mods-count').textContent=state.mods.length+' jar'+(state.mods.length===1?'':'s');

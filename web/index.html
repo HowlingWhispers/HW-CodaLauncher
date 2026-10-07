@@ -25,10 +25,10 @@
   <header><div><em>CODA CONTROL CENTER</em><h1>Ready when you are.</h1></div><button id="refresh" class="quiet">↻ Refresh</button></header>
   <div class="hero">
     <div class="hero-copy">
-      <div class="chips"><span id="loader-chip">CML checking…</span><span>Minecraft 26.4 Snapshot 3</span><span id="mod-chip">0 mods</span></div>
+      <div class="chips"><span id="loader-chip">CML checking…</span><span id="pack-chip">BASE PACK checking…</span><span>Minecraft 26.4 Snapshot 3</span><span id="mod-chip">0 mods</span></div>
       <h2>Howling Whispers Minecraft</h2>
       <p id="loader-summary">Choose your CodaLoader folder once, then CodaLauncher becomes the front door.</p>
-      <div class="actions"><button id="play" class="play">PLAY ▶</button><button id="open-loader" class="quiet">Open loader folder</button></div>
+      <div class="actions"><button id="play" class="play">INSTALL</button><button id="open-loader" class="quiet">Open loader folder</button></div>
       <div id="launch-message"></div>
     </div>
     <div class="coda"><div class="halo"></div><div class="wolf">🐺</div><b>Coda</b><small>clipboard online</small></div>
@@ -55,10 +55,10 @@
 <section class="view" id="settings">
   <header><div><em>LOCAL CONFIGURATION</em><h1>Settings</h1></div></header>
   <div class="panel settings">
-    <label><span>CodaLoader folder</span><input id="loader-path" type="text" placeholder="C:\Games\CodaLoader"><small>Folder containing CodaLoader.jar and Launch-CodaLoader.bat.</small></label>
+    <label><span>CodaLoader folder override</span><input id="loader-path" type="text" placeholder="Leave blank for managed install"><small>Default: %APPDATA%\.howlingshispers\loader</small></label>
     <label><span>Launcher feed URL</span><input id="feed-url" type="text" placeholder="http://SERVER_IP:3220"><small>CodaLauncher appends /api/feed automatically.</small></label>
     <label class="toggle"><div><span>Close after PLAY</span><small>Leave off if you want launcher logs visible.</small></div><input id="close-after" type="checkbox"></label>
-    <div class="coming"><b>Coming next</b><small>Java/runtime · RAM · update channel · music · branding</small></div>
+    <div class="coming"><b>Managed install</b><small>Minecraft: %APPDATA%\.howlingshispers\minecraft · CML base pack is mandatory and verified before PLAY.</small></div>
     <button id="save" class="save">Save settings</button>
   </div>
 </section>

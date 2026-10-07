@@ -2,7 +2,7 @@
 
 CodaLauncher is the desktop control center for CodaLoader and the Howling Whispers Minecraft ecosystem.
 
-## 0.5.0 Simple Flow
+## 0.5.1 Coda Voice
 
 - WPF native shell with a local HTML/CSS/JavaScript interface rendered through WebView2.
 - Home screen with CodaLoader readiness, Minecraft target, mod count and PLAY.

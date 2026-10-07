@@ -3,7 +3,7 @@ namespace HowlingWhispers.CodaLauncher;
 public sealed class LauncherSettings
 {
     public string LoaderPath { get; set; } = "";
-    public string FeedUrl { get; set; } = "";
+    public string FeedUrl { get; set; } = "https://thehowlingwhispers.com/launcher";
     public bool CloseAfterLaunch { get; set; }
 }
 

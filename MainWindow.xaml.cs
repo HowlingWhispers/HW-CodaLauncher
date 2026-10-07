@@ -8,7 +8,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class MainWindow : Window
 {
-    private const string Version = "0.2.1-self-update";
+    private const string Version = "0.2.2-default-feed";
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();
@@ -77,6 +77,8 @@ public partial class MainWindow : Window
                     if (root.TryGetProperty("settings", out var s))
                     {
                         _settings = s.Deserialize<LauncherSettings>(_json) ?? new();
+                        if (string.IsNullOrWhiteSpace(_settings.FeedUrl))
+                            _settings.FeedUrl = "https://thehowlingwhispers.com/launcher";
                         _settingsStore.Save(_settings);
                         _logs.Add("Launcher settings saved.");
                         await SendState();
@@ -136,9 +138,12 @@ public partial class MainWindow : Window
     {
         var loader = LoaderLocator.Resolve(_settings.LoaderPath);
         var mods = _mods.Scan(AppPaths.MinecraftRoot);
-        var feed = await _feeds.FetchAsync(_settings.FeedUrl, CancellationToken.None);
+        var feedUrl = string.IsNullOrWhiteSpace(_settings.FeedUrl)
+                ? "https://thehowlingwhispers.com/launcher"
+                : _settings.FeedUrl;
+        var feed = await _feeds.FetchAsync(feedUrl, CancellationToken.None);
         _lastFeed = feed;
-        _installer.CurrentFeedBase = FeedBaseUri(_settings.FeedUrl);
+        _installer.CurrentFeedBase = FeedBaseUri(feedUrl);
 
         var loaderReady = LoaderLocator.IsReady(loader);
         var basePackReady = _installer.BasePackReady(feed.BasePack);

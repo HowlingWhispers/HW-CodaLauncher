@@ -14,6 +14,7 @@
     <button class="nav active" data-view="home">⌂ <span>Home</span></button>
     <button class="nav" data-view="mods">◇ <span>Mods</span></button>
     <button class="nav" data-view="packs">▣ <span>Packs</span></button>
+    <button class="nav" data-view="resourcepacks">▤ <span>Resourcepacks</span></button>
     <button class="nav" data-view="profile">◉ <span>Profile</span></button>
     <button class="nav" data-view="settings">⚙ <span>Settings</span></button>
     <button class="nav" data-view="logs">≡ <span>Logs</span></button>
@@ -52,6 +53,15 @@
   <div id="packs-list" class="pack-grid"></div>
 </section>
 
+<section class="view" id="resourcepacks">
+  <header><div><em>CML RESOURCE LIBRARY</em><h1>Resourcepacks</h1></div></header>
+  <div class="packs-intro">
+    <div><b>Visuals, music and presentation</b><small>Resourcepacks are installable dependencies used by Packs. Required dependencies install automatically with their Pack.</small></div>
+    <span class="pill">1 RESOURCEPACK</span>
+  </div>
+  <div id="resourcepacks-list" class="pack-grid"></div>
+</section>
+
 <section class="view" id="profile">
   <header><div><em>FUTURE CML IDENTITY</em><h1>Your profile</h1></div></header>
   <div class="cards">
@@ -68,7 +78,7 @@
     <label><span>CodaLoader folder override</span><input id="loader-path" type="text" placeholder="Leave blank for managed install"><small>Default: %APPDATA%\.howlingshispers\loader</small></label>
     <label><span>Launcher feed URL</span><input id="feed-url" type="text" placeholder="https://thehowlingwhispers.com/launcher"><small>Defaults to https://thehowlingwhispers.com/launcher. CodaLauncher appends /api/feed automatically.</small></label>
     <label class="toggle"><div><span>Close after PLAY</span><small>Leave off if you want launcher logs visible.</small></div><input id="close-after" type="checkbox"></label>
-    <div class="coming"><b>Managed install</b><small>Minecraft: %APPDATA%\.howlingshispers\minecraft · CML base pack is mandatory and verified before PLAY.</small></div>
+    <div class="coming"><b>Managed install</b><small>Minecraft: %APPDATA%\.howlingshispers\minecraft · Packs and Resourcepacks are dependency-managed before PLAY.</small></div>
     <button id="save" class="save">Save settings</button>
   </div>
 </section>

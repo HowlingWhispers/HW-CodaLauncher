@@ -12,7 +12,29 @@ public sealed class CmlBasePackInfo
     public bool Required { get; set; } = true;
     public string Version { get; set; } = "1";
     public string Url { get; set; } = "";
-    public string Sha256 { get; set; } = "13152d503929d55fd685dfaffbbd2b4df66a13619a907deff85097b10de66bf8";
+    public string Sha256 { get; set; } = "";
+}
+
+public sealed class PackCatalogInfo
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Version { get; set; } = "";
+    public bool Required { get; set; }
+    public string Description { get; set; } = "";
+    public List<string> ResourcePacks { get; set; } = [];
+}
+
+public sealed class ResourcePackCatalogInfo
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Version { get; set; } = "";
+    public bool Required { get; set; }
+    public string Description { get; set; } = "";
+    public string Url { get; set; } = "";
+    public string Sha256 { get; set; } = "";
+    public List<string> RequiredBy { get; set; } = [];
 }
 
 public sealed record ModInfo(string FileName, string Id, string Name, string Version, bool Valid, string? Error);
@@ -25,6 +47,8 @@ public sealed class LauncherFeed
     public LauncherFeedInfo Launcher { get; set; } = new();
     public CodaLoaderFeedInfo Codaloader { get; set; } = new();
     public CmlBasePackInfo BasePack { get; set; } = new();
+    public List<PackCatalogInfo> Packs { get; set; } = [];
+    public List<ResourcePackCatalogInfo> ResourcePacks { get; set; } = [];
     public List<NewsItem> News { get; set; } = [];
     public bool Online { get; set; }
     public string? Error { get; set; }

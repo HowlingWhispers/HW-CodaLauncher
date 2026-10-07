@@ -1,0 +1,52 @@
+name: Publish CodaLauncher prototype
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Publish
+        shell: pwsh
+        run: |
+          dotnet restore
+          dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
+          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.1.0-prototype-win64.zip -Force
+      - name: Publish prerelease
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v0.1.0-prototype"
+          $zip = "dist/CodaLauncher-v0.1.0-prototype-win64.zip"
+          @"
+          # CodaLauncher v0.1.0 Prototype
+
+          First runnable Windows prototype for the Howling Whispers CodaLauncher.
+
+          Includes:
+          - native WPF shell with WebView2 UI
+          - Home / News / Mods / Profile / Settings / Logs
+          - CodaLoader folder discovery and PLAY handoff
+          - CML mod scanning through coda.mod.json
+          - optional HW launcher-feed integration with offline fallback
+          - local settings and launcher/CodaLoader logs
+
+          CML identity, Discord linking, Minecraft ownership verification, launcher-owned updating, RAM/runtime controls and avatar editing are placeholders for later milestones.
+          "@ | Set-Content release-notes.md
+          if (gh release view $tag 2>$null) {
+            gh release upload $tag $zip --clobber
+            gh release edit $tag --prerelease --title "CodaLauncher v0.1.0 Prototype" --notes-file release-notes.md
+          } else {
+            gh release create $tag $zip --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.1.0 Prototype" --notes-file release-notes.md
+          }

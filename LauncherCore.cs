@@ -415,7 +415,8 @@ internal sealed record LauncherUpdateInfo(
     string Version,
     string BundleUrl,
     string Sha256,
-    string BundleName);
+    string BundleName,
+    string ReleaseUrl);
 
 internal static class SelfUpdater
 {
@@ -436,6 +437,9 @@ internal static class SelfUpdater
 
             var tag = release.GetProperty("tag_name").GetString() ?? "";
             var version = tag.StartsWith('v') ? tag[1..] : tag;
+            var releaseUrl = release.TryGetProperty("html_url", out var html)
+                ? html.GetString() ?? "https://github.com/HowlingWhispers/HW-CodaLauncher/releases"
+                : "https://github.com/HowlingWhispers/HW-CodaLauncher/releases";
             if (CompareVersions(version, currentVersion) <= 0) return null;
 
             string? bundleUrl = null;
@@ -470,7 +474,7 @@ internal static class SelfUpdater
             if (!manifestVersion.Equals(version, StringComparison.OrdinalIgnoreCase) || sha.Length != 64)
                 throw new InvalidDataException("Launcher update manifest does not match the release.");
 
-            return new LauncherUpdateInfo(version, bundleUrl, sha, bundleName);
+            return new LauncherUpdateInfo(version, bundleUrl, sha, bundleName, releaseUrl);
         }
 
         return null;

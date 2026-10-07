@@ -13,6 +13,7 @@
   <nav>
     <button class="nav active" data-view="home">⌂ <span>Home</span></button>
     <button class="nav" data-view="mods">◇ <span>Mods</span></button>
+    <button class="nav" data-view="packs">▣ <span>Packs</span></button>
     <button class="nav" data-view="profile">◉ <span>Profile</span></button>
     <button class="nav" data-view="settings">⚙ <span>Settings</span></button>
     <button class="nav" data-view="logs">≡ <span>Logs</span></button>
@@ -40,6 +41,15 @@
 <section class="view" id="mods">
   <header><div><em>CML</em><h1>Installed mods</h1></div></header>
   <div class="panel"><div class="panel-head"><div><b>run\mods</b><small>Read directly from your CodaLoader installation.</small></div><span id="mods-count" class="pill"></span></div><div id="mods-list"></div></div>
+</section>
+
+<section class="view" id="packs">
+  <header><div><em>CML PACK LIBRARY</em><h1>Packs</h1></div></header>
+  <div class="packs-intro">
+    <div><b>Project-sized experiences</b><small>Packs can grow into complete modpacks with CML mods, resource packs, music, configs and world content.</small></div>
+    <span class="pill">1 PACK</span>
+  </div>
+  <div id="packs-list" class="pack-grid"></div>
 </section>
 
 <section class="view" id="profile">

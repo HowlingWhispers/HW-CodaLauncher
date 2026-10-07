@@ -8,7 +8,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class MainWindow : Window
 {
-    private const string Version = "0.2.3-release-basepack";
+    private const string Version = "0.3.0-packs";
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();
@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private readonly InstallService _installer = new();
     private LauncherSettings _settings = new();
     private LauncherFeed _lastFeed = new();
+    private readonly List<NewsItem> _systemNews = [];
 
     public MainWindow()
     {
@@ -108,9 +109,10 @@ public partial class MainWindow : Window
 
     private async Task CheckLauncherUpdateAsync()
     {
+        LauncherUpdateInfo? update = null;
         try
         {
-            var update = await SelfUpdater.CheckAsync(Version, CancellationToken.None);
+            update = await SelfUpdater.CheckAsync(Version, CancellationToken.None);
             if (update is null) return;
 
             _logs.Add($"Launcher update available: {update.Version}");
@@ -131,6 +133,18 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             _logs.Add("Launcher update check failed: " + ex.Message);
+            if (update is not null)
+            {
+                _systemNews.RemoveAll(item => item.Id == "launcher-update-manual");
+                _systemNews.Insert(0, new NewsItem
+                {
+                    Id = "launcher-update-manual",
+                    Date = DateTime.Now.ToString("yyyy-MM-dd"),
+                    Title = $"CodaLauncher {update.Version} needs a manual update",
+                    Text = "Automatic updating could not finish. Open the release page to download the current launcher manually.",
+                    Link = update.ReleaseUrl
+                });
+            }
         }
     }
 
@@ -152,6 +166,7 @@ public partial class MainWindow : Window
             feed.BasePack.Sha256 = "13152d503929d55fd685dfaffbbd2b4df66a13619a907deff85097b10de66bf8";
         var basePackReady = _installer.BasePackReady(feed.BasePack);
         var readyToPlay = loaderReady && basePackReady;
+        var news = _systemNews.Concat(feed.News).ToList();
 
         Send(new
         {
@@ -166,9 +181,35 @@ public partial class MainWindow : Window
                 installRoot = AppPaths.InstallRoot,
                 minecraftRoot = AppPaths.MinecraftRoot,
                 basePackVersion = feed.BasePack.Version,
+                packs = new[]
+                {
+                    new
+                    {
+                        id = "cml-base",
+                        name = "CML Base",
+                        description = "Required foundation pack for Howling Whispers Minecraft. Provides official presentation assets and shared defaults.",
+                        required = true,
+                        installed = basePackReady,
+                        installedVersion = basePackReady ? feed.BasePack.Version : "",
+                        availableVersion = feed.BasePack.Version,
+                        source = "HW-CodaLoader Releases",
+                        status = basePackReady ? "Installed" : "Required"
+                    }
+                },
                 modCount = mods.Count(m => m.Valid),
                 mods,
-                feed,
+                feed = new
+                {
+                    feed.Schema,
+                    feed.ApiVersion,
+                    feed.Project,
+                    feed.Launcher,
+                    feed.Codaloader,
+                    feed.BasePack,
+                    news,
+                    feed.Online,
+                    feed.Error
+                },
                 settings = _settings,
                 logs = _logs.Snapshot(),
                 profile = new { cmlAccount = "Not configured", minecraftOwnership = "Not verified", discord = "Not linked", avatar = "Coming later" }

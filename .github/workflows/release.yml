@@ -12,9 +12,9 @@ jobs:
   publish:
     runs-on: windows-latest
     env:
-      CODA_VERSION: 0.5.2-update-terminal
-      CODA_TAG: v0.5.2-update-terminal
-      CODA_ZIP: CodaLauncher-v0.5.2-update-terminal-win64.zip
+      CODA_VERSION: 0.5.3-updater-smoke-test
+      CODA_TAG: v0.5.3-updater-smoke-test
+      CODA_ZIP: CodaLauncher-v0.5.3-updater-smoke-test-win64.zip
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,26 +48,26 @@ jobs:
           git push origin "refs/tags/$env:CODA_TAG" --force
 
           @"
-          # CodaLauncher v0.5.2 Update Terminal
+          # CodaLauncher v0.5.3 Updater Smoke Test
 
-          Coda now makes launcher updates visible instead of silently disappearing into an update handoff.
+          Small validation release for the new Coda update terminal.
 
-          - startup update check happens before the normal launcher opens
-          - updates download in a dedicated Coda terminal
-          - live download progress is visible
-          - SHA-256 verification remains mandatory
-          - Coda talks the player through download, verification and staging
-          - the installed launcher is untouched until the verified update is staged
-          - Coda waits for the player to press REBOOT CODALAUNCHER
-          - failed updates can continue into the existing launcher without replacing files
-          - prerelease tags are kept aligned with the commit that produced the downloadable assets
+          No feature changes beyond the version bump. This release exists so 0.5.2 can exercise the complete visible updater path in a real update:
 
-          Buttons stay clear. Coda handles the paperwork.
+          - detect a newer launcher at startup
+          - show Coda's update terminal
+          - display live download progress
+          - verify the SHA-256
+          - stage the update safely
+          - wait for REBOOT CODALAUNCHER
+          - apply the staged files and reopen as 0.5.3
+
+          If that path works, the updater has passed its first real smoke test.
           "@ | Set-Content release-notes.md
 
           if (gh release view $env:CODA_TAG 2>$null) {
             gh release upload $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --clobber
-            gh release edit $env:CODA_TAG --prerelease --title "CodaLauncher v0.5.2 Update Terminal" --notes-file release-notes.md
+            gh release edit $env:CODA_TAG --prerelease --title "CodaLauncher v0.5.3 Updater Smoke Test" --notes-file release-notes.md
           } else {
-            gh release create $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.5.2 Update Terminal" --notes-file release-notes.md
+            gh release create $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.5.3 Updater Smoke Test" --notes-file release-notes.md
           }

@@ -4,7 +4,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class App : Application
 {
-    internal const string LauncherVersion = "0.5.2-update-terminal";
+    internal const string LauncherVersion = "0.5.3-updater-smoke-test";
 
     protected override async void OnStartup(StartupEventArgs e)
     {

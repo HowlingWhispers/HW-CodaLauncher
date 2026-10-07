@@ -34,22 +34,58 @@ $('play').onclick=()=>{
 };
 $('open-loader').onclick=()=>post('openLoaderFolder');
 $('save').onclick=()=>post('saveSettings',{settings:{loaderPath:$('loader-path').value.trim(),feedUrl:$('feed-url').value.trim(),closeAfterLaunch:$('close-after').checked}});
-window.chrome.webview.addEventListener('message',e=>{const m=e.data;if(m.type==='state'){state=m.data;render();}if(m.type==='log')appendLog(m.line);if(m.type==='installStatus'){const box=$('launch-message');box.textContent=m.message;box.style.color=m.ok?'#8df0bb':'#ffb28a';setInstallBusy(!!m.busy,m.message);if(!m.busy&&state)render();}if(m.type==='launchStatus'){const box=$('launch-message');box.textContent=m.message;box.style.color=m.ok?'#8df0bb':'#ffb28a';}if(m.type==='error')$('launch-message').textContent=m.message;});
+window.chrome.webview.addEventListener('message',e=>{
+  const m=e.data;
+  if(m.type==='state'){
+    state=m.data;
+    render();
+  }
+  if(m.type==='log') appendLog(m.line);
+  if(m.type==='installStatus'){
+    const box=$('launch-message');
+    box.textContent=m.message;
+    box.style.color=m.ok?'#8df0bb':'#ffb28a';
+    setInstallBusy(!!m.busy,m.message);
+    if(!m.busy&&state) render();
+  }
+  if(m.type==='sessionStatus'){
+    if(state) state.gameRunning=!!m.running;
+    installBusy=false;
+    const box=$('launch-message');
+    box.textContent=m.message;
+    box.style.color=m.crashed?'#ffb28a':'#8df0bb';
+    render();
+  }
+  if(m.type==='launchStatus'){
+    const box=$('launch-message');
+    box.textContent=m.message;
+    box.style.color=m.ok?'#8df0bb':'#ffb28a';
+  }
+  if(m.type==='error') $('launch-message').textContent=m.message;
+});
 function render(){
   $('version').textContent='CodaLauncher '+state.launcherVersion;
+  $('home-heading').textContent=state.gameRunning?'World session active.':'Ready when you are.';
+  $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
   $('loader-chip').textContent=state.loaderCurrent?'CML CURRENT':(state.loaderReady?'CML UPDATE READY':'CML INSTALL');
   $('loader-chip').className=state.loaderCurrent?'good':(state.loaderReady?'warn':'bad');
   $('pack-chip').textContent=state.basePackReady?'CML BASE CURRENT':(state.managedInstalled?'CML BASE UPDATE READY':'CML BASE INSTALL');
   $('pack-chip').className=state.basePackReady?'good':(state.managedInstalled?'warn':'bad');
   $('mod-chip').textContent=state.modCount+' mod'+(state.modCount===1?'':'s');
-  $('play').disabled=installBusy;
-  if(!installBusy) $('play').textContent=state.managedInstalled?'PLAY ▶':'INSTALL & PLAY ▶';
-  $('loader-summary').textContent=state.managedCurrent
-    ? 'Everything required is current. '+state.minecraftRoot
-    : state.managedInstalled
-      ? 'Updates are available. CodaLauncher will apply them automatically when you press PLAY.'
-      : 'First launch installs CodaLoader, CML Base and required Resourcepacks automatically.';
-  const feed=state.feed;$('feed-pill').textContent=feed.online?'NEWS ONLINE':'NEWS OFFLINE';$('feed-pill').className='pill '+(feed.online?'online':'offline');$('feed-note').textContent=feed.online?'Live launcher feed':'Local fallback';
+  $('play').disabled=installBusy||state.gameRunning;
+  if(state.gameRunning) $('play').textContent='RUNNING';
+  else if(!installBusy) $('play').textContent=state.managedInstalled?'PLAY ▶':'INSTALL & PLAY ▶';
+  $('loader-summary').textContent=state.gameRunning
+    ? 'Minecraft is running. Coda is keeping the clipboard warm.'
+    : state.managedCurrent
+      ? 'Coda checked the essentials. Everything is where it belongs.'
+      : state.managedInstalled
+        ? 'Coda found a few things that need freshening up. PLAY will handle them automatically.'
+        : 'Coda will install CodaLoader, CML Base and the required Resourcepacks for you.';
+  const feed=state.feed;
+  $('feed-pill').textContent=feed.online?'NEWS ONLINE':'NEWS OFFLINE';
+  $('feed-pill').className='pill '+(feed.online?'online':'offline');
+  $('feed-note').textContent=feed.online?'Fresh notes from Howling Whispers.':"Coda can't reach the bulletin board right now.";
   $('news').innerHTML=(feed.news||[]).map(n=>'<article><time>'+esc(n.date||'')+'</time><b>'+esc(n.title||'Untitled')+'</b><p>'+esc(n.text||'')+'</p>'+(n.link?'<button class="news-link" data-link="'+escAttr(n.link)+'">Open</button>':'')+'</article>').join('');
   document.querySelectorAll('.news-link').forEach(btn=>btn.onclick=()=>post('openExternal',{url:btn.dataset.link}));
   $('packs-list').innerHTML=(state.packs||[]).map(p=>'<article class="pack-card"><div class="pack-top"><div><em>'+(p.required?'REQUIRED':'OPTIONAL')+'</em><h3>'+esc(p.name)+'</h3></div><span class="pill '+(p.current?'online':(p.installed?'update':'offline'))+'">'+esc(p.status)+'</span></div><p>'+esc(p.description)+'</p><div class="dependency-note">Requires: '+esc((p.dependencies||[]).join(', ')||'None')+'</div><div class="pack-meta"><span>Available v'+esc(p.availableVersion||'?')+'</span><span>'+esc(p.source||'')+'</span></div>'+(p.required?'<div class="managed-label">Managed automatically when you press PLAY</div>':'<button class="pack-action save" data-pack="'+escAttr(p.id)+'">INSTALL</button>')+'</article>').join('');
@@ -72,9 +108,9 @@ function render(){
   $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Ready':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No CML mods found</b><small>run\\mods is empty or the loader path is not configured.</small></div></div>';
   $('loader-path').value=state.settings.loaderPath||'';$('feed-url').value=state.settings.feedUrl||'';$('close-after').checked=!!state.settings.closeAfterLaunch;
   $('p-cml').textContent=state.profile.cmlAccount;$('p-mc').textContent=state.profile.minecraftOwnership;$('p-discord').textContent=state.profile.discord;
-  $('log-output').textContent=(state.logs||[]).join('\n')||'No launcher logs yet.';
+  $('log-output').textContent=(state.logs||[]).join('\n')||'Nothing interesting has happened yet.';
 }
-function appendLog(line){const pre=$('log-output');pre.textContent=(pre.textContent==='No launcher logs yet.'?'':pre.textContent+'\n')+line;pre.parentElement.scrollTop=pre.parentElement.scrollHeight;}
+function appendLog(line){const pre=$('log-output');pre.textContent=(pre.textContent==='Nothing interesting has happened yet.'?'':pre.textContent+'\n')+line;pre.parentElement.scrollTop=pre.parentElement.scrollHeight;}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function escAttr(v){return esc(v).replace(/\x60/g,'&#96;');}
 post('ready');

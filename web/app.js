@@ -1,12 +1,39 @@
 const post=(action,extra={})=>window.chrome.webview.postMessage({action,...extra});
 let state=null;
+let installBusy=false;
 const $=id=>document.getElementById(id);
+
+function setInstallBusy(busy,message=''){
+  installBusy=busy;
+  const home=$('play');
+  if(home){
+    home.disabled=busy;
+    if(busy) home.textContent='WORKING…';
+  }
+  document.querySelectorAll('.pack-action').forEach(btn=>{
+    btn.disabled=busy;
+    if(busy) btn.textContent='WORKING…';
+  });
+  if(message){
+    const box=$('launch-message');
+    if(box) box.textContent=message;
+  }
+}
+
+function requestInstall(){
+  if(installBusy) return;
+  setInstallBusy(true,'Preparing install…');
+  post('install');
+}
 document.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.view).classList.add('active');}));
 $('refresh').onclick=()=>post('refresh');
-$('play').onclick=()=>post(state&&state.readyToPlay?'play':'install');
+$('play').onclick=()=>{
+  if(state&&state.readyToPlay) post('play');
+  else requestInstall();
+};
 $('open-loader').onclick=()=>post('openLoaderFolder');
 $('save').onclick=()=>post('saveSettings',{settings:{loaderPath:$('loader-path').value.trim(),feedUrl:$('feed-url').value.trim(),closeAfterLaunch:$('close-after').checked}});
-window.chrome.webview.addEventListener('message',e=>{const m=e.data;if(m.type==='state'){state=m.data;render();}if(m.type==='log')appendLog(m.line);if(m.type==='installStatus'){const box=$('launch-message');box.textContent=m.message;box.style.color=m.ok?'#8df0bb':'#ffb28a';$('play').disabled=!!m.busy;}if(m.type==='launchStatus'){const box=$('launch-message');box.textContent=m.message;box.style.color=m.ok?'#8df0bb':'#ffb28a';}if(m.type==='error')$('launch-message').textContent=m.message;});
+window.chrome.webview.addEventListener('message',e=>{const m=e.data;if(m.type==='state'){state=m.data;render();}if(m.type==='log')appendLog(m.line);if(m.type==='installStatus'){const box=$('launch-message');box.textContent=m.message;box.style.color=m.ok?'#8df0bb':'#ffb28a';setInstallBusy(!!m.busy,m.message);if(!m.busy&&state)render();}if(m.type==='launchStatus'){const box=$('launch-message');box.textContent=m.message;box.style.color=m.ok?'#8df0bb':'#ffb28a';}if(m.type==='error')$('launch-message').textContent=m.message;});
 function render(){
   $('version').textContent='CodaLauncher '+state.launcherVersion;
   $('loader-chip').textContent=state.loaderReady?'CML READY':'CML NOT CONFIGURED';
@@ -14,8 +41,8 @@ function render(){
   $('pack-chip').textContent=state.basePackReady?'BASE PACK READY':'BASE PACK REQUIRED';
   $('pack-chip').className=state.basePackReady?'good':'bad';
   $('mod-chip').textContent=state.modCount+' mod'+(state.modCount===1?'':'s');
-  $('play').disabled=false;
-  $('play').textContent=state.readyToPlay?'PLAY ▶':(state.loaderReady?'REPAIR':'INSTALL');
+  $('play').disabled=installBusy;
+  if(!installBusy) $('play').textContent=state.readyToPlay?'PLAY ▶':(state.loaderReady?'REPAIR':'INSTALL');
   $('loader-summary').textContent=state.readyToPlay
     ? state.minecraftRoot
     : 'Install CodaLoader, Minecraft workspace and the mandatory Howling Whispers base pack.';
@@ -23,7 +50,11 @@ function render(){
   $('news').innerHTML=(feed.news||[]).map(n=>'<article><time>'+esc(n.date||'')+'</time><b>'+esc(n.title||'Untitled')+'</b><p>'+esc(n.text||'')+'</p>'+(n.link?'<button class="news-link" data-link="'+escAttr(n.link)+'">Open</button>':'')+'</article>').join('');
   document.querySelectorAll('.news-link').forEach(btn=>btn.onclick=()=>post('openExternal',{url:btn.dataset.link}));
   $('packs-list').innerHTML=(state.packs||[]).map(p=>'<article class="pack-card"><div class="pack-top"><div><em>'+(p.required?'REQUIRED':'OPTIONAL')+'</em><h3>'+esc(p.name)+'</h3></div><span class="pill '+(p.installed?'online':'offline')+'">'+esc(p.status)+'</span></div><p>'+esc(p.description)+'</p><div class="pack-meta"><span>Available v'+esc(p.availableVersion||'?')+'</span><span>'+esc(p.source||'')+'</span></div><button class="pack-action '+(p.installed?'quiet':'save')+'" data-pack="'+escAttr(p.id)+'">'+(p.installed?'REPAIR':'INSTALL')+'</button></article>').join('');
-  document.querySelectorAll('.pack-action').forEach(btn=>btn.onclick=()=>post('install'));
+  document.querySelectorAll('.pack-action').forEach(btn=>{
+    btn.disabled=installBusy;
+    if(installBusy) btn.textContent='WORKING…';
+    btn.onclick=requestInstall;
+  });
   $('mods-count').textContent=state.mods.length+' jar'+(state.mods.length===1?'':'s');
   $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Ready':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No CML mods found</b><small>run\\mods is empty or the loader path is not configured.</small></div></div>';
   $('loader-path').value=state.settings.loaderPath||'';$('feed-url').value=state.settings.feedUrl||'';$('close-after').checked=!!state.settings.closeAfterLaunch;

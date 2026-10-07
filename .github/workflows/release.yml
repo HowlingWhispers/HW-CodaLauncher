@@ -21,16 +21,25 @@ jobs:
         run: |
           dotnet restore
           dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
-          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.2.0-installer-win64.zip -Force
+          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.2.1-self-update-win64.zip -Force
+          $sha = (Get-FileHash dist/CodaLauncher-v0.2.1-self-update-win64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          @"
+          {
+            "schema": 1,
+            "version": "0.2.1-self-update",
+            "bundle": "CodaLauncher-v0.2.1-self-update-win64.zip",
+            "sha256": "$sha"
+          }
+          "@ | Set-Content -Encoding UTF8 dist/launcher-update.json
       - name: Publish prerelease
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v0.2.0-installer"
-          $zip = "dist/CodaLauncher-v0.2.0-installer-win64.zip"
+          $tag = "v0.2.1-self-update"
+          $zip = "dist/CodaLauncher-v0.2.1-self-update-win64.zip"
           @"
-          # CodaLauncher v0.2.0 Installer
+          # CodaLauncher v0.2.1 Self Update
 
           First installer-capable CodaLauncher milestone.
 
@@ -42,11 +51,13 @@ jobs:
           - mandatory CML base-pack download and SHA-256 verification from launcher feed
           - CML mod scanning, news, settings and logs
 
-          CML identity, Discord linking, Minecraft ownership verification, launcher-owned updating, RAM/runtime controls and avatar editing are placeholders for later milestones.
+          CodaLauncher now also updates itself through a SHA-256 verified staged copy of its own EXE, with no BAT helper or console window.
+
+          CML identity, Discord linking, Minecraft ownership verification, RAM/runtime controls and avatar editing are placeholders for later milestones.
           "@ | Set-Content release-notes.md
           if (gh release view $tag 2>$null) {
-            gh release upload $tag $zip --clobber
-            gh release edit $tag --prerelease --title "CodaLauncher v0.2.0 Installer" --notes-file release-notes.md
+            gh release upload $tag $zip dist/launcher-update.json --clobber
+            gh release edit $tag --prerelease --title "CodaLauncher v0.2.1 Self Update" --notes-file release-notes.md
           } else {
-            gh release create $tag $zip --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.2.0 Installer" --notes-file release-notes.md
+            gh release create $tag $zip dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.2.1 Self Update" --notes-file release-notes.md
           }

@@ -43,7 +43,7 @@ internal sealed class SettingsStore
 
     public void Save(LauncherSettings settings)
     {
-        Directory.CreateDirectory(AppPaths.Root);
+        Directory.CreateDirectory(Path.GetDirectoryName(AppPaths.SettingsFile)!);
         var temp = AppPaths.SettingsFile + ".tmp";
         File.WriteAllText(temp, JsonSerializer.Serialize(settings, Json));
         File.Move(temp, AppPaths.SettingsFile, true);
@@ -375,6 +375,210 @@ internal sealed class InstallService
     {
         var client = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("CodaLauncher/0.2");
+        return client;
+    }
+}
+
+internal sealed record LauncherUpdateInfo(
+    string Version,
+    string BundleUrl,
+    string Sha256,
+    string BundleName);
+
+internal static class SelfUpdater
+{
+    private const string ReleasesApi =
+        "https://api.github.com/repos/HowlingWhispers/HW-CodaLauncher/releases?per_page=10";
+    private static readonly HttpClient Http = CreateHttp();
+
+    public static async Task<LauncherUpdateInfo?> CheckAsync(string currentVersion, CancellationToken ct)
+    {
+        using var response = await Http.GetAsync(ReleasesApi, ct);
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+
+        foreach (var release in doc.RootElement.EnumerateArray())
+        {
+            if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
+
+            var tag = release.GetProperty("tag_name").GetString() ?? "";
+            var version = tag.StartsWith('v') ? tag[1..] : tag;
+            if (CompareVersions(version, currentVersion) <= 0) return null;
+
+            string? bundleUrl = null;
+            string? manifestUrl = null;
+            string? bundleName = null;
+
+            foreach (var asset in release.GetProperty("assets").EnumerateArray())
+            {
+                var name = asset.GetProperty("name").GetString() ?? "";
+                var url = asset.GetProperty("browser_download_url").GetString();
+                if (name.StartsWith("CodaLauncher-v", StringComparison.OrdinalIgnoreCase)
+                    && name.EndsWith("-win64.zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    bundleName = name;
+                    bundleUrl = url;
+                }
+                else if (name.Equals("launcher-update.json", StringComparison.OrdinalIgnoreCase))
+                {
+                    manifestUrl = url;
+                }
+            }
+
+            if (bundleUrl is null || manifestUrl is null || bundleName is null) return null;
+
+            using var manifestResponse = await Http.GetAsync(manifestUrl, ct);
+            manifestResponse.EnsureSuccessStatusCode();
+            var manifestText = await manifestResponse.Content.ReadAsStringAsync(ct);
+            using var manifest = JsonDocument.Parse(manifestText);
+            var sha = manifest.RootElement.GetProperty("sha256").GetString() ?? "";
+            var manifestVersion = manifest.RootElement.GetProperty("version").GetString() ?? "";
+
+            if (!manifestVersion.Equals(version, StringComparison.OrdinalIgnoreCase) || sha.Length != 64)
+                throw new InvalidDataException("Launcher update manifest does not match the release.");
+
+            return new LauncherUpdateInfo(version, bundleUrl, sha, bundleName);
+        }
+
+        return null;
+    }
+
+    public static async Task StageAndRestartAsync(
+        LauncherUpdateInfo update,
+        Action<string> progress,
+        CancellationToken ct)
+    {
+        var installRoot = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+        var tempRoot = Path.Combine(Path.GetTempPath(), "CodaLauncherUpdate", Guid.NewGuid().ToString("N"));
+        var zip = Path.Combine(tempRoot, update.BundleName);
+        var staging = Path.Combine(tempRoot, "staging");
+        Directory.CreateDirectory(tempRoot);
+
+        progress($"Downloading CodaLauncher {update.Version}...");
+        using (var response = await Http.GetAsync(update.BundleUrl, HttpCompletionOption.ResponseHeadersRead, ct))
+        {
+            response.EnsureSuccessStatusCode();
+            await using var input = await response.Content.ReadAsStreamAsync(ct);
+            await using var output = File.Create(zip);
+            await input.CopyToAsync(output, ct);
+        }
+
+        var actual = Sha256(zip);
+        if (!actual.Equals(update.Sha256, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException(
+                $"Launcher update failed SHA-256 verification. Expected {update.Sha256}, got {actual}.");
+
+        ZipFile.ExtractToDirectory(zip, staging, true);
+        var stagedExe = Path.Combine(staging, "CodaLauncher.exe");
+        if (!File.Exists(stagedExe))
+            throw new InvalidDataException("Staged launcher update does not contain CodaLauncher.exe.");
+
+        progress("Applying launcher update...");
+        var info = new ProcessStartInfo(stagedExe)
+        {
+            WorkingDirectory = staging,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        info.ArgumentList.Add("--apply-update");
+        info.ArgumentList.Add(Environment.ProcessId.ToString());
+        info.ArgumentList.Add(staging);
+        info.ArgumentList.Add(installRoot);
+        Process.Start(info) ?? throw new InvalidOperationException("Could not start staged CodaLauncher updater.");
+    }
+
+    public static bool TryRunApplyMode(string[] args)
+    {
+        if (args.Length < 4 || !args[0].Equals("--apply-update", StringComparison.Ordinal))
+            return false;
+
+        if (!int.TryParse(args[1], out var parentPid))
+            return true;
+
+        var staging = Path.GetFullPath(args[2]);
+        var target = Path.GetFullPath(args[3]);
+
+        try
+        {
+            try
+            {
+                using var parent = Process.GetProcessById(parentPid);
+                parent.WaitForExit(60_000);
+            }
+            catch { }
+
+            Directory.CreateDirectory(target);
+            foreach (var source in Directory.EnumerateFiles(staging, "*", SearchOption.AllDirectories))
+            {
+                var relative = Path.GetRelativePath(staging, source);
+                var destination = Path.Combine(target, relative);
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+
+                if (destination.Equals(
+                    Path.Combine(target, Path.GetFileName(Environment.ProcessPath ?? "CodaLauncher.exe")),
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    // The updater itself is running from staging, not target, so replacement is safe.
+                }
+
+                File.Copy(source, destination, true);
+            }
+
+            var installedExe = Path.Combine(target, "CodaLauncher.exe");
+            Process.Start(new ProcessStartInfo(installedExe)
+            {
+                WorkingDirectory = target,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                File.WriteAllText(
+                    Path.Combine(Path.GetTempPath(), "CodaLauncher-update-error.txt"),
+                    ex.ToString());
+            }
+            catch { }
+        }
+
+        return true;
+    }
+
+    private static string Sha256(string file)
+    {
+        using var sha = SHA256.Create();
+        using var input = File.OpenRead(file);
+        return Convert.ToHexString(sha.ComputeHash(input)).ToLowerInvariant();
+    }
+
+    private static int CompareVersions(string left, string right)
+    {
+        static int[] Parts(string raw)
+        {
+            var core = raw.Split('-', 2)[0];
+            return core.Split('.')
+                .Select(x => int.TryParse(x, out var n) ? n : 0)
+                .Concat([0, 0, 0])
+                .Take(3)
+                .ToArray();
+        }
+
+        var a = Parts(left);
+        var b = Parts(right);
+        for (var i = 0; i < 3; i++)
+        {
+            var cmp = a[i].CompareTo(b[i]);
+            if (cmp != 0) return cmp;
+        }
+        return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static HttpClient CreateHttp()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("CodaLauncher-SelfUpdater/0.2");
         return client;
     }
 }

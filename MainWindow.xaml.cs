@@ -8,7 +8,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class MainWindow : Window
 {
-    private const string Version = "0.2.0-installer";
+    private const string Version = "0.2.1-self-update";
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();
@@ -33,6 +33,8 @@ public partial class MainWindow : Window
             _settings = _settingsStore.Load();
             _logs.Add("CodaLauncher starting.");
             Directory.CreateDirectory(AppPaths.WebViewData);
+
+            _ = CheckLauncherUpdateAsync();
 
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: AppPaths.WebViewData);
             await Browser.EnsureCoreWebView2Async(environment);
@@ -99,6 +101,34 @@ public partial class MainWindow : Window
             var line = _logs.Add("UI request failed: " + ex.Message);
             Send(new { type = "log", line });
             Send(new { type = "error", message = ex.Message });
+        }
+    }
+
+    private async Task CheckLauncherUpdateAsync()
+    {
+        try
+        {
+            var update = await SelfUpdater.CheckAsync(Version, CancellationToken.None);
+            if (update is null) return;
+
+            _logs.Add($"Launcher update available: {update.Version}");
+            Dispatcher.Invoke(() => Send(new
+            {
+                type = "launcherUpdate",
+                available = true,
+                version = update.Version
+            }));
+
+            await SelfUpdater.StageAndRestartAsync(
+                update,
+                message => _logs.Add(message),
+                CancellationToken.None);
+
+            Dispatcher.Invoke(Close);
+        }
+        catch (Exception ex)
+        {
+            _logs.Add("Launcher update check failed: " + ex.Message);
         }
     }
 

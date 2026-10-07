@@ -256,6 +256,20 @@ internal sealed class InstallService
         progress("Install ready.");
     }
 
+    public async Task InstallCmlBaseResourcesOnlyAsync(
+        LauncherFeed feed,
+        Action<string> progress,
+        CancellationToken ct)
+    {
+        Directory.CreateDirectory(AppPaths.InstallRoot);
+        Directory.CreateDirectory(AppPaths.ResourcePacksRoot);
+
+        var resource = ResolveCmlBaseResources(feed);
+        progress("Downloading resource pack: CML Base Resources...");
+        await InstallCmlBaseResourcesAsync(resource, progress, ct);
+        progress("CML Base Resources ready.");
+    }
+
     private async Task InstallLoaderAsync(Action<string> progress, CancellationToken ct)
     {
         using var response = await Http.GetAsync(ReleasesApi, ct);

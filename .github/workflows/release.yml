@@ -21,13 +21,13 @@ jobs:
         run: |
           dotnet restore
           dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
-          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.3.1-install-lock-win64.zip -Force
-          $sha = (Get-FileHash dist/CodaLauncher-v0.3.1-install-lock-win64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-v0.4.0-pack-deps-win64.zip -Force
+          $sha = (Get-FileHash dist/CodaLauncher-v0.4.0-pack-deps-win64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
           @"
           {
             "schema": 1,
-            "version": "0.3.1-install-lock",
-            "bundle": "CodaLauncher-v0.3.1-install-lock-win64.zip",
+            "version": "0.4.0-pack-deps",
+            "bundle": "CodaLauncher-v0.4.0-pack-deps-win64.zip",
             "sha256": "$sha"
           }
           "@ | Set-Content -Encoding UTF8 dist/launcher-update.json
@@ -36,10 +36,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v0.3.1-install-lock"
-          $zip = "dist/CodaLauncher-v0.3.1-install-lock-win64.zip"
+          $tag = "v0.4.0-pack-deps"
+          $zip = "dist/CodaLauncher-v0.4.0-pack-deps-win64.zip"
           @"
-          # CodaLauncher v0.3.1 Install Lock
+          # CodaLauncher v0.4.0 Pack Dependencies
 
           First installer-capable CodaLauncher milestone.
 
@@ -48,7 +48,7 @@ jobs:
           - managed install under %APPDATA%\.howlingshispers
           - Minecraft workspace at %APPDATA%\.howlingshispers\minecraft
           - current CodaLoader release download from GitHub
-          - mandatory CML base-pack download and SHA-256 verification from launcher feed
+          - CML Pack dependency resolution with SHA-256 verified Resourcepacks
           - CML mod scanning, news, settings and logs
 
           Adds the first real Packs screen with CML Base as the required foundation pack.\n\n          INSTALL/REPAIR now locks immediately in the UI and native backend so repeated clicks cannot start parallel installers. REPAIR also keeps an already-installed CodaLoader when only CML Base is missing.
@@ -63,7 +63,7 @@ jobs:
           "@ | Set-Content release-notes.md
           if (gh release view $tag 2>$null) {
             gh release upload $tag $zip dist/launcher-update.json --clobber
-            gh release edit $tag --prerelease --title "CodaLauncher v0.3.1 Install Lock" --notes-file release-notes.md
+            gh release edit $tag --prerelease --title "CodaLauncher v0.4.0 Pack Dependencies" --notes-file release-notes.md
           } else {
-            gh release create $tag $zip dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.3.1 Install Lock" --notes-file release-notes.md
+            gh release create $tag $zip dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.4.0 Pack Dependencies" --notes-file release-notes.md
           }

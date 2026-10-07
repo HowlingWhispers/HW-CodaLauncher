@@ -89,6 +89,9 @@ public partial class MainWindow : Window
                 case "install":
                     await InstallOrRepair();
                     break;
+                case "installResourcePack":
+                    await InstallResourcePack();
+                    break;
                 case "play":
                     await Play();
                     break;
@@ -284,6 +287,72 @@ public partial class MainWindow : Window
         {
             _logs.Add("Install/repair failed: " + ex.Message);
             Send(new { type = "installStatus", busy = false, ok = false, message = ex.Message });
+            await SendState();
+        }
+        finally
+        {
+            _installGate.Release();
+        }
+    }
+
+    private async Task InstallResourcePack()
+    {
+        if (!await _installGate.WaitAsync(0))
+        {
+            Send(new
+            {
+                type = "installStatus",
+                busy = true,
+                ok = true,
+                message = "Install/repair is already running."
+            });
+            return;
+        }
+
+        try
+        {
+            Send(new
+            {
+                type = "installStatus",
+                busy = true,
+                ok = true,
+                message = "Preparing Resourcepack install..."
+            });
+
+            await _installer.InstallCmlBaseResourcesOnlyAsync(
+                _lastFeed,
+                message =>
+                {
+                    _logs.Add(message);
+                    Dispatcher.Invoke(() => Send(new
+                    {
+                        type = "installStatus",
+                        busy = true,
+                        ok = true,
+                        message
+                    }));
+                },
+                CancellationToken.None);
+
+            Send(new
+            {
+                type = "installStatus",
+                busy = false,
+                ok = true,
+                message = "CML Base Resources ready."
+            });
+            await SendState();
+        }
+        catch (Exception ex)
+        {
+            _logs.Add("Resourcepack install/repair failed: " + ex.Message);
+            Send(new
+            {
+                type = "installStatus",
+                busy = false,
+                ok = false,
+                message = ex.Message
+            });
             await SendState();
         }
         finally

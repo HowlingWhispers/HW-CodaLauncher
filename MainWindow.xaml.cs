@@ -8,7 +8,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class MainWindow : Window
 {
-    private const string Version = "0.3.0-packs";
+    private const string Version = "0.3.1-install-lock";
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();
@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     private LauncherSettings _settings = new();
     private LauncherFeed _lastFeed = new();
     private readonly List<NewsItem> _systemNews = [];
+    private readonly SemaphoreSlim _installGate = new(1, 1);
 
     public MainWindow()
     {
@@ -219,9 +220,22 @@ public partial class MainWindow : Window
 
     private async Task InstallOrRepair()
     {
+        if (!await _installGate.WaitAsync(0))
+        {
+            Send(new
+            {
+                type = "installStatus",
+                busy = true,
+                ok = true,
+                message = "Install/repair is already running."
+            });
+            return;
+        }
+
         try
         {
             Send(new { type = "installStatus", busy = true, ok = true, message = "Preparing install..." });
+
             await _installer.InstallOrRepairAsync(
                 _lastFeed,
                 message =>
@@ -247,6 +261,10 @@ public partial class MainWindow : Window
             _logs.Add("Install/repair failed: " + ex.Message);
             Send(new { type = "installStatus", busy = false, ok = false, message = ex.Message });
             await SendState();
+        }
+        finally
+        {
+            _installGate.Release();
         }
     }
 

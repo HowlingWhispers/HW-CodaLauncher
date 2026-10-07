@@ -165,15 +165,16 @@ public partial class MainWindow : Window
 
         EnsureCmlBaseCatalog(feed);
 
-        var loaderReady = LoaderLocator.IsReady(loader);
         var pack = feed.Packs.First(item =>
             item.Id.Equals("cml-base", StringComparison.OrdinalIgnoreCase));
         var resource = feed.ResourcePacks.First(item =>
             item.Id.Equals("cml-base-resources", StringComparison.OrdinalIgnoreCase));
+        var managed = await _installer.CheckManagedStateAsync(feed, CancellationToken.None);
 
-        var resourcePackReady = _installer.CmlBaseResourcesReady(resource.Version);
-        var basePackReady = _installer.CmlBasePackReady(pack.Version, resource.Version);
-        var readyToPlay = loaderReady && basePackReady;
+        var loaderReady = managed.LoaderInstalled;
+        var resourcePackReady = managed.ResourceCurrent;
+        var basePackReady = managed.PackCurrent;
+        var readyToPlay = managed.Current;
         var news = _systemNews.Concat(feed.News).ToList();
 
         Send(new
@@ -184,7 +185,13 @@ public partial class MainWindow : Window
                 launcherVersion = Version,
                 loaderPath = loader ?? "",
                 loaderReady,
+                loaderCurrent = managed.LoaderCurrent,
+                installedLoaderVersion = managed.InstalledLoaderVersion ?? "",
+                latestLoaderVersion = managed.LatestLoaderVersion,
                 basePackReady,
+                managedInstalled = managed.Installed,
+                managedCurrent = managed.Current,
+                updatesAvailable = managed.UpdatesAvailable,
                 readyToPlay,
                 installRoot = AppPaths.InstallRoot,
                 minecraftRoot = AppPaths.MinecraftRoot,
@@ -197,12 +204,15 @@ public partial class MainWindow : Window
                         name = pack.Name,
                         description = pack.Description,
                         required = pack.Required,
-                        installed = basePackReady,
-                        installedVersion = basePackReady ? pack.Version : "",
+                        installed = managed.PackInstalled,
+                        current = managed.PackCurrent,
+                        installedVersion = managed.PackInstalled ? pack.Version : "",
                         availableVersion = pack.Version,
                         source = "CML Pack Catalog",
                         dependencies = pack.ResourcePacks,
-                        status = basePackReady ? "Installed" : "Required"
+                        status = managed.PackCurrent
+                            ? "Current"
+                            : managed.PackInstalled ? "Update available" : "Required"
                     }
                 },
                 resourcePacks = new[]
@@ -213,13 +223,16 @@ public partial class MainWindow : Window
                         name = resource.Name,
                         description = resource.Description,
                         required = resource.Required,
-                        installed = resourcePackReady,
-                        installedVersion = resourcePackReady ? resource.Version : "",
+                        installed = managed.ResourceInstalled,
+                        current = managed.ResourceCurrent,
+                        installedVersion = managed.ResourceInstalled ? resource.Version : "",
                         availableVersion = resource.Version,
                         requiredBy = resource.RequiredBy,
                         source = "HW-CodaLoader Releases / launcher feed",
                         contents = new[] { "Title banner", "4 panorama scenes", "Menu music", "Splash/default presentation assets" },
-                        status = resourcePackReady ? "Installed" : "Required"
+                        status = managed.ResourceCurrent
+                            ? "Current"
+                            : managed.ResourceInstalled ? "Update available" : "Required"
                     }
                 },
                 modCount = mods.Count(m => m.Valid),
@@ -414,34 +427,89 @@ public partial class MainWindow : Window
         return Uri.TryCreate(raw.TrimEnd('/') + "/", UriKind.Absolute, out var uri) ? uri : null;
     }
 
-    private Task Play()
+    private async Task Play()
     {
-        var loader = LoaderLocator.Resolve(_settings.LoaderPath);
-        EnsureCmlBaseCatalog(_lastFeed);
-        var pack = _lastFeed.Packs.First(item =>
-            item.Id.Equals("cml-base", StringComparison.OrdinalIgnoreCase));
-        var resource = _lastFeed.ResourcePacks.First(item =>
-            item.Id.Equals("cml-base-resources", StringComparison.OrdinalIgnoreCase));
-
-        if (!LoaderLocator.IsReady(loader)
-            || !_installer.CmlBasePackReady(pack.Version, resource.Version))
+        if (!await _installGate.WaitAsync(0))
         {
-            Send(new { type = "launchStatus", ok = false, message = "Install/repair CML Base and its required resource pack first." });
-            return Task.CompletedTask;
+            Send(new
+            {
+                type = "launchStatus",
+                ok = true,
+                message = "Coda is already preparing the game."
+            });
+            return;
         }
 
         try
         {
+            EnsureCmlBaseCatalog(_lastFeed);
+            Send(new
+            {
+                type = "installStatus",
+                busy = true,
+                ok = true,
+                message = "Checking CodaLoader and required Packs..."
+            });
+
+            await _installer.InstallOrRepairAsync(
+                _lastFeed,
+                message =>
+                {
+                    _logs.Add(message);
+                    Dispatcher.Invoke(() => Send(new
+                    {
+                        type = "installStatus",
+                        busy = true,
+                        ok = true,
+                        message
+                    }));
+                },
+                CancellationToken.None);
+
+            _settings.LoaderPath = AppPaths.LoaderRoot;
+            _settingsStore.Save(_settings);
+
+            var loader = LoaderLocator.Resolve(_settings.LoaderPath);
+            if (!LoaderLocator.IsReady(loader))
+                throw new InvalidOperationException("Managed CodaLoader install is not ready.");
+
+            Send(new
+            {
+                type = "installStatus",
+                busy = true,
+                ok = true,
+                message = "Everything is current. Launching Minecraft..."
+            });
+
             var pid = _launcher.Launch(loader!);
-            Send(new { type = "launchStatus", ok = true, message = $"CodaLoader started as process {pid}." });
+            Send(new
+            {
+                type = "installStatus",
+                busy = false,
+                ok = true,
+                message = $"CodaLoader started as process {pid}."
+            });
+
             if (_settings.CloseAfterLaunch) Close();
+            else await SendState();
         }
         catch (Exception ex)
         {
-            _logs.Add("Launch failed: " + ex.Message);
-            Send(new { type = "launchStatus", ok = false, message = ex.Message });
+            var message = FriendlyInstallError(ex);
+            _logs.Add("Launch preparation failed: " + message);
+            Send(new
+            {
+                type = "installStatus",
+                busy = false,
+                ok = false,
+                message
+            });
+            await SendState();
         }
-        return Task.CompletedTask;
+        finally
+        {
+            _installGate.Release();
+        }
     }
 
     private void OpenLoaderFolder()

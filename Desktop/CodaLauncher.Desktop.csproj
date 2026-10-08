@@ -13,6 +13,8 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.3.21" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.21" />
     <Compile Include="../MinecraftAccount.cs" Link="Shared/MinecraftAccount.cs" />
+    <Compile Include="../LocalSingleplayer.cs" Link="Shared/LocalSingleplayer.cs" />
+    <Compile Include="../OfficialMinecraftLauncher.cs" Link="Shared/OfficialMinecraftLauncher.cs" />
     <Content Include="../auth/microsoft.json" Link="auth/microsoft.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../LauncherCore.cs" Link="Shared/LauncherCore.cs" />
     <Compile Include="../LauncherModels.cs" Link="Shared/LauncherModels.cs" />

@@ -18,6 +18,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - name: Test Settings save feedback
+        run: |
+          node --check web/app.js
+          node tests/web/settings-save.test.cjs
       - name: Test account verification
         run: dotnet run --project tests/accounts/AccountsTests.csproj -c Release
       - name: Test official Minecraft profile registration
@@ -65,6 +69,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - name: Test Settings save feedback
+        run: |
+          node --check web/app.js
+          node tests/web/settings-save.test.cjs
       - name: Test account verification
         run: dotnet run --project tests/accounts/AccountsTests.csproj -c Release
       - name: Test official Minecraft profile registration

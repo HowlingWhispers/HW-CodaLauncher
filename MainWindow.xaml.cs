@@ -857,6 +857,7 @@ public partial class MainWindow : Window
             "buildcraft_cml" => "BuildCraft CML",
             "coda_wolf" => "Coda Wolf",
             "hw_essentials" => "HW Essentials",
+            "quiet_underground" => "Quiet Underground",
             _ => throw new InvalidOperationException("Unknown optional mod.")
         };
         var root = _settings.UpdateChannel == "nightly"
@@ -874,13 +875,15 @@ public partial class MainWindow : Window
         {
             Send(new { type = "modActionStatus", busy = true, ok = true,
                 message = (uninstall ? "Uninstalling " : "Installing/updating ") + title + "..." });
-            if (id is "buildcraft_cml" or "coda_wolf" && _settings.UpdateChannel != "nightly")
+            if ((id is "buildcraft_cml" or "coda_wolf" or "quiet_underground")
+                && _settings.UpdateChannel != "nightly")
                 throw new InvalidOperationException(title + " is currently offered only in Nightly.");
             if (uninstall)
             {
                 switch (id)
                 {
                     case "buildcraft_cml": NightlyBuildInstaller.UninstallBuildCraft(Report); break;
+                    case "quiet_underground": NightlyBuildInstaller.UninstallQuiet(Report); break;
                     case "coda_wolf": _codaWolf.UninstallManaged(Report); break;
                     case "hw_essentials": ManagedMods.Uninstall(root, Report); break;
                 }
@@ -894,6 +897,12 @@ public partial class MainWindow : Window
                             throw new InvalidOperationException("Install the required H.O.W.L. Nightly runtime first.");
                         await _nightly.InstallLatestAsync(Report, CancellationToken.None,
                             installBuildCraft: true);
+                        break;
+                    case "quiet_underground":
+                        if (!NightlyBuildInstaller.Installed)
+                            throw new InvalidOperationException("Install the required H.O.W.L. Nightly runtime first.");
+                        await _nightly.InstallLatestAsync(Report, CancellationToken.None,
+                            installQuiet: true);
                         break;
                     case "coda_wolf":
                         if (!NightlyBuildInstaller.Installed)

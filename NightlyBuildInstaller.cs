@@ -48,8 +48,23 @@ internal sealed class NightlyBuildInstaller
     }
 
     /// <summary>Required Nightly runtime only. Optional mods and worldgen are independent.</summary>
-    public static bool Installed => File.Exists(Path.Combine(LoaderRoot, "CodaLoader.jar"))
-        && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag"));
+    private static string LoaderHashMarker => Path.Combine(LoaderRoot, ".nightly-loader-sha256");
+    public static bool Installed
+    {
+        get
+        {
+            try
+            {
+                string loader = Path.Combine(LoaderRoot, "CodaLoader.jar");
+                return File.Exists(loader) && File.Exists(LoaderHashMarker)
+                    && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag"))
+                    && HashFile(loader).Equals(File.ReadAllText(LoaderHashMarker).Trim(),
+                        StringComparison.OrdinalIgnoreCase);
+            }
+            catch (IOException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+        }
+    }
 
     public static bool BuildCraftInstalled => IsManagedBuildCraft();
     private static string ModFolder => Path.Combine(GameRoot, "mods");
@@ -265,6 +280,7 @@ internal sealed class NightlyBuildInstaller
                         + Guid.NewGuid().ToString("N") + ".jar"));
                 }
                 File.Move(jarTemp, oldLoader, overwrite: true);
+                File.WriteAllText(LoaderHashMarker, HashFile(oldLoader));
                 if (installBuildCraft)
                 {
                     File.Move(modTemp, targetMod, overwrite: true);

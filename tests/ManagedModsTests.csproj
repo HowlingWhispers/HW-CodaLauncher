@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Remove="accounts/**/*.cs" />
     <Compile Remove="official/**/*.cs" />
+    <Compile Remove="nightly/**/*.cs" />
     <Compile Remove="official/**/obj/**/*.cs" />
     <Compile Include="../ManagedMods.cs" Link="ManagedMods.cs" />
   </ItemGroup>

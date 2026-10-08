@@ -55,7 +55,7 @@ async Task ExpectFailure(Func<Task> action, string message)
     Check(failed, message);
 }
 
-byte[] MakeMod(string id = "coda_wolf")
+byte[] MakeMod(string id = "coda_wolf", string version = "0.1.0-dev")
 {
     using var buffer = new MemoryStream();
     using (var zip = new ZipArchive(buffer, ZipArchiveMode.Create, leaveOpen: true))
@@ -67,7 +67,7 @@ byte[] MakeMod(string id = "coda_wolf")
                 schema = 1,
                 id,
                 name = "Coda Wolf Companion",
-                version = "0.1.0-dev",
+                version,
                 minecraft = "26.4-snapshot-3",
                 entrypoint = "dev.howlingwhispers.codawolf.CodaWolfMod",
                 depends = Array.Empty<string>()
@@ -92,7 +92,7 @@ string atomXml = $"""
 Check(NightlyAtomReleaseReader.SelectNewest(atomXml, CodaWolfNightlyInstaller.TagPrefix,
     CodaWolfNightlyInstaller.ModJar, CodaWolfNightlyInstaller.ChecksumFile)?.Tag == atomTag,
     "Release Atom fallback selects newest authentic companion tag, rejects foreign repos.");
-byte[] atomBytes = MakeMod();
+byte[] atomBytes = MakeMod(version: "0.1.1-dev");
 string atomSha = Convert.ToHexString(SHA256.HashData(atomBytes)).ToLowerInvariant();
 string baseUrl = "https://github.com/HowlingWhispers/HW-Mods/releases/download/";
 string jarName = CodaWolfNightlyInstaller.ModJar;
@@ -183,6 +183,8 @@ try
         "HTTP 403 GitHub API rate limit automatically discovers newer Coda Wolf via public Atom.");
     Check(File.ReadAllBytes(path).SequenceEqual(atomBytes),
         "API rate-limit fallback actually upgrades stale verified JAR, not merely logs success.");
+    Check(installer.HasManagedInstall(),
+        "Incremented v0.1.1-dev manifest remains a verified managed installation.");
     Check(File.ReadAllText(Path.Combine(root, "mods", ".howl-codawolf-tag")) == atomTag,
         "Updated fallback release tag persisted.");
     apiRateLimited = false;

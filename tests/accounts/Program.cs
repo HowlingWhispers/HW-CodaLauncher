@@ -4,6 +4,12 @@ using System.Text.Json;
 using HowlingWhispers.CodaLauncher;
 
 const string client = "14713b55-f304-4923-8671-e7b40467778e"; // Test fixture only, never used on a real network.
+var local = LocalSingleplayer.Identity();
+void LocalCheck(bool ok, string reason) { if (!ok) throw new Exception(reason); }
+LocalCheck(LocalSingleplayer.Enabled && local.LocalOnly && local.Offline, "Local development mode disabled or not explicitly marked");
+LocalCheck(local.PlayerName == "CodaPlayer" && local.Uuid.Length == 32, "Legacy local player identity invalid");
+LocalCheck(local == LocalSingleplayer.Identity(), "Local player UUID is not stable across sessions");
+LocalCheck(local.AccessToken == "0" && local.ClientId == "", "Local play must never have online credentials");
 AccountSession Session(DateTimeOffset? verified = null) => new("CodaOwner", "1234567890abcdef1234567890abcdef", "secret-game-token", "secret-refresh-token", DateTimeOffset.UtcNow.AddHours(1), verified ?? DateTimeOffset.UtcNow.AddMinutes(-1));
 void Check(bool value, string message) { if (!value) throw new Exception(message); }
 async Task Reject(Func<Task> action, string message) { try { await action(); } catch { return; } throw new Exception(message); }

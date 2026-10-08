@@ -1009,10 +1009,16 @@ internal sealed class LauncherService
         info.Environment["CODA_ACCESS_TOKEN"] = identity.AccessToken;
         info.Environment["CODA_PLAY_MODE"] = identity.LocalOnly ? "local" : identity.Offline ? "offline" : "online";
         info.Environment["CODA_AUTH_CLIENT_ID"] = identity.ClientId;
-        // Older loaders use a test identity; never silently launch one after verification.
+        // Older CodaLoader (0.0.24) already supports only local CodaPlayer.
+        // Permit it only for explicit Local Test Mode, never as a stand-in for
+        // a verified Microsoft account. New loaders validate the explicit mode.
         using (var jarArchive = ZipFile.OpenRead(jar))
             if (jarArchive.GetEntry("dev/howlingwhispers/codaloader/bootstrap/LaunchIdentity.class") is null)
-                throw new InvalidOperationException("This CodaLoader does not support the current launcher identity contract. Update it before playing.");
+            {
+                if (!identity.LocalOnly)
+                    throw new InvalidOperationException("This CodaLoader does not support verified accounts. Update it before playing.");
+                Forward("Using legacy local-only CodaPlayer support in the installed loader.", false);
+            }
         info.Environment["CODA_NO_PAUSE"] = "1";
         info.Environment["CODA_LAUNCHED_BY"] = "CodaLauncher";
 

@@ -1,0 +1,32 @@
+name: Test Coda Wolf launcher integration
+on:
+  push:
+    branches:
+      - feature/coda-wolf-auto-download
+    paths:
+      - 'CodaWolfNightlyInstaller.cs'
+      - 'MainWindow.xaml.cs'
+      - 'tests/codawolf/**'
+      - '.github/workflows/coda-wolf-launcher-test.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Verify isolated Coda Wolf release downloader
+        run: dotnet run --project tests/codawolf/CodaWolfReleaseTests.csproj -c Release
+      - name: Compile Windows launcher
+        if: runner.os == 'Windows'
+        run: dotnet build CodaLauncher.csproj -c Release
+      - name: Compile Linux desktop launcher
+        if: runner.os == 'Linux'
+        run: dotnet build Desktop/CodaLauncher.Desktop.csproj -c Release

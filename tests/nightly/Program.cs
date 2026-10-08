@@ -51,4 +51,19 @@ Assert(Select("[" + Release("nightly-buildcraft-20261008-stable", "2026-10-08T08
     + "," + newPack + "]")?.Tag == newestFirst?.Tag, "Only opt-in prereleases are valid");
 Assert(Select("[]") is null, "Empty release result must fail safely");
 
+var atom = $"""
+    <feed xmlns="http://www.w3.org/2005/Atom">
+      <entry><updated>2026-10-08T10:00:00Z</updated><link rel="alternate" href="https://github.com/HowlingWhispers/HW-Mods/releases/tag/nightly-buildcraft-20261008-latest"/></entry>
+      <entry><updated>2026-10-07T10:00:00Z</updated><link rel="alternate" href="https://github.com/HowlingWhispers/HW-Mods/releases/tag/nightly-buildcraft-20261007-older"/></entry>
+      <entry><updated>2026-10-09T10:00:00Z</updated><link rel="alternate" href="https://github.com/HowlingWhispers/HW-Mods/releases/tag/nightly-codawolf-20261009-other"/></entry>
+    </feed>
+    """;
+var atomBuild = NightlyAtomReleaseReader.SelectNewest(atom, prefix, package, sha);
+Assert(atomBuild?.Tag == "nightly-buildcraft-20261008-latest",
+    "BuildCraft Atom fallback selects newest matching public release");
+Assert(atomBuild?.PackageUrl.AbsolutePath.EndsWith("/nightly-buildcraft-20261008-latest/" + package) == true,
+    "BuildCraft Atom fallback constructs the exact expected official release asset URL");
+Assert(atomBuild?.ChecksumUrl.AbsolutePath.EndsWith(".sha256") == true,
+    "BuildCraft fallback includes official SHA-256 filename");
+
 Console.WriteLine("PASS: newest published Nightly selection, old-first release order, URLs, checksum, draft and host restrictions.");

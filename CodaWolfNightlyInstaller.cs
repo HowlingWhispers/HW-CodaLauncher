@@ -140,6 +140,31 @@ internal sealed class CodaWolfNightlyInstaller
 
     private async Task<NightlyReleaseSelector.Release> FindNewestAsync(CancellationToken ct)
     {
+        // GitHub's unauthenticated REST allowance is shared across launchers,
+        // machines and NATs. A 403 must not strand users on stale Coda JARs.
+        try { return await FindFromApiAsync(ct); }
+        catch (HttpRequestException apiError) when (apiError.StatusCode is System.Net.HttpStatusCode.Forbidden
+                or System.Net.HttpStatusCode.TooManyRequests)
+        {
+            try
+            {
+                byte[] bytes = await DownloadAsync(new Uri(NightlyAtomReleaseReader.FeedUrl),
+                    512 * 1024, ct);
+                var fallback = NightlyAtomReleaseReader.SelectNewest(
+                    Encoding.UTF8.GetString(bytes), TagPrefix, ModJar, ChecksumFile);
+                if (fallback is not null) return fallback;
+            }
+            catch (Exception fallbackError) when (fallbackError is HttpRequestException
+                    or InvalidDataException or System.Xml.XmlException)
+            {
+                // Preserve the real GitHub REST failure for installed-cache fallback.
+            }
+            throw;
+        }
+    }
+
+    private async Task<NightlyReleaseSelector.Release> FindFromApiAsync(CancellationToken ct)
+    {
         // HW-Mods also publishes BuildCraft nightlies, so do not assume our
         // release is on page 1 as that repository grows.
         for (int page = 1; page <= 10; page++)

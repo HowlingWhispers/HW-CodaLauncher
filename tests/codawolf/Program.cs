@@ -6,6 +6,18 @@ using System.Text;
 using System.Text.Json;
 using HowlingWhispers.CodaLauncher;
 
+if (args.Contains("--live-atom", StringComparer.Ordinal))
+{
+    using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("CodaLauncher-Atom-Smoke/0.1");
+    string xml = await client.GetStringAsync(NightlyAtomReleaseReader.FeedUrl);
+    var found = NightlyAtomReleaseReader.SelectNewest(xml, CodaWolfNightlyInstaller.TagPrefix,
+        CodaWolfNightlyInstaller.ModJar, CodaWolfNightlyInstaller.ChecksumFile);
+    if (found is null) throw new Exception("Public GitHub Atom feed did not list a Coda Wolf prerelease.");
+    Console.WriteLine("PASS: actual public GitHub releases.atom contains Coda Wolf Nightly: " + found.Tag);
+    return;
+}
+
 if (args.Contains("--live-release", StringComparer.Ordinal))
 {
     string scratch = Path.Combine(Path.GetTempPath(), "codawolf-live-smoke-" + Guid.NewGuid().ToString("N"));
@@ -68,6 +80,20 @@ byte[] MakeMod(string id = "coda_wolf")
 
 string tag = "nightly-codawolf-20261008-test123456";
 string older = "nightly-codawolf-20261007-older12345";
+string atomTag = "nightly-codawolf-20261008-atom654321";
+string atomXml = $"""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <feed xmlns="http://www.w3.org/2005/Atom">
+      <entry><updated>2026-10-08T10:00:00Z</updated><link rel="alternate" href="https://github.com/HowlingWhispers/HW-Mods/releases/tag/{atomTag}"/></entry>
+      <entry><updated>2026-10-07T10:00:00Z</updated><link rel="alternate" href="https://github.com/HowlingWhispers/HW-Mods/releases/tag/{older}"/></entry>
+      <entry><updated>2026-10-09T10:00:00Z</updated><link rel="alternate" href="https://github.com/Evil/Fake/releases/tag/nightly-codawolf-fake"/></entry>
+    </feed>
+    """;
+Check(NightlyAtomReleaseReader.SelectNewest(atomXml, CodaWolfNightlyInstaller.TagPrefix,
+    CodaWolfNightlyInstaller.ModJar, CodaWolfNightlyInstaller.ChecksumFile)?.Tag == atomTag,
+    "Release Atom fallback selects newest authentic companion tag, rejects foreign repos.");
+byte[] atomBytes = MakeMod();
+string atomSha = Convert.ToHexString(SHA256.HashData(atomBytes)).ToLowerInvariant();
 string baseUrl = "https://github.com/HowlingWhispers/HW-Mods/releases/download/";
 string jarName = CodaWolfNightlyInstaller.ModJar;
 byte[] bytes = MakeMod();
@@ -96,12 +122,21 @@ using (var parsed = JsonDocument.Parse(releases))
         CodaWolfNightlyInstaller.TagPrefix, jarName, jarName + ".sha256")?.Tag == tag,
         "Only newest Coda Wolf releases selected, not BuildCraft.");
 
-bool offline = false, timeout = false, badChecksum = false;
+bool offline = false, timeout = false, badChecksum = false, apiRateLimited = false;
 using var handler = new FakeHandler((url) =>
 {
     if (offline) throw new HttpRequestException("Simulated api.github.com:443 timeout");
     if (timeout) throw new TaskCanceledException("Simulated GitHub request timeout");
+    if (url.Host == "api.github.com" && apiRateLimited)
+        throw new HttpRequestException("HTTP 403 rate limit exceeded", null, HttpStatusCode.Forbidden);
     if (url.Host == "api.github.com") return Encoding.UTF8.GetBytes(releases);
+    if (url.AbsolutePath.EndsWith("/releases.atom")) return Encoding.UTF8.GetBytes(atomXml);
+    if (url.AbsolutePath.Contains(atomTag, StringComparison.Ordinal))
+    {
+        if (url.AbsolutePath.EndsWith(".sha256"))
+            return Encoding.UTF8.GetBytes(atomSha + "  " + jarName + "\n");
+        if (url.AbsolutePath.EndsWith(".jar")) return atomBytes;
+    }
     if (url.AbsolutePath.EndsWith(".sha256"))
         return Encoding.UTF8.GetBytes((badChecksum ? new string('0', 64) : sha) + "  " + jarName + "\n");
     if (url.AbsolutePath.EndsWith(".jar")) return bytes;
@@ -142,6 +177,15 @@ try
     await ExpectFailure(async () => { await installer.InstallLatestAsync(output.Add, CancellationToken.None); },
         "Corrupt remote SHA-256 must never trigger offline fallback.");
     badChecksum = false;
+
+    apiRateLimited = true;
+    Check(await installer.InstallLatestAsync(output.Add, CancellationToken.None) == atomTag,
+        "HTTP 403 GitHub API rate limit automatically discovers newer Coda Wolf via public Atom.");
+    Check(File.ReadAllBytes(path).SequenceEqual(atomBytes),
+        "API rate-limit fallback actually upgrades stale verified JAR, not merely logs success.");
+    Check(File.ReadAllText(Path.Combine(root, "mods", ".howl-codawolf-tag")) == atomTag,
+        "Updated fallback release tag persisted.");
+    apiRateLimited = false;
 
     File.WriteAllBytes(path, MakeMod("tampered_id"));
     await ExpectFailure(async () => { await installer.InstallLatestAsync(output.Add, CancellationToken.None); },

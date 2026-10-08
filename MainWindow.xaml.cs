@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private readonly CancellationTokenSource _windowLifetime = new();
     private LauncherUpdateInfo? _availableLauncherUpdate;
     private DateTime _lastLauncherUpdateCheck = DateTime.MinValue;
+    private DateTime _rateLimitedLauncherUpdatesUntil = DateTime.MinValue;
     private bool _checkingLauncherUpdate;
     private bool _updateWindowOpen;
     private bool _uiReady;
@@ -771,6 +772,8 @@ public partial class MainWindow : Window
     {
         if (_checkingLauncherUpdate || _updateWindowOpen || _windowLifetime.IsCancellationRequested)
             return;
+        if (DateTime.UtcNow < _rateLimitedLauncherUpdatesUntil)
+            return;
         if (!force && DateTime.UtcNow - _lastLauncherUpdateCheck < TimeSpan.FromMinutes(1))
             return;
 
@@ -786,6 +789,13 @@ public partial class MainWindow : Window
         catch (OperationCanceledException)
         {
             // An unavailable update service must not interrupt the launcher or game.
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.Forbidden
+                or System.Net.HttpStatusCode.TooManyRequests)
+        {
+            _rateLimitedLauncherUpdatesUntil = DateTime.UtcNow.AddHours(1);
+            _logs.Add("GitHub API rate limit reached. Pausing automatic launcher update checks for one hour. " +
+                      "Nightly mod updates use the public releases fallback independently.");
         }
         catch (Exception ex)
         {

@@ -60,23 +60,22 @@ internal static class ManagedMods
                     : "MOD CONFLICT: " + name + " differs between folders; both originals preserved. Review manually.");
                 continue;
             }
+            // Stage a verified copy, then commit with no-clobber semantics.
+            // Only our own temporary file is removed if a copy fails.
+            string staged = Path.Combine(destination, "." + Guid.NewGuid().ToString("N") + ".tmp");
             try
             {
-                // CreateNew is an OS-enforced no-clobber operation. If another
-                // program writes the name concurrently, do not overwrite it.
-                using (var input = File.OpenRead(file))
-                using (var output = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-                    input.CopyTo(output);
-                if (Hash(target) != Hash(file))
+                File.Copy(file, staged);
+                if (Hash(staged) != Hash(file))
                     throw new IOException("Migrated mod checksum differs: " + name);
+                File.Move(staged, target, overwrite: false);
                 progress("Copied legacy mod to active Minecraft/mods: " + name + " (old copy preserved).");
             }
-            catch (IOException)
+            catch (IOException) when (File.Exists(target))
             {
-                // Do not silently delete partial data or pre-existing files.
-                // Caller receives error and can inspect the preserved source.
-                throw;
+                progress("MOD CONFLICT: " + name + " appeared during migration; existing file preserved.");
             }
+            finally { if (File.Exists(staged)) File.Delete(staged); }
         }
         progress("Legacy loader/run/mods was not deleted. You may review it after confirming the new profile works.");
     }
@@ -90,6 +89,28 @@ internal static class ManagedMods
     {
         string legacy = Path.Combine(loaderRoot, "run", "mods");
         if (!Directory.Exists(legacy)) return;
+        // Older bundles relied on this directory as their ONLY source of
+        // Essentials. Do not archive it until a self-contained loader exists.
+        string loaderJar = Path.Combine(loaderRoot, "CodaLoader.jar");
+        if (!File.Exists(loaderJar))
+        {
+            progress("Legacy mods retained: loader JAR is missing.");
+            return;
+        }
+        try
+        {
+            using var zip = ZipFile.OpenRead(loaderJar);
+            if (zip.GetEntry(EmbeddedName) == null)
+            {
+                progress("Legacy mods retained: this loader still relies on the old bundled seed.");
+                return;
+            }
+        }
+        catch (InvalidDataException)
+        {
+            progress("Legacy mods retained: loader JAR could not be inspected.");
+            return;
+        }
         string backup = Path.Combine(Path.GetDirectoryName(loaderRoot)
             ?? throw new IOException("Unknown loader parent directory"),
             "legacy-loader-mods-backup",

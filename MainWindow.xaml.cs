@@ -787,6 +787,16 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OpenModsFolder()
+    {
+        // The active game profile owns all mod JARs, never loader/run/mods.
+        string game = _settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot;
+        string mods = Path.Combine(game, "mods");
+        Directory.CreateDirectory(mods);
+        Process.Start(new ProcessStartInfo("explorer.exe", mods) { UseShellExecute = true });
+    }
+
     private void OpenLoaderFolder()
     {
         var loader = _settings.UpdateChannel == "nightly"

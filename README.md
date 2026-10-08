@@ -1,5 +1,22 @@
 # CodaLauncher
 
+## Optional and recommended mods (v0.7.16)
+
+Only H.O.W.L. and its required resource pack are automatic. The Mods tab
+offers **Install / Check for Update / Uninstall** for optional BuildCraft CML,
+Coda Wolf Companion and HW Essentials. Nightly Quiet Underground is also
+optional in Packs. Normal PLAY and Install/Repair never silently install or
+reactivate those add-ons. Uninstall only removes a checksum-owned add-on
+file and marker; manually edited mods, worlds and configs are preserved.
+**Back up your worlds before opening them without a gameplay mod**, since
+Minecraft can change block or item references when a mod is missing.
+
+Nightly updates still use a combined GitHub ZIP as the transport for the
+required H.O.W.L. loader. Its optional bundled files are **not installed**
+except upon an explicit player action. BuildCraft tracks its own installed
+Nightly tag independently from the loader build version.
+
+
 ## GitHub-hosted Coda News (independent of launcher updates)
 
 The player-facing News panel reads the public `web/news.json` file on the

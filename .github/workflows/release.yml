@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.15
-  CODA_TAG: v0.7.15
+  CODA_VERSION: 0.7.16
+  CODA_TAG: v0.7.16
 
 jobs:
   gate:
@@ -170,7 +170,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.15 (prerelease)
+          # CodaLauncher 0.7.16 (prerelease)
+
+          - **Optional but recommended Mods:** Only the required H.O.W.L. runtime and resource pack install automatically. BuildCraft CML, Coda Wolf, and HW Essentials now have explicit Install/Update and Uninstall actions; optional Nightly worldgen is managed separately in Packs.
+          - PLAY no longer downloads or reinstalls optional add-ons. Their JARs are protected by SHA-256 ownership checks, and uninstall does not erase worlds or configs. Back up worlds before reopening without mods whose blocks/items they used.
+          - Required H.O.W.L. Nightly runtime updates independently of BuildCraft. Manually installed BuildCraft keeps its own release tag even while the runtime advances; Stable is unchanged apart from making HW Essentials optional.
 
           - **Real mod version support:** Coda Wolf Nightly now accepts safely validated incrementing semantic versions (for example `0.1.1-dev`) instead of rejecting everything except `0.1.0-dev`.
           - Release tags, SHA-256 checksums, isolated Nightly installs, and protection of user-edited mods remain unchanged.

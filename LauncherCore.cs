@@ -238,8 +238,7 @@ internal sealed class InstallService
             && string.Equals(
                 installedLoaderVersion,
                 latestLoader.Version,
-                StringComparison.OrdinalIgnoreCase)
-            && ManagedMods.IsCurrent(AppPaths.LoaderRoot, AppPaths.MinecraftRoot);
+                StringComparison.OrdinalIgnoreCase);
 
         var resource = ResolveCmlBaseResources(feed);
         var resourceInstalled = File.Exists(AppPaths.CmlBaseResourcesMarker);

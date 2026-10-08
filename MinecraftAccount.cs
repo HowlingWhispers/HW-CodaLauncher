@@ -12,7 +12,7 @@ namespace HowlingWhispers.CodaLauncher;
 internal sealed record DeviceSignIn(string Code, string Url, DateTimeOffset ExpiresAt);
 internal sealed record AccountView(bool Configured, bool SignedIn, bool OfflineAvailable,
     string PlayerName, string Uuid, string Status, DateTimeOffset? VerifiedAt, string Storage);
-internal sealed record GameIdentity(string PlayerName, string Uuid, string AccessToken, bool Offline, string ClientId);
+internal sealed record GameIdentity(string PlayerName, string Uuid, string AccessToken, bool Offline, string ClientId, bool LocalOnly = false);
 internal sealed record AccountSession(string PlayerName, string Uuid, string AccessToken,
     string RefreshToken, DateTimeOffset ExpiresAt, DateTimeOffset VerifiedAt);
 

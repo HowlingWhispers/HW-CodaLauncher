@@ -177,6 +177,7 @@ public partial class MainWindow : Window
                     SendAccount();
                     break;
                 case "saveSettings":
+                    if (_gameRunning || _installGate.CurrentCount == 0) throw new InvalidOperationException("Close Minecraft and finish installation before changing Settings.");
                     if (root.TryGetProperty("settings", out var s))
                     {
                         var updated = s.Deserialize<LauncherSettings>(_json) ?? new();
@@ -245,7 +246,8 @@ public partial class MainWindow : Window
             data = new
             {
                 launcherVersion = App.LauncherVersion,
-                localSingleplayer = LocalSingleplayer.Enabled,
+                localSingleplayer = _settings.LocalTestMode,
+                officialLauncher = !_settings.LocalTestMode,
                 launcherUpdateVersion = _availableLauncherUpdate?.Version,
                 loaderPath = loader ?? "",
                 loaderReady,
@@ -525,9 +527,8 @@ public partial class MainWindow : Window
         try
         {
             if (_accountBusy) throw new InvalidOperationException("Finish account verification before launching Minecraft.");
-            var identity = LocalSingleplayer.Enabled ? LocalSingleplayer.Identity()
-                : await _account.PrepareLaunchAsync(_settings.OfflineMode, _windowLifetime.Token);
-            if (!LocalSingleplayer.Enabled && _settings.OfflineMode)
+            var identity = _settings.LocalTestMode ? LocalSingleplayer.Identity() : null;
+            if (!_settings.LocalTestMode && _settings.OfflineMode && !LocalSingleplayer.Enabled)
             {
                 var installed = LoaderLocator.Resolve(_settings.LoaderPath);
                 if (!LoaderLocator.IsReady(installed)) throw new InvalidOperationException("Install Minecraft and CodaLoader while online before using offline play.");
@@ -574,10 +575,26 @@ public partial class MainWindow : Window
                 message = "Everything is where it belongs. Coda is opening Minecraft..."
             });
 
-            _launcher.Launch(loader!, identity);
-
-            if (_settings.CloseAfterLaunch) Close();
-            else await SendState();
+            if (_settings.LocalTestMode)
+            {
+                _launcher.Launch(loader!, identity!);
+                if (_settings.CloseAfterLaunch) Close();
+                else await SendState();
+            }
+            else
+            {
+                var profile = await OfficialMinecraftLauncher.InstallProfileAsync(
+                    Path.Combine(loader!, "CodaLoader.jar"), AppPaths.MinecraftRoot, _windowLifetime.Token);
+                var opened = OfficialMinecraftLauncher.TryOpenLauncher();
+                var message = opened
+                    ? "Official Minecraft Launcher opened. Select Howling Whispers | CodaLoader, then press Play."
+                    : "Official profile installed. Open Minecraft Launcher, select Howling Whispers | CodaLoader, then press Play.";
+                _logs.Add("CodaLoader official installation registered in " + profile);
+                _logs.Add(message);
+                Send(new { type = "installStatus", busy = false, ok = true, message });
+                Send(new { type = "launchStatus", ok = true, message });
+                await SendState();
+            }
         }
         catch (Exception ex)
         {

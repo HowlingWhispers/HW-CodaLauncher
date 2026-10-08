@@ -35,7 +35,7 @@ Assert(oldestFirst?.Tag == "nightly-buildcraft-20261008-345b4cfef0",
     "Must select new Quiet Underground nightly even when old release appears first");
 var newestFirst = Select("[" + string.Join(",", newPack, old, before) + "]");
 Assert(newestFirst?.Tag == oldestFirst?.Tag, "Order of GitHub JSON must not affect selection");
-Assert(oldestFirst?.PackageUrl.ToString().Contains("/345b4cfef0/") == true,
+Assert(oldestFirst?.PackageUrl.AbsolutePath.Contains("/nightly-buildcraft-20261008-345b4cfef0/") == true,
     "Selected package URL must point to newest tag, not merely report newest version");
 Assert(oldestFirst?.ChecksumUrl.ToString().Contains(".sha256") == true,
     "Selected release must have matching checksum asset");

@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.10
-  CODA_TAG: v0.7.10
+  CODA_VERSION: 0.7.11
+  CODA_TAG: v0.7.11
 
 jobs:
   gate:
@@ -168,7 +168,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.10 (prerelease)
+          # CodaLauncher 0.7.11 (prerelease)
+
+          - Fix Nightly GitHub API timeouts blocking PLAY when valid BuildCraft and Coda Wolf files are already installed.
+          - Fall back to locally checksum-verified files only for connectivity failures, never for corrupt packages or modified JARs.
+          - A failed GitHub status refresh after game launch no longer produces a false launch-failure notice.
+          - Fresh installations still require GitHub to download and verify required content.
 
           - **Coda Wolf Companion Nightly:** automatically discovers the latest checksum-verified `nightly-codawolf-*` GitHub prerelease and installs it in the isolated Nightly Minecraft mods profile during Play or Install/Repair.
           - Never overwrites hand-edited wolf JARs or installs a duplicate `coda_wolf` mod. Stable profiles and existing BuildCraft updater remain unchanged.

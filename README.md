@@ -1,5 +1,10 @@
 # CodaLauncher
 
+## CodaLauncher 0.7.11: GitHub connection timeout hotfix
+
+If GitHub is unreachable while preparing Nightly, H.O.W.L. reuses existing checksum-verified BuildCraft, Quiet Underground, and Coda Wolf content in the Nightly profile. A new or damaged installation still requires a working connection. The launcher logs the cache fallback and checks for updates again on the next Play. A failed GitHub status refresh after starting the game no longer reports a failed launch. No changes are made to player worlds, stable profiles, or the mod loader.
+
+
 ## CodaLauncher 0.7.10: Coda Wolf automatic Nightly delivery
 
 With **Settings > Nightly** and **Local Test Mode**, **PLAY** and **Install/Repair** now discover the latest `nightly-codawolf-*` release from the HW-Mods GitHub release feed and checksum-verify the `coda-wolf-0.1.0-dev.jar` before copying it into the selected Nightly Minecraft mods directory. It appears in Mods upon refresh. No manual ZIP installation required, and the normal Stable installation stays unchanged. Existing modified or duplicate Coda Wolf jars are protected instead of overwritten. This is a **prototype**: the wolf's runtime entity hooks need a disposable-world playtest before gameplay claims can be made.

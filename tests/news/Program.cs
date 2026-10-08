@@ -68,7 +68,10 @@ using var down = new HttpClient(new FakeHandler(_ =>
     offlineCalls++;
     return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
 }));
-var unavailable = new FeedService(down, root);
+var fallbackRoot = Path.Combine(cacheRoot, "offline");
+Directory.CreateDirectory(fallbackRoot);
+File.Copy(Path.Combine(root, "web", "news.json"), Path.Combine(fallbackRoot, "news.json"));
+var unavailable = new FeedService(down, fallbackRoot);
 var fallback = await unavailable.FetchAsync("https://example.com/launcher", CancellationToken.None);
 Check(!fallback.Online && fallback.Error != null, "HTTP error is preserved for pack metadata");
 Check(fallback.NewsSource == "Bundled" && fallback.News.Any(x => x.Id == "coda-companion-playtest"),

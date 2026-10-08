@@ -247,15 +247,46 @@ internal sealed class NightlyBuildInstaller
 
     private static async Task<NightlyRelease> GetReleaseAsync(CancellationToken ct)
     {
-        using var response = await Http.GetAsync(ReleasesApi, ct);
-        response.EnsureSuccessStatusCode();
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-        var selected = NightlyReleaseSelector.SelectNewest(
-            document.RootElement, TagPrefix, Package, Checksum);
+        var selected = await ResolveReleaseAsync(Http, ct);
         if (selected is null)
             throw new InvalidOperationException(
                 "No valid public BuildCraft Nightly release is published yet. Stable remains unchanged.");
         return new NightlyRelease(selected.Tag, selected.PackageUrl, selected.ChecksumUrl);
+    }
+
+    internal static async Task<NightlyReleaseSelector.Release?> ResolveReleaseAsync(
+        HttpClient client, CancellationToken ct)
+    {
+        try
+        {
+            using var response = await client.GetAsync(ReleasesApi, ct);
+            response.EnsureSuccessStatusCode();
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            return NightlyReleaseSelector.SelectNewest(document.RootElement, TagPrefix, Package, Checksum);
+        }
+        catch (HttpRequestException apiError) when (apiError.StatusCode is System.Net.HttpStatusCode.Forbidden
+                or System.Net.HttpStatusCode.TooManyRequests)
+        {
+            try
+            {
+                using var response = await client.GetAsync(NightlyAtomReleaseReader.FeedUrl, ct);
+                response.EnsureSuccessStatusCode();
+                if (response.Content.Headers.ContentLength > 512 * 1024)
+                    throw new InvalidDataException("GitHub release feed exceeds size limit.");
+                string xml = await response.Content.ReadAsStringAsync(ct);
+                if (xml.Length > 512 * 1024)
+                    throw new InvalidDataException("GitHub release feed exceeds size limit.");
+                var selected = NightlyAtomReleaseReader.SelectNewest(xml, TagPrefix, Package, Checksum);
+                if (selected is not null) return selected;
+            }
+            catch (Exception fallbackError) when (fallbackError is HttpRequestException
+                    or InvalidDataException or System.Xml.XmlException)
+            {
+                // Retain the original API error so a previously verified
+                // Nightly installation can be reused safely.
+            }
+            throw;
+        }
     }
 
     private static async Task<byte[]> DownloadAsync(Uri url, int max, CancellationToken ct)

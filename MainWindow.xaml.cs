@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     private readonly ModScanner _mods = new();
     private readonly LauncherService _launcher;
     private readonly InstallService _installer = new();
+    private readonly NightlyBuildInstaller _nightly = new();
     private LauncherSettings _settings = new();
     private LauncherFeed _lastFeed = new();
     private readonly List<NewsItem> _systemNews = [];
@@ -184,6 +185,10 @@ public partial class MainWindow : Window
                     var updated = s.Deserialize<LauncherSettings>(_json)
                         ?? throw new InvalidOperationException("Invalid settings payload.");
                     updated.OfflineMode = _settings.OfflineMode;
+                    if (updated.UpdateChannel is not ("stable" or "nightly"))
+                        throw new InvalidOperationException("Select Stable or Nightly for H.O.W.L. updates.");
+                    if (updated.UpdateChannel == "nightly" && !updated.LocalTestMode)
+                        throw new InvalidOperationException("Nightly requires Local Test Mode to protect your normal Minecraft installation.");
                     if (string.IsNullOrWhiteSpace(updated.FeedUrl))
                         updated.FeedUrl = "https://thehowlingwhispers.com/launcher";
                     _settingsStore.Save(updated);
@@ -226,8 +231,10 @@ public partial class MainWindow : Window
 
     private async Task SendState()
     {
-        var loader = LoaderLocator.Resolve(_settings.LoaderPath);
-        var mods = _mods.Scan(AppPaths.MinecraftRoot);
+        var loader = _settings.UpdateChannel == "nightly" && NightlyBuildInstaller.Installed
+            ? NightlyBuildInstaller.LoaderRoot : LoaderLocator.Resolve(_settings.LoaderPath);
+        var mods = _mods.Scan(_settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot);
         var feedUrl = string.IsNullOrWhiteSpace(_settings.FeedUrl)
                 ? "https://thehowlingwhispers.com/launcher"
                 : _settings.FeedUrl;
@@ -271,7 +278,9 @@ public partial class MainWindow : Window
                 gameRunning = _gameRunning,
                 gameProcessId = _gameRunning ? _gameProcessId : 0,
                 installRoot = AppPaths.InstallRoot,
-                minecraftRoot = AppPaths.MinecraftRoot,
+                minecraftRoot = _settings.UpdateChannel == "nightly" ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot,
+                activeChannel = _settings.UpdateChannel,
+                nightlyInstalled = NightlyBuildInstaller.Installed,
                 basePackVersion = pack.Version,
                 packs = new[]
                 {
@@ -354,6 +363,21 @@ public partial class MainWindow : Window
         try
         {
             Send(new { type = "installStatus", busy = true, ok = true, message = "Preparing install..." });
+
+            if (_settings.UpdateChannel == "nightly")
+            {
+                if (!_settings.LocalTestMode)
+                    throw new InvalidOperationException("Nightly requires Local Test Mode.");
+                await _nightly.InstallLatestAsync(message =>
+                {
+                    _logs.Add(message);
+                    Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
+                }, CancellationToken.None);
+                Send(new { type = "installStatus", busy = false, ok = true,
+                    message = "Nightly installed in its own separate Minecraft test profile." });
+                await SendState();
+                return;
+            }
 
             await _installer.InstallOrRepairAsync(
                 _lastFeed,
@@ -541,6 +565,23 @@ public partial class MainWindow : Window
         {
             if (_accountBusy) throw new InvalidOperationException("Finish account verification before launching Minecraft.");
             var identity = _settings.LocalTestMode ? LocalSingleplayer.Identity() : null;
+            if (_settings.UpdateChannel == "nightly")
+            {
+                if (!_settings.LocalTestMode)
+                    throw new InvalidOperationException("Nightly BuildCraft is local single-player only. Enable Local Test Mode in Settings.");
+                Send(new { type = "installStatus", busy = true, ok = true,
+                    message = "Checking opt-in BuildCraft Nightly (stable files stay untouched)..." });
+                var nightRoot = await _nightly.InstallLatestAsync(message =>
+                {
+                    _logs.Add(message);
+                    Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
+                }, CancellationToken.None);
+                _logs.Add("Nightly world directory: " + NightlyBuildInstaller.GameRoot);
+                _launcher.Launch(nightRoot, identity!, NightlyBuildInstaller.GameRoot);
+                if (_settings.CloseAfterLaunch) Close();
+                else await SendState();
+                return;
+            }
             if (!_settings.LocalTestMode && _settings.OfflineMode && !LocalSingleplayer.Enabled)
             {
                 var installed = LoaderLocator.Resolve(_settings.LoaderPath);
@@ -745,7 +786,8 @@ public partial class MainWindow : Window
 
     private void OpenLoaderFolder()
     {
-        var loader = LoaderLocator.Resolve(_settings.LoaderPath);
+        var loader = _settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.LoaderRoot : LoaderLocator.Resolve(_settings.LoaderPath);
         if (string.IsNullOrWhiteSpace(loader) || !Directory.Exists(loader)) return;
         Process.Start(new ProcessStartInfo("explorer.exe", loader) { UseShellExecute = true });
     }

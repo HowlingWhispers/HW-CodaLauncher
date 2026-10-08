@@ -74,6 +74,11 @@ $('account-signout').onclick=()=>post('signOutAccount');
 $('account-cancel').onclick=()=>post('cancelSignIn');
 $('account-offline').onchange=()=>post('setPlayMode',{offline:$('account-offline').checked});
 $('copy-all-logs').onclick=()=>post('copyAllLogs');
+$('update-channel').onchange=()=>{
+  const nightly=$('update-channel').value==='nightly';
+  $('nightly-warning').hidden=!nightly;
+  if(nightly) $('local-test-mode').checked=true;
+};
 $('refresh').onclick=()=>post('refresh');
 $('play').onclick=()=>{
   if(installBusy) return;
@@ -93,6 +98,7 @@ $('save').onclick=()=>{
     loaderPath:$('loader-path').value.trim(),
     feedUrl:$('feed-url').value.trim(),
     localTestMode:$('local-test-mode').checked,
+    updateChannel:$('update-channel').value,
     closeAfterLaunch:$('close-after').checked
   }});
 };
@@ -151,17 +157,22 @@ function render(){
   $('version').textContent='CodaLauncher '+state.launcherVersion;
   $('home-heading').textContent=state.gameRunning?'World session active.':'Ready when you are.';
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
-  $('loader-versions').textContent='Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
+  const nightly=state.activeChannel==='nightly';
+  $('loader-versions').textContent=nightly
+    ? 'Nightly BuildCraft: '+(state.nightlyInstalled?'Installed in isolated profile':'Not installed yet')+' | Stable remains untouched'
+    : 'Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
   $('loader-update-result').textContent=loaderUpdateMessage;
-  $('loader-chip').textContent=state.loaderCurrent?'HOWL CURRENT':(state.loaderReady?'HOWL UPDATE READY':'HOWL INSTALL');
+  $('loader-chip').textContent=nightly?'HOWL NIGHTLY':state.loaderCurrent?'HOWL CURRENT':(state.loaderReady?'HOWL UPDATE READY':'HOWL INSTALL');
   $('loader-chip').className=state.loaderCurrent?'good':(state.loaderReady?'warn':'bad');
   $('pack-chip').textContent=state.basePackReady?'HOWL BASE CURRENT':(state.managedInstalled?'HOWL BASE UPDATE READY':'HOWL BASE INSTALL');
   $('pack-chip').className=state.basePackReady?'good':(state.managedInstalled?'warn':'bad');
   $('mod-chip').textContent=state.modCount+' mod'+(state.modCount===1?'':'s');
   $('play').disabled=installBusy||state.gameRunning||state.accountBusy;
   if(state.gameRunning) $('play').textContent='RUNNING';
-  else if(!installBusy) $('play').textContent=state.localSingleplayer?'PLAY LOCAL (TEST) ▶':'OPEN MINECRAFT LAUNCHER ▶';
-  $('loader-summary').textContent=state.gameRunning
+  else if(!installBusy) $('play').textContent=nightly?'PLAY NIGHTLY ▶':state.localSingleplayer?'PLAY LOCAL (TEST) ▶':'OPEN MINECRAFT LAUNCHER ▶';
+  $('loader-summary').textContent=nightly
+    ? 'Experimental BuildCraft tests download into a separate Minecraft profile. Your normal saves stay in Stable.'
+    : state.gameRunning
     ? 'Minecraft is running. Coda is keeping the clipboard warm.'
     : state.managedCurrent
       ? 'Coda checked the essentials. Everything is where it belongs.'
@@ -194,6 +205,8 @@ function render(){
   $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Ready':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No HOWL mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
   $('loader-path').value=state.settings.loaderPath||'';$('feed-url').value=state.settings.feedUrl||'';$('close-after').checked=!!state.settings.closeAfterLaunch;
   $('local-test-mode').checked=!!state.settings.localTestMode;
+  $('update-channel').value=state.settings.updateChannel||'stable';
+  $('nightly-warning').hidden=$('update-channel').value!=='nightly';
   $('p-cml').textContent=state.profile.cmlAccount;$('p-mc').textContent=state.localSingleplayer?'Unverified (local test)':'Handled by Minecraft Launcher';$('p-discord').textContent=state.profile.discord;
   $('log-output').textContent=(state.logs||[]).join('\n')||'Nothing interesting has happened yet.';
 }

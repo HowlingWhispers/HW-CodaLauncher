@@ -21,3 +21,10 @@
 .settings-save-result.ok{color:#8df0bb}
 .settings-save-result.error{color:#ffb28a}
 .settings-save-row button:disabled{cursor:wait;opacity:.6}
+
+/* Nightly is explicitly opt-in and visually distinct from Stable. */
+.settings select{width:100%;border:1px solid #315260;background:#071318;color:white;border-radius:9px;padding:11px 12px;outline:none}
+.settings select:focus{border-color:#66caec}
+#nightly-warning{border-color:#a27234;background:#251b10}
+#nightly-warning small{color:#e0bf8a}
+#nightly-warning[hidden]{display:none}

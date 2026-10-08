@@ -2,6 +2,38 @@
 
 Desktop launcher for **H.O.W.L. (Howling Open Works Loader)** and Howling Whispers Minecraft, pinned to **Minecraft Java 26.4 Snapshot 3**.
 
+## CodaLauncher 0.7.5: opt-in Nightly (Windows)
+
+A new **Stable / Nightly** selector appears under Settings. Stable remains the
+default after install and for all existing users. Saving Nightly requires
+**Local Test Mode**, as it is for experimental single-player gameplay only.
+
+- Clicking Play in Nightly fetches the newest public, checksum-verified
+  `nightly-buildcraft-*` prerelease from
+  [HW-Mods](https://github.com/HowlingWhispers/HW-Mods/releases).
+- Loader code goes in `%APPDATA%\\.howlingshispers\\nightly\\loader`. Mods
+  and Minecraft world saves go in
+  `%APPDATA%\\.howlingshispers\\nightly\\minecraft`.
+  The existing Stable loader, resource packs, mods, accounts and saves are
+  not replaced or used as experimental saves.
+- Before running it downloads the latest nightly release, checks its published
+  SHA-256 checksum, and refuses missing or unexpected package contents.
+  If no published nightly is available, Play shows an explicit error rather
+  than silently falling back to Stable.
+- First experimental BuildCraft gameplay: two standard single chests/barrels
+  separated by a straight 1-16 block line of **vanilla glass** used as
+  temporary pipes. Use `/buildcraft pulse x1 y1 z1 x2 y2 z2` to move up to
+  16 items in the integrated single-player server. Make a new throwaway world.
+  Native BuildCraft blocks and engines are still being ported.
+- Switching back to Stable is a Settings change. No automatic promotion of
+  nightly worlds to Stable. CodaLauncher itself still uses stable self-updates.
+- Nightly channel installation through the app is initially **Windows-only**.
+  Linux/macOS builds remain on the existing stable launcher path until native
+  desktop parity is implemented.
+
+The nightly package is test code. Passing automated tests does not establish
+a successful live Minecraft Snapshot 3 playtest. **Do not use valuable worlds**.
+
 ## H.O.W.L. 0.7.4 updater hotfix
 
 Fixes the Windows reboot/update loop in 0.7.3: the Windows app was still

@@ -1,0 +1,210 @@
+using System.IO;
+using System.IO.Compression;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text.Json;
+
+namespace HowlingWhispers.CodaLauncher;
+
+/// <summary>
+/// Explicit opt-in BuildCraft nightly. Downloads a verified public prerelease
+/// from HW-Mods and installs it OUTSIDE both the stable loader and world folder.
+/// A separate test profile is compulsory: no stable-world migration.
+/// </summary>
+internal sealed class NightlyBuildInstaller
+{
+    private const string ReleasesApi = "https://api.github.com/repos/HowlingWhispers/HW-Mods/releases?per_page=50";
+    private const string TagPrefix = "nightly-buildcraft-";
+    private const string Package = "HOWL-BuildCraft-Singleplayer-Playtest.zip";
+    private const string Checksum = Package + ".sha256";
+    private const string ModJar = "buildcraft-cml-0.1.0-dev.jar";
+    private const int MaxArchiveBytes = 64 * 1024 * 1024;
+    private static readonly HttpClient Http = NewHttp();
+
+    private sealed record NightlyRelease(string Tag, Uri PackageUrl, Uri ChecksumUrl);
+
+    public static string LoaderRoot => Path.Combine(AppPaths.InstallRoot, "nightly", "loader");
+    public static string GameRoot => Path.Combine(AppPaths.InstallRoot, "nightly", "minecraft");
+
+    public static bool Installed
+    {
+        get
+        {
+            try
+            {
+                string modFile = Path.Combine(GameRoot, "mods", ModJar);
+                string marker = Path.Combine(GameRoot, "mods", ".howl-buildcraft-managed.sha256");
+                return File.Exists(Path.Combine(LoaderRoot, "CodaLoader.jar"))
+                    && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag"))
+                    && File.Exists(modFile) && File.Exists(marker)
+                    && HashFile(modFile).Equals(File.ReadAllText(marker).Trim(), StringComparison.OrdinalIgnoreCase);
+            }
+            catch (IOException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+        }
+    }
+
+    public async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+        var release = await GetReleaseAsync(cancellation);
+        if (Installed && File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim() == release.Tag)
+        {
+            report($"Nightly {release.Tag} is already installed in its isolated test profile.");
+            return LoaderRoot;
+        }
+
+        // Stage code on the same filesystem as its destination so atomic
+        // directory rename works on Windows and does not touch Stable.
+        string working = Path.Combine(AppPaths.InstallRoot, "nightly", ".staging",
+            Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(working);
+        string staging = Path.Combine(working, "loader");
+        string backup = Path.Combine(working, "backup");
+        try
+        {
+            report($"Downloading experimental BuildCraft {release.Tag}...");
+            byte[] checksumBytes = await DownloadAsync(release.ChecksumUrl, 4096, cancellation);
+            string checksumText = System.Text.Encoding.UTF8.GetString(checksumBytes).Trim();
+            string expected = checksumText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+            if (expected.Length != 64 || !expected.All(Uri.IsHexDigit))
+                throw new InvalidDataException("Nightly checksum file has an invalid SHA-256.");
+
+            byte[] package = await DownloadAsync(release.PackageUrl, MaxArchiveBytes, cancellation);
+            string actual = Convert.ToHexString(SHA256.HashData(package)).ToLowerInvariant();
+            if (!actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Nightly download failed SHA-256 verification. Stable installation unchanged.");
+
+            Directory.CreateDirectory(staging);
+            string nested = Path.Combine(working, Package);
+            await File.WriteAllBytesAsync(nested, package, cancellation);
+            ZipFile.ExtractToDirectory(nested, staging, overwriteFiles: false);
+
+            string loaderJar = Path.Combine(staging, "CodaLoader.jar");
+            string bundledMod = Path.Combine(staging, "run", "mods", ModJar);
+            if (!File.Exists(loaderJar) || !File.Exists(bundledMod))
+                throw new InvalidDataException("Nightly package does not contain the loader and BuildCraft test mod.");
+            using (var jar = ZipFile.OpenRead(bundledMod))
+                if (jar.GetEntry("coda.mod.json") is null
+                    || jar.GetEntry("dev/howlingwhispers/buildcraft/BuildCraftGlassPipeDemo.class") is null)
+                    throw new InvalidDataException("Downloaded BuildCraft nightly has no playable-test entrypoint.");
+
+            // Only manage the explicitly owned nightly game mod; do not touch
+            // stable mods, installed Minecraft or a user-modified nightly mod.
+            string modFolder = Path.Combine(GameRoot, "mods");
+            string targetMod = Path.Combine(modFolder, ModJar);
+            string ownerMarker = Path.Combine(modFolder, ".howl-buildcraft-managed.sha256");
+            string newHash = HashFile(bundledMod);
+            if (File.Exists(targetMod))
+            {
+                string existingHash = HashFile(targetMod);
+                if (existingHash != newHash &&
+                    (!File.Exists(ownerMarker) || !File.ReadAllText(ownerMarker).Trim()
+                        .Equals(existingHash, StringComparison.OrdinalIgnoreCase)))
+                    throw new IOException("Nightly BuildCraft JAR was modified manually. Your file was preserved; move it aside before updating.");
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(LoaderRoot)!);
+            Directory.CreateDirectory(modFolder);
+            // Swap code only; leave the separate nightly world's saves intact.
+            bool movedOld = false;
+            if (Directory.Exists(LoaderRoot))
+            {
+                Directory.Move(LoaderRoot, backup);
+                movedOld = true;
+            }
+            try
+            {
+                Directory.Move(staging, LoaderRoot);
+                string modTemp = Path.Combine(modFolder, "." + Guid.NewGuid().ToString("N") + ".tmp");
+                try
+                {
+                    File.Copy(Path.Combine(LoaderRoot, "run", "mods", ModJar), modTemp);
+                    if (!HashFile(modTemp).Equals(newHash, StringComparison.OrdinalIgnoreCase))
+                        throw new IOException("Nightly BuildCraft mod verification failed.");
+                    File.Move(modTemp, targetMod, overwrite: true);
+                }
+                finally { if (File.Exists(modTemp)) File.Delete(modTemp); }
+                File.WriteAllText(ownerMarker, newHash);
+                File.WriteAllText(Path.Combine(LoaderRoot, ".nightly-tag"), release.Tag);
+                report($"Nightly {release.Tag} installed. Test worlds stay in the separate nightly profile.");
+            }
+            catch
+            {
+                // Restore previous loader code if installation failed before
+                // commit. The world's save folder is never moved or deleted.
+                if (Directory.Exists(LoaderRoot)) Directory.Delete(LoaderRoot, recursive: true);
+                if (movedOld) Directory.Move(backup, LoaderRoot);
+                throw;
+            }
+
+            return LoaderRoot;
+        }
+        finally
+        {
+            try { if (Directory.Exists(working)) Directory.Delete(working, recursive: true); }
+            catch { /* A locked temp file will be cleaned up by the OS. */ }
+        }
+    }
+
+    private static async Task<NightlyRelease> GetReleaseAsync(CancellationToken ct)
+    {
+        using var response = await Http.GetAsync(ReleasesApi, ct);
+        response.EnsureSuccessStatusCode();
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+        foreach (var release in document.RootElement.EnumerateArray())
+        {
+            if (!release.TryGetProperty("prerelease", out var prerelease) || !prerelease.GetBoolean()) continue;
+            if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
+            string tag = release.GetProperty("tag_name").GetString() ?? "";
+            if (!tag.StartsWith(TagPrefix, StringComparison.Ordinal)) continue;
+            Uri? zip = null;
+            Uri? sha = null;
+            foreach (var asset in release.GetProperty("assets").EnumerateArray())
+            {
+                string name = asset.GetProperty("name").GetString() ?? "";
+                string? link = asset.GetProperty("browser_download_url").GetString();
+                if (!Uri.TryCreate(link, UriKind.Absolute, out var url) || url.Scheme != Uri.UriSchemeHttps
+                    || !url.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (name == Package) zip = url;
+                else if (name == Checksum) sha = url;
+            }
+            if (zip != null && sha != null) return new NightlyRelease(tag, zip, sha);
+        }
+        throw new InvalidOperationException("No verified public BuildCraft nightly release is published yet. Stable has not been modified.");
+    }
+
+    private static async Task<byte[]> DownloadAsync(Uri url, int max, CancellationToken ct)
+    {
+        using var response = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength > max)
+            throw new InvalidDataException("Nightly file exceeds safety size limit.");
+        await using var input = await response.Content.ReadAsStreamAsync(ct);
+        await using var output = new MemoryStream();
+        var buffer = new byte[81920];
+        while (true)
+        {
+            int read = await input.ReadAsync(buffer, ct);
+            if (read == 0) break;
+            if (output.Length + read > max)
+                throw new InvalidDataException("Nightly file exceeds safety size limit.");
+            output.Write(buffer, 0, read);
+        }
+        return output.ToArray();
+    }
+
+    private static string HashFile(string filename)
+    {
+        using var file = File.OpenRead(filename);
+        return Convert.ToHexString(SHA256.HashData(file)).ToLowerInvariant();
+    }
+
+    private static HttpClient NewHttp()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("CodaLauncher-Nightly/0.1");
+        return client;
+    }
+}

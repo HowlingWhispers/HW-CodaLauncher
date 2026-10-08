@@ -980,7 +980,7 @@ internal sealed class LauncherService
         _sendLine = sendLine;
     }
 
-    public int Launch(string loaderDirectory, GameIdentity identity)
+    public int Launch(string loaderDirectory, GameIdentity identity, string? isolatedGameRoot = null)
     {
         if (string.IsNullOrWhiteSpace(identity.Uuid) || string.IsNullOrWhiteSpace(identity.PlayerName) ||
             (!identity.Offline && (string.IsNullOrWhiteSpace(identity.AccessToken) || identity.AccessToken == "0"))
@@ -1000,7 +1000,7 @@ internal sealed class LauncherService
         info.ArgumentList.Add("-jar");
         info.ArgumentList.Add(jar);
         info.ArgumentList.Add("--root");
-        info.ArgumentList.Add(AppPaths.MinecraftRoot);
+        info.ArgumentList.Add(isolatedGameRoot ?? AppPaths.MinecraftRoot);
         info.ArgumentList.Add("--base-pack");
         info.ArgumentList.Add(AppPaths.CmlBaseResourcesRoot);
         _redactedToken = identity.Offline ? null : identity.AccessToken;

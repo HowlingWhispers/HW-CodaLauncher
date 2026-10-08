@@ -42,7 +42,8 @@ internal static class OfficialMinecraftLauncher
 
     internal static async Task<string> InstallProfileAsync(
         string loaderJar, string gameDirectory, CancellationToken ct,
-        string? minecraftDirectory = null, HttpClient? client = null)
+        string? minecraftDirectory = null, HttpClient? client = null,
+        string? basePackDirectory = null)
     {
         var minecraft = Path.GetFullPath(minecraftDirectory ?? DefaultMinecraftDirectory);
         loaderJar = Path.GetFullPath(loaderJar);
@@ -86,11 +87,14 @@ internal static class OfficialMinecraftLauncher
         version["id"] = VersionId;
         var agent = loaderJar.Replace('\\', '/');
         var root = gameDirectory.Replace('\\', '/');
+        var basePack = Path.GetFullPath(basePackDirectory ?? Path.Combine(
+            Path.GetDirectoryName(gameDirectory)!, "resourcepacks", "cml-base-resources")).Replace('\\', '/');
         if (agent.Contains('\n') || root.Contains('\n') || agent.Contains('\r') || root.Contains('\r')
-            || agent.Contains('='))
+            || agent.Contains('=') || basePack.Contains('\n') || basePack.Contains('\r'))
             throw new InvalidOperationException("CodaLoader is installed in a path unsuitable for Java agent arguments.");
         jvm.Add("-javaagent:" + agent + "=" + root);
         jvm.Add("-Dcodaloader.officialLauncher=true");
+        jvm.Add("-Dcodaloader.basePack=" + basePack);
 
         var profiles = JsonNode.Parse(await File.ReadAllTextAsync(profilesPath, ct)) as JsonObject
             ?? throw new InvalidDataException("Minecraft launcher profiles JSON is invalid. Nothing was changed.");

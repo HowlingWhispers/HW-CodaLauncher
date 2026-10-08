@@ -50,7 +50,13 @@ function requestInstall(){
   setInstallBusy(true,'Preparing install…');
   post('install');
 }
-document.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.view).classList.add('active');}));
+document.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
+  $(btn.dataset.view).classList.add('active');
+  if(btn.dataset.view==='mods') post('refreshMods');
+}));
 function renderAccount(){
   const a=state?.account;
   if(!a) return;
@@ -87,6 +93,7 @@ $('play').onclick=()=>{
 };
 $('open-loader').onclick=()=>post('openLoaderFolder');
 $('open-mods-folder').onclick=()=>post('openModsFolder');
+$('refresh-mods').onclick=()=>post('refreshMods');
 $('save').onclick=()=>{
   if(settingsSaving) return;
   settingsSaving=true;
@@ -112,6 +119,12 @@ window.chrome.webview.addEventListener('message',e=>{
   if(m.type==='state'){
     state=m.data;
     launcherUpdateVersion=state.launcherUpdateVersion||null;
+    render();
+  }
+  if(m.type==='modsState'&&state){
+    state.mods=m.mods||[];
+    state.modCount=m.modCount??state.mods.filter(x=>x.valid).length;
+    state.minecraftRoot=m.minecraftRoot||state.minecraftRoot;
     render();
   }
   if(m.type==='launcherUpdate'){
@@ -203,7 +216,7 @@ function render(){
     };
   });
   $('mods-count').textContent=state.mods.length+' jar'+(state.mods.length===1?'':'s');
-  $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Ready':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No HOWL mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
+  $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Recognized':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No HOWL mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
   $('loader-path').value=state.settings.loaderPath||'';$('feed-url').value=state.settings.feedUrl||'';$('close-after').checked=!!state.settings.closeAfterLaunch;
   $('local-test-mode').checked=!!state.settings.localTestMode;
   $('update-channel').value=state.settings.updateChannel||'stable';

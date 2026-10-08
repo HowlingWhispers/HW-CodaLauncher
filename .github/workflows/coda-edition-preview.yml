@@ -42,6 +42,7 @@ jobs:
           path: |
             .coda-edition/dist/CodaLauncher-CodaEdition-windows.zip
             .coda-edition/dist/CodaLauncher-CodaEdition-windows.zip.sha256
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
 
@@ -93,5 +94,6 @@ jobs:
             .coda-edition/dist/CodaLauncher-CodaEdition-linux-x64.tar.gz.sha256
             .coda-edition/artifacts/home.png
             .coda-edition/artifacts/mobile.png
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 30

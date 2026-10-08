@@ -164,7 +164,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.4 (prerelease)
+          # CodaLauncher 0.7.6 (prerelease)
+
+          This release consolidates all playable mods under each active game's
+          minecraft/mods folder. Legacy loader/run/mods content is copied
+          without overwriting conflicts, then archived with its files intact
+          after the new game profile is ready. Fresh installations no longer
+          create a second loader-side mods directory.
+
+          - Mod Drawer: Open Mods Folder opens the Stable or Nightly profile.
+          - Nightly: BuildCraft development JARs are delivered directly into
+            the isolated Nightly minecraft/mods directory through the launcher.
+          - Stable and Nightly remain separate profiles. Existing users with
+            the original misspelled roaming folder retain their old path to
+            avoid silently separating them from saves and account settings.
+          - Actual live Minecraft 26.4 Snapshot 3 gameplay still requires
+            user-side validation, beyond CI fixture and installer tests.
+
 
           Fixes the Windows reboot loop: 0.7.3 reported itself as 0.7.2 after
           a successful update. Windows and portable launcher versions now come
@@ -211,4 +227,4 @@ jobs:
           - Real-device verification with Minecraft 26.4 Snapshot 3 remains
             required. This is an early-access prerelease.
           EOF
-          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.7.4" --notes-file release-notes.md
+          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher $CODA_VERSION" --notes-file release-notes.md

@@ -163,6 +163,10 @@ window.chrome.webview.addEventListener('message',e=>{
     setInstallBusy(!!m.busy,m.message);
     if(!m.busy&&state) render();
   }
+  if(m.type==='quietState'&&state){
+    state.nightlyQuietInstalled=!!m.installed;
+    render();
+  }
   if(m.type==='modActionStatus'){
     setInstallBusy(!!m.busy,m.message||'');
     const status=$('mod-action-result');

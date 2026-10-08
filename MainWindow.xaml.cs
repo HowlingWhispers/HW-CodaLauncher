@@ -921,6 +921,8 @@ public partial class MainWindow : Window
                 }
             }
             SendMods();
+            if (id == "quiet_underground")
+                Send(new { type = "quietState", installed = NightlyBuildInstaller.QuietInstalled });
             Send(new { type = "modActionStatus", busy = false, ok = true,
                 message = title + (uninstall ? " uninstalled." : " install/update completed.") });
         }

@@ -55,6 +55,11 @@ const source = {
     modCount: 1,
     mods: [{ fileName: 'buildcraft-cml-0.1.0-dev.jar', id: 'buildcraft_cml',
       name: 'BuildCraft CML', version: '0.1.0-dev', valid: true }],
+    optionalMods: [
+      { id: 'buildcraft_cml', name: 'BuildCraft CML', installed: true, managed: true, recommended: true, nightlyOnly: true, version: '0.1.0-dev' },
+      { id: 'coda_wolf', name: 'Coda Wolf Companion', installed: false, managed: false, recommended: true, nightlyOnly: true, version: '' },
+      { id: 'hw_essentials', name: 'HW Essentials', installed: false, managed: false, recommended: true, nightlyOnly: false, version: '' }
+    ],
     account: { configured: false, signedIn: false, offlineAvailable: true, storage: '' },
     settings: { updateChannel: 'nightly', localTestMode: true },
     profile: { cmlAccount: '', discord: '' },
@@ -64,9 +69,14 @@ const source = {
 };
 listeners.message({ data: source });
 assert.equal(el('mods-count').textContent, '1 jar', 'initial drawer matches cached state');
+assert.match(el('optional-mods').innerHTML, /Coda Wolf Companion/, 'Optional Coda Wolf listed when uninstalled');
+assert.match(el('optional-mods').innerHTML, /RECOMMENDED/, 'Recommendation is distinct from requirement');
+assert.match(el('optional-mods').innerHTML, /INSTALL/, 'Optional installation requires explicit button');
+assert.match(el('optional-mods').innerHTML, /UNINSTALL/, 'Optional installed mod supports removal');
+assert.doesNotMatch(el('optional-mods').innerHTML, /REQUIRED/, 'No add-on labeled required');
 assert.equal(el('nightly-quiet-card').hidden, false, 'Nightly Quiet Underground appears under Packs');
-assert.equal(el('nightly-quiet-status').textContent, 'Installed for new worlds',
-  'Quiet Underground card reports staged pack status, not creative items');
+assert.equal(el('nightly-quiet-status').textContent, 'Optional · Installed',
+  'Quiet Underground is explicitly optional, not a required mod');
 modsNav.click();
 assert.equal(calls.at(-1).action, 'refreshMods', 'opening Mods requests immediate rescan');
 el('refresh-mods').onclick();

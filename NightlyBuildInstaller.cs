@@ -18,6 +18,8 @@ internal sealed class NightlyBuildInstaller
     private const string Package = "HOWL-BuildCraft-Singleplayer-Playtest.zip";
     private const string Checksum = Package + ".sha256";
     private const string ModJar = "buildcraft-cml-0.1.0-dev.jar";
+    private const string QuietPack = "hw-quiet-underground-1.0.0.zip";
+    private const string ActiveQuietPack = "hw-quiet-underground.zip";
     private const int MaxArchiveBytes = 64 * 1024 * 1024;
     private static readonly HttpClient Http = NewHttp();
 
@@ -34,7 +36,14 @@ internal sealed class NightlyBuildInstaller
             {
                 string modFile = Path.Combine(GameRoot, "mods", ModJar);
                 string marker = Path.Combine(GameRoot, "mods", ".howl-buildcraft-managed.sha256");
-                return File.Exists(Path.Combine(LoaderRoot, "CodaLoader.jar"))
+                string worldgen = Path.Combine(GameRoot, "config", "codaloader", "worldgen");
+                string quiet = Path.Combine(worldgen, ActiveQuietPack);
+                string quietMarker = quiet + ".sha256";
+                return File.Exists(quiet) && File.Exists(quietMarker)
+                    && HashFile(quiet).Equals(File.ReadAllText(quietMarker).Trim()
+                        .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)[0],
+                        StringComparison.OrdinalIgnoreCase)
+                    && File.Exists(Path.Combine(LoaderRoot, "CodaLoader.jar"))
                     && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag"))
                     && File.Exists(modFile) && File.Exists(marker)
                     && HashFile(modFile).Equals(File.ReadAllText(marker).Trim(), StringComparison.OrdinalIgnoreCase);
@@ -93,6 +102,19 @@ internal sealed class NightlyBuildInstaller
                     || jar.GetEntry("dev/howlingwhispers/buildcraft/BuildCraftGlassPipeDemo.class") is null)
                     throw new InvalidDataException("Downloaded BuildCraft nightly has no playable-test entrypoint.");
 
+            // Quiet Underground is a world datapack, NOT a mod JAR. Nightly
+            // supplies it as a verified new-world creation preset.
+            string bundledQuiet = Path.Combine(staging, "payload", QuietPack);
+            string bundledQuietHash = bundledQuiet + ".sha256";
+            if (!File.Exists(bundledQuiet) || !File.Exists(bundledQuietHash))
+                throw new InvalidDataException("This Nightly predates Quiet Underground world creation support.");
+            string quietHashText = File.ReadAllText(bundledQuietHash);
+            string quietHash = quietHashText.Split((char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+            if (quietHash.Length != 64 || !quietHash.All(Uri.IsHexDigit)
+                || !HashFile(bundledQuiet).Equals(quietHash, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Quiet Underground datapack checksum failed.");
+
             // First migrate any older nightly installation. Validate
             // ownership only AFTER migration, so a user-modified legacy
             // BuildCraft JAR cannot be silently replaced by the new nightly.
@@ -112,8 +134,23 @@ internal sealed class NightlyBuildInstaller
                     throw new IOException("Nightly BuildCraft JAR was modified manually. Your file was preserved; move it aside before updating.");
             }
 
+            // Refuse overwriting a user-edited Quiet Underground preset.
+            string worldgen = Path.Combine(GameRoot, "config", "codaloader", "worldgen");
+            string targetQuiet = Path.Combine(worldgen, ActiveQuietPack);
+            string quietOwner = targetQuiet + ".sha256";
+            if (File.Exists(targetQuiet))
+            {
+                string currentHash = HashFile(targetQuiet);
+                if (!currentHash.Equals(quietHash, StringComparison.OrdinalIgnoreCase)
+                    && (!File.Exists(quietOwner)
+                        || !File.ReadAllText(quietOwner).Trim().Equals(currentHash,
+                            StringComparison.OrdinalIgnoreCase)))
+                    throw new IOException("Quiet Underground pack was edited. Your original was preserved.");
+            }
+
             Directory.CreateDirectory(LoaderRoot);
             Directory.CreateDirectory(modFolder);
+            Directory.CreateDirectory(worldgen);
 
             // Nightly is a distinct game profile, NOT a second mod scanner
             // under its loader. Preserve and migrate older nightly run/mods.
@@ -121,6 +158,7 @@ internal sealed class NightlyBuildInstaller
             // Older loader/run/mods, configuration and user files are retained.
             string jarTemp = Path.Combine(LoaderRoot, "." + Guid.NewGuid().ToString("N") + ".tmp");
             string modTemp = Path.Combine(modFolder, "." + Guid.NewGuid().ToString("N") + ".tmp");
+            string quietTemp = Path.Combine(worldgen, "." + Guid.NewGuid().ToString("N") + ".tmp");
             try
             {
                 File.Copy(loaderJar, jarTemp);
@@ -129,6 +167,9 @@ internal sealed class NightlyBuildInstaller
                 File.Copy(bundledMod, modTemp);
                 if (HashFile(modTemp) != newHash)
                     throw new IOException("Nightly BuildCraft mod verification failed.");
+                File.Copy(bundledQuiet, quietTemp);
+                if (!HashFile(quietTemp).Equals(quietHash, StringComparison.OrdinalIgnoreCase))
+                    throw new IOException("Nightly Quiet Underground staging verification failed.");
 
                 // Keep a copy of the old owned loader binary rather than
                 // destroying unknown files on each nightly update.
@@ -143,6 +184,8 @@ internal sealed class NightlyBuildInstaller
                 }
                 File.Move(jarTemp, oldLoader, overwrite: true);
                 File.Move(modTemp, targetMod, overwrite: true);
+                File.Move(quietTemp, targetQuiet, overwrite: true);
+                File.WriteAllText(quietOwner, quietHash);
                 File.WriteAllText(ownerMarker, newHash);
                 File.WriteAllText(Path.Combine(LoaderRoot, ".nightly-tag"), release.Tag);
                 ManagedMods.ArchiveLegacy(LoaderRoot, report);
@@ -152,6 +195,7 @@ internal sealed class NightlyBuildInstaller
             {
                 if (File.Exists(jarTemp)) File.Delete(jarTemp);
                 if (File.Exists(modTemp)) File.Delete(modTemp);
+                if (File.Exists(quietTemp)) File.Delete(quietTemp);
             }
 
             return LoaderRoot;

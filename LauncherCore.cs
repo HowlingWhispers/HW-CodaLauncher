@@ -661,19 +661,36 @@ internal sealed class InstallService
 
     private static void ReplaceDirectory(string source, string target)
     {
-        var backup = target + ".old";
-        TryDeleteDirectory(backup);
-        if (Directory.Exists(target)) Directory.Move(target, backup);
-        try
+        // Distribution updates own precisely two files. Replacing the whole
+        // loader directory previously DELETED loader/run/mods, which may hold
+        // user JARs or unresolved conflicts. Preserve all unknown files.
+        string[] owned = ["CodaLoader.jar", "Launch-CodaLoader.bat"];
+        foreach (string name in owned)
+            if (!File.Exists(Path.Combine(source, name)))
+                throw new IOException("Loader bundle is missing managed file " + name);
+
+        Directory.CreateDirectory(target);
+        string backup = Path.Combine(target, "previous-loader-code",
+            DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + "-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(backup);
+        foreach (string name in owned)
         {
-            Directory.Move(source, target);
-            TryDeleteDirectory(backup);
-        }
-        catch
-        {
-            TryDeleteDirectory(target);
-            if (Directory.Exists(backup)) Directory.Move(backup, target);
-            throw;
+            string original = Path.Combine(target, name);
+            string incoming = Path.Combine(source, name);
+            string pending = Path.Combine(target, "." + Guid.NewGuid().ToString("N") + ".tmp");
+            if (File.Exists(original))
+                File.Copy(original, Path.Combine(backup, name));
+            try
+            {
+                File.Copy(incoming, pending);
+                if (Sha256(pending) != Sha256(incoming))
+                    throw new IOException("Loader update integrity check failed: " + name);
+                File.Move(pending, original, overwrite: true);
+            }
+            finally
+            {
+                if (File.Exists(pending)) File.Delete(pending);
+            }
         }
     }
 

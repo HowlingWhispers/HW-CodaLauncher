@@ -213,6 +213,9 @@ public partial class MainWindow : Window
                 case "openLoaderFolder":
                     OpenLoaderFolder();
                     break;
+                case "openModsFolder":
+                    OpenModsFolder();
+                    break;
                 case "openExternal":
                     if (root.TryGetProperty("url", out var u)) OpenExternal(u.GetString());
                     break;

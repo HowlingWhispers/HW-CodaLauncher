@@ -223,7 +223,16 @@ function render(){
     };
   });
   $('mods-count').textContent=state.mods.length+' jar'+(state.mods.length===1?'':'s');
-  $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Recognized':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No HOWL mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
+  $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>{
+    const release=m.releaseStatus==='Verified'&&m.releaseTag
+      ?'<small>Installed release: '+esc(m.releaseTag)+' · SHA-256 verified locally</small>'
+      :m.releaseStatus==='Modified'
+        ?'<small class="bad-text">Managed JAR changed: installed release cannot be verified</small>'
+        :m.releaseStatus==='Untracked'
+          ?'<small>Nightly release marker unavailable. Build identity unknown.</small>':'';
+    const recognized=m.valid?'Recognized':'Invalid';
+    return '<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · Manifest v'+esc(m.version)+' · '+esc(m.fileName)+'</small>'+release+'</div><div class="'+(!m.valid||m.releaseStatus==='Modified'?'bad-text':'')+'">'+recognized+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>';
+  }).join(''):'<div class="mod"><div><b>No HOWL mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
   $('loader-path').value=state.settings.loaderPath||'';$('feed-url').value=state.settings.feedUrl||'';$('close-after').checked=!!state.settings.closeAfterLaunch;
   $('local-test-mode').checked=!!state.settings.localTestMode;
   $('update-channel').value=state.settings.updateChannel||'stable';

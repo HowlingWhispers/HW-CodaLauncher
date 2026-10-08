@@ -108,7 +108,10 @@ internal sealed class ModScanner
         if (string.IsNullOrWhiteSpace(loaderDirectory)) return [];
         var mods = Path.Combine(loaderDirectory, "mods");
         if (!Directory.Exists(mods)) return [];
-        return Directory.EnumerateFiles(mods, "*.jar").OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase).Select(Read).ToList();
+        return Directory.EnumerateFiles(mods, "*.jar")
+            .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
+            .Select(jar => NightlyModIdentity.Attach(Read(jar), loaderDirectory))
+            .ToList();
     }
 
     private static ModInfo Read(string jar)

@@ -79,7 +79,8 @@ listeners.message({
     modCount: 2,
     mods: [
       { fileName: 'buildcraft-cml-0.1.0-dev.jar', id: 'buildcraft_cml',
-        name: 'BuildCraft CML', version: '0.1.0-dev', valid: true },
+        name: 'BuildCraft CML', version: '0.1.0-dev', valid: true,
+        releaseStatus: 'Verified', releaseTag: 'nightly-buildcraft-20261008-abc123' },
       { fileName: 'hw-essentials.jar', id: 'hw_essentials',
         name: 'HW Essentials', version: '0.2.0', valid: true }
     ]
@@ -90,5 +91,9 @@ assert.equal(el('mod-chip').textContent, '2 mods', 'Home counter updates with fr
 assert.match(el('mods-list').innerHTML, /hw-essentials\.jar/, 'HW Essentials appears in drawer');
 assert.match(el('mods-list').innerHTML, /buildcraft-cml/, 'BuildCraft remains listed');
 assert.match(el('mods-list').innerHTML, /Recognized/, 'JAR recognition is not mistaken for in-game load');
+assert.match(el('mods-list').innerHTML, /nightly-buildcraft-20261008-abc123/, 'Mods shelf shows verified installed release tag');
+assert.match(el('mods-list').innerHTML, /Manifest v0\.1\.0-dev/, 'JAR metadata version remains distinguishable from installed release');
+assert.match(el('mods-list').innerHTML, /SHA-256 verified locally/, 'Release identity is locally checksum verified');
+assert.doesNotMatch(el('mods-list').innerHTML, /Latest release/, 'Local verification never claims remote freshness');
 assert.doesNotMatch(el('mods-list').innerHTML, /Ready/, 'No unverified gameplay success label');
 console.log('PASS: Mod Drawer navigation refreshes installed JARs and corrects displayed labels.');

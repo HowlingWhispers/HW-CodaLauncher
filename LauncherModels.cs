@@ -43,7 +43,7 @@ public sealed class ResourcePackCatalogInfo
     public List<string> RequiredBy { get; set; } = [];
 }
 
-public sealed record ModInfo(string FileName, string Id, string Name, string Version, bool Valid, string? Error);
+public sealed record ModInfo(string FileName, string Id, string Name, string Version, bool Valid, string? Error, string? ReleaseTag = null, string? ReleaseStatus = null);
 
 public sealed class LauncherFeed
 {

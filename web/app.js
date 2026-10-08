@@ -3,6 +3,7 @@ let state=null;
 let installBusy=false;
 let launcherUpdateVersion=null;
 let launcherUpdateBusy=false;
+let settingsSaving=false;
 let loaderUpdateMessage='Update check has not completed yet.';
 const $=id=>document.getElementById(id);
 
@@ -80,7 +81,21 @@ $('play').onclick=()=>{
   post('play');
 };
 $('open-loader').onclick=()=>post('openLoaderFolder');
-$('save').onclick=()=>post('saveSettings',{settings:{loaderPath:$('loader-path').value.trim(),feedUrl:$('feed-url').value.trim(),localTestMode:$('local-test-mode').checked,closeAfterLaunch:$('close-after').checked}});
+$('save').onclick=()=>{
+  if(settingsSaving) return;
+  settingsSaving=true;
+  $('save').disabled=true;
+  $('save').textContent='Saving…';
+  const result=$('settings-save-result');
+  result.className='settings-save-result';
+  result.textContent='Saving settings…';
+  post('saveSettings',{settings:{
+    loaderPath:$('loader-path').value.trim(),
+    feedUrl:$('feed-url').value.trim(),
+    localTestMode:$('local-test-mode').checked,
+    closeAfterLaunch:$('close-after').checked
+  }});
+};
 window.chrome.webview.addEventListener('message',e=>{
   const m=e.data;
   if(m.type==='account'&&state){state.account=m.account;state.accountBusy=m.busy;state.settings.offlineMode=m.offline;render();}
@@ -96,6 +111,14 @@ window.chrome.webview.addEventListener('message',e=>{
     launcherUpdateVersion=m.version||null;
     launcherUpdateBusy=!!m.busy;
     renderLauncherUpdateNotice();
+  }
+  if(m.type==='settingsSaveResult'){
+    settingsSaving=false;
+    $('save').disabled=false;
+    $('save').textContent='Save settings';
+    const result=$('settings-save-result');
+    result.className='settings-save-result '+(m.ok?'ok':'error');
+    result.textContent=m.ok?'✓ Settings saved.':('Could not save: '+(m.message||'Unknown error'));
   }
   if(m.type==='copyLogsResult') $('copy-logs-status').textContent=m.ok?'Copied '+m.count+' log lines to clipboard.':('Copy failed: '+m.message);
   if(m.type==='log') appendLog(m.line);

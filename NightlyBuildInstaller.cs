@@ -93,6 +93,10 @@ internal sealed class NightlyBuildInstaller
                     || jar.GetEntry("dev/howlingwhispers/buildcraft/BuildCraftGlassPipeDemo.class") is null)
                     throw new InvalidDataException("Downloaded BuildCraft nightly has no playable-test entrypoint.");
 
+            // First migrate any older nightly installation. Validate
+            // ownership only AFTER migration, so a user-modified legacy
+            // BuildCraft JAR cannot be silently replaced by the new nightly.
+            ManagedMods.MigrateLegacy(LoaderRoot, GameRoot, report);
             // Only manage the explicitly owned nightly game mod; do not touch
             // stable mods, installed Minecraft or a user-modified nightly mod.
             string modFolder = Path.Combine(GameRoot, "mods");
@@ -113,7 +117,6 @@ internal sealed class NightlyBuildInstaller
 
             // Nightly is a distinct game profile, NOT a second mod scanner
             // under its loader. Preserve and migrate older nightly run/mods.
-            ManagedMods.MigrateLegacy(LoaderRoot, GameRoot, report);
             // Stage the two owned files without deleting the loader folder.
             // Older loader/run/mods, configuration and user files are retained.
             string jarTemp = Path.Combine(LoaderRoot, "." + Guid.NewGuid().ToString("N") + ".tmp");

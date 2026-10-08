@@ -1,5 +1,10 @@
 # CodaLauncher
 
+## CodaLauncher 0.7.12: reliable Nightly updates during GitHub API rate limits
+
+GitHub's anonymous API has a shared request quota. When GitHub REST release discovery returns HTTP 403/429, both Coda Wolf and BuildCraft Nightly automatically discover published release tags through GitHub's public Atom feed instead. Downloaded official assets still require valid SHA-256 sidecars, and user-edited files cannot be overwritten. Previously verified local mods remain available when *both* discovery routes are unavailable. The background self-updater backs off for an hour after GitHub rate limiting, avoiding unnecessary repeated requests. No changes to the loader, worlds or Stable channel.
+
+
 ## CodaLauncher 0.7.11: GitHub connection timeout hotfix
 
 If GitHub is unreachable while preparing Nightly, H.O.W.L. reuses existing checksum-verified BuildCraft, Quiet Underground, and Coda Wolf content in the Nightly profile. A new or damaged installation still requires a working connection. The launcher logs the cache fallback and checks for updates again on the next Play. A failed GitHub status refresh after starting the game no longer reports a failed launch. No changes are made to player worlds, stable profiles, or the mod loader.

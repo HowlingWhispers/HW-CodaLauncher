@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.11
-  CODA_TAG: v0.7.11
+  CODA_VERSION: 0.7.12
+  CODA_TAG: v0.7.12
 
 jobs:
   gate:
@@ -168,7 +168,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.11 (prerelease)
+          # CodaLauncher 0.7.12 (prerelease)
+
+          - **GitHub API rate-limit resilience:** Nightly BuildCraft and Coda Wolf automatically fall back to the public GitHub Releases Atom feed when unauthenticated REST APIs return HTTP 403/429.
+          - Releases remain restricted to the official HW-Mods project; assets remain SHA-256 verified and installed atomically with local-file protections unchanged.
+          - Prevent repeated background launcher update checks during a one-hour GitHub rate-limit cooldown. Existing worlds and stable profiles stay untouched.
 
           - Fix Nightly GitHub API timeouts blocking PLAY when valid BuildCraft and Coda Wolf files are already installed.
           - Fall back to locally checksum-verified files only for connectivity failures, never for corrupt packages or modified JARs.

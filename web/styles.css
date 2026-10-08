@@ -14,3 +14,10 @@
 @media(max-width:650px){.launcher-update-notice{align-items:flex-start;flex-direction:column}}
 
 .account-panel{padding:24px;margin-bottom:22px}.account-panel p{color:var(--muted);line-height:1.5}.account-panel .actions{flex-wrap:wrap}.account-panel .toggle{margin:22px 0}.account-panel small{display:block;color:var(--muted)}.signin-code{font-size:20px;color:var(--cyan)!important;font-weight:700}button:disabled{opacity:.5;cursor:not-allowed}
+
+/* Settings confirmations live beside Save, never in the Home view. */
+.settings-save-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.settings-save-result{font-size:13px;line-height:1.5;color:var(--muted);min-height:1.5em}
+.settings-save-result.ok{color:#8df0bb}
+.settings-save-result.error{color:#ffb28a}
+.settings-save-row button:disabled{cursor:wait;opacity:.6}

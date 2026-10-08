@@ -303,6 +303,7 @@ public partial class MainWindow : Window
                 minecraftRoot = _settings.UpdateChannel == "nightly" ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot,
                 activeChannel = _settings.UpdateChannel,
                 nightlyInstalled = NightlyBuildInstaller.Installed,
+                nightlyQuietInstalled = NightlyBuildInstaller.QuietInstalled,
                 basePackVersion = pack.Version,
                 packs = new[]
                 {

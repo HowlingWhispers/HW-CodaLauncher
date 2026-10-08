@@ -341,6 +341,8 @@ public partial class MainWindow : Window
                 message =>
                 {
                     _logs.Add(message);
+                    if (message.StartsWith("CodaLoader ", StringComparison.Ordinal))
+                        Dispatcher.Invoke(() => Send(new { type = "loaderUpdateStatus", message }));
                     Dispatcher.Invoke(() => Send(new
                     {
                         type = "installStatus",

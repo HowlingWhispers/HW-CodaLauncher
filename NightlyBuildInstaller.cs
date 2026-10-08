@@ -60,7 +60,6 @@ internal sealed class NightlyBuildInstaller
             Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(working);
         string staging = Path.Combine(working, "loader");
-        string backup = Path.Combine(working, "backup");
         try
         {
             report($"Downloading experimental BuildCraft {release.Tag}...");
@@ -81,7 +80,12 @@ internal sealed class NightlyBuildInstaller
             ZipFile.ExtractToDirectory(nested, staging, overwriteFiles: false);
 
             string loaderJar = Path.Combine(staging, "CodaLoader.jar");
-            string bundledMod = Path.Combine(staging, "run", "mods", ModJar);
+            // New nightlies provide a transient package payload. For migration,
+            // older pre-refactor ZIPs may still carry run/mods, but that
+            // directory is never installed under the active loader.
+            string bundledMod = Path.Combine(staging, "payload", ModJar);
+            if (!File.Exists(bundledMod))
+                bundledMod = Path.Combine(staging, "run", "mods", ModJar);
             if (!File.Exists(loaderJar) || !File.Exists(bundledMod))
                 throw new InvalidDataException("Nightly package does not contain the loader and BuildCraft test mod.");
             using (var jar = ZipFile.OpenRead(bundledMod))
@@ -104,38 +108,47 @@ internal sealed class NightlyBuildInstaller
                     throw new IOException("Nightly BuildCraft JAR was modified manually. Your file was preserved; move it aside before updating.");
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(LoaderRoot)!);
+            Directory.CreateDirectory(LoaderRoot);
             Directory.CreateDirectory(modFolder);
-            // Swap code only; leave the separate nightly world's saves intact.
-            bool movedOld = false;
-            if (Directory.Exists(LoaderRoot))
-            {
-                Directory.Move(LoaderRoot, backup);
-                movedOld = true;
-            }
+
+            // Nightly is a distinct game profile, NOT a second mod scanner
+            // under its loader. Preserve and migrate older nightly run/mods.
+            ManagedMods.MigrateLegacy(LoaderRoot, GameRoot, report);
+            // Stage the two owned files without deleting the loader folder.
+            // Older loader/run/mods, configuration and user files are retained.
+            string jarTemp = Path.Combine(LoaderRoot, "." + Guid.NewGuid().ToString("N") + ".tmp");
+            string modTemp = Path.Combine(modFolder, "." + Guid.NewGuid().ToString("N") + ".tmp");
             try
             {
-                Directory.Move(staging, LoaderRoot);
-                string modTemp = Path.Combine(modFolder, "." + Guid.NewGuid().ToString("N") + ".tmp");
-                try
+                File.Copy(loaderJar, jarTemp);
+                if (HashFile(jarTemp) != HashFile(loaderJar))
+                    throw new IOException("Nightly loader verification failed.");
+                File.Copy(bundledMod, modTemp);
+                if (HashFile(modTemp) != newHash)
+                    throw new IOException("Nightly BuildCraft mod verification failed.");
+
+                // Keep a copy of the old owned loader binary rather than
+                // destroying unknown files on each nightly update.
+                string oldLoader = Path.Combine(LoaderRoot, "CodaLoader.jar");
+                if (File.Exists(oldLoader))
                 {
-                    File.Copy(Path.Combine(LoaderRoot, "run", "mods", ModJar), modTemp);
-                    if (!HashFile(modTemp).Equals(newHash, StringComparison.OrdinalIgnoreCase))
-                        throw new IOException("Nightly BuildCraft mod verification failed.");
-                    File.Move(modTemp, targetMod, overwrite: true);
+                    string backups = Path.Combine(LoaderRoot, "previous-loader-code");
+                    Directory.CreateDirectory(backups);
+                    File.Copy(oldLoader, Path.Combine(backups,
+                        DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + "-"
+                            + Guid.NewGuid().ToString("N") + ".jar"));
                 }
-                finally { if (File.Exists(modTemp)) File.Delete(modTemp); }
+                File.Move(jarTemp, oldLoader, overwrite: true);
+                File.Move(modTemp, targetMod, overwrite: true);
                 File.WriteAllText(ownerMarker, newHash);
                 File.WriteAllText(Path.Combine(LoaderRoot, ".nightly-tag"), release.Tag);
-                report($"Nightly {release.Tag} installed. Test worlds stay in the separate nightly profile.");
+                ManagedMods.ArchiveLegacy(LoaderRoot, report);
+                report($"Nightly {release.Tag} installed into one active game mods folder. Stable untouched.");
             }
-            catch
+            finally
             {
-                // Restore previous loader code if installation failed before
-                // commit. The world's save folder is never moved or deleted.
-                if (Directory.Exists(LoaderRoot)) Directory.Delete(LoaderRoot, recursive: true);
-                if (movedOld) Directory.Move(backup, LoaderRoot);
-                throw;
+                if (File.Exists(jarTemp)) File.Delete(jarTemp);
+                if (File.Exists(modTemp)) File.Delete(modTemp);
             }
 
             return LoaderRoot;

@@ -9,9 +9,14 @@ namespace HowlingWhispers.CodaLauncher;
 
 internal static class AppPaths
 {
-    public static string InstallRoot { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        ".howlingshispers");
+    // Correct spelling for new installs. Existing misspelled roots are
+    // retained to avoid separating a user's worlds, profiles and credentials.
+    // A full data-root migration requires an explicit backup-first operation.
+    private static readonly string Roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+    private static readonly string LegacyRoot = Path.Combine(Roaming, ".howlingshispers");
+    private static readonly string CanonicalRoot = Path.Combine(Roaming, ".howlingwhispers");
+    public static string InstallRoot { get; } = Directory.Exists(LegacyRoot)
+        ? LegacyRoot : CanonicalRoot;
 
     public static string MinecraftRoot => Path.Combine(InstallRoot, "minecraft");
     public static string LoaderRoot => Path.Combine(InstallRoot, "loader");
@@ -299,8 +304,12 @@ internal sealed class InstallService
         var latestLoader = await GetLatestLoaderReleaseAsync(ct);
         var installedLoaderVersion = ReadInstalledLoaderVersion();
 
+        // Historical release ZIPs installed starter mods under loader/run/mods.
+        // This folder was NOT scanned by the Minecraft agent when launched by
+        // CodaLauncher. Copy user JARs to the actual game folder first.
+        ManagedMods.MigrateLegacy(AppPaths.LoaderRoot, AppPaths.MinecraftRoot, progress);
+
         if (!LoaderReady
-            || !File.Exists(Path.Combine(AppPaths.LoaderRoot, "run", "mods", "hw-essentials.jar"))
             || !string.Equals(
                 installedLoaderVersion,
                 latestLoader.Version,
@@ -343,13 +352,8 @@ internal sealed class InstallService
         File.WriteAllText(AppPaths.CmlBasePackFingerprint, PackFingerprint(packVersion, resource));
         progress("HOWL Base is current.");
 
-        var bundledHello = Path.Combine(AppPaths.LoaderRoot, "run", "mods", "hello-coda.jar");
-        var gameMods = Path.Combine(AppPaths.MinecraftRoot, "mods");
-        Directory.CreateDirectory(gameMods);
-        var helloTarget = Path.Combine(gameMods, "hello-coda.jar");
-        if (File.Exists(bundledHello) && !File.Exists(helloTarget))
-            File.Copy(bundledHello, helloTarget);
-
+        // The example Hello Coda is no longer installed by default.
+        // User-supplied copies are handled by no-clobber legacy migration.
         ManagedMods.Install(AppPaths.LoaderRoot, AppPaths.MinecraftRoot, progress);
         progress("Install ready.");
     }

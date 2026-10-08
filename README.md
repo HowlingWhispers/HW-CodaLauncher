@@ -1,5 +1,9 @@
 # CodaLauncher
 
+## CodaLauncher 0.7.10: Coda Wolf automatic Nightly delivery
+
+With **Settings > Nightly** and **Local Test Mode**, **PLAY** and **Install/Repair** now discover the latest `nightly-codawolf-*` release from the HW-Mods GitHub release feed and checksum-verify the `coda-wolf-0.1.0-dev.jar` before copying it into the selected Nightly Minecraft mods directory. It appears in Mods upon refresh. No manual ZIP installation required, and the normal Stable installation stays unchanged. Existing modified or duplicate Coda Wolf jars are protected instead of overwritten. This is a **prototype**: the wolf's runtime entity hooks need a disposable-world playtest before gameplay claims can be made.
+
 Desktop launcher for **H.O.W.L. (Howling Open Works Loader)** and Howling Whispers Minecraft, pinned to **Minecraft Java 26.4 Snapshot 3**.
 
 ## CodaLauncher 0.7.6: one active mod folder

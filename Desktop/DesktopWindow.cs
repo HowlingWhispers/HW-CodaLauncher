@@ -20,6 +20,7 @@ internal sealed class DesktopWindow : Window
     private readonly Button _signOutButton = new() { Content = "SIGN OUT" };
     private readonly Button _cancelButton = new() { Content = "CANCEL SIGN-IN", IsVisible = false };
     private readonly CheckBox _offline = new() { Content = "Verified offline (Microsoft paused)" };
+    private readonly CheckBox _localTest = new() { Content = "Local Test Mode (no Microsoft sign-in, no online services)" };
     private readonly InstallService _installer = new();
     private readonly FeedService _feeds = new();
     private readonly SettingsStore _settingsStore = new();
@@ -83,6 +84,13 @@ internal sealed class DesktopWindow : Window
             catch (Exception ex) { _accountStatus.Text = ex.Message; }
         };
         _offline.IsChecked = _settings.OfflineMode;
+        _localTest.IsChecked = _settings.LocalTestMode;
+        _localTest.IsCheckedChanged += (_, _) => {
+            if (_running || _busy) { _localTest.IsChecked = _settings.LocalTestMode; return; }
+            _settings.LocalTestMode = _localTest.IsChecked == true;
+            _settingsStore.Save(_settings);
+            SetControls();
+        };
         if (LocalSingleplayer.Enabled) _offline.IsEnabled = false;
         _offline.IsCheckedChanged += (_, _) => {
             if (_running || _accountBusy) return;
@@ -102,6 +110,7 @@ internal sealed class DesktopWindow : Window
         var openData = new Button { Content = "OPEN INSTALL FOLDER" };
         openData.Click += (_, _) => OpenFolder(AppPaths.InstallRoot);
         tabs.Items.Add(Tab("SETTINGS", Stack(Text("Launcher feed", 20), _feedUrl, save,
+            Text("Play normally through the official Minecraft Launcher. Enable local testing only for unverified singleplayer development.", 14), _localTest,
             Text("Minecraft requires Java 25 or newer on PATH. Profile handles Microsoft sign-in; CodaLoader handles Minecraft downloads.", 15),
             Text("Install folder: " + AppPaths.InstallRoot, 14), openData)));
         var copyLogs = new Button { Content = "COPY ALL LOGS" };
@@ -175,8 +184,7 @@ internal sealed class DesktopWindow : Window
         _busy = true; SetControls();
         try
         {
-            var identity = launch ? (LocalSingleplayer.Enabled ? LocalSingleplayer.Identity()
-                : await _account.PrepareLaunchAsync(_settings.OfflineMode, _lifetime.Token)) : null;
+            var identity = launch && _settings.LocalTestMode ? LocalSingleplayer.Identity() : null;
             if (launch && _settings.OfflineMode && !LocalSingleplayer.Enabled)
             {
                 _launcher.Launch(AppPaths.LoaderRoot, identity!);
@@ -188,8 +196,16 @@ internal sealed class DesktopWindow : Window
                 message => Dispatcher.UIThread.Post(() => Report(message)), _lifetime.Token));
             _settings.LoaderPath = AppPaths.LoaderRoot; _settingsStore.Save(_settings);
             ScanMods();
-            if (launch) _launcher.Launch(AppPaths.LoaderRoot, identity!);
-            else _status.Text = "Install ready. Coda has checked the essentials.";
+            if (!launch) _status.Text = "Install ready. Coda has checked the essentials.";
+            else if (_settings.LocalTestMode) _launcher.Launch(AppPaths.LoaderRoot, identity!);
+            else {
+                await OfficialMinecraftLauncher.InstallProfileAsync(
+                    Path.Combine(AppPaths.LoaderRoot, "CodaLoader.jar"), AppPaths.MinecraftRoot, _lifetime.Token);
+                var opened = OfficialMinecraftLauncher.TryOpenLauncher();
+                _status.Text = opened
+                    ? "Minecraft Launcher opened. Select Howling Whispers | CodaLoader and press Play."
+                    : "Open Minecraft Launcher, select Howling Whispers | CodaLoader, then press Play.";
+            }
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Report("Coda couldn't prepare Minecraft: " + ex.Message); }
@@ -221,6 +237,7 @@ internal sealed class DesktopWindow : Window
     private void UpdateLog() { _log.Text = string.Join("\n", _logs.Snapshot()); _log.CaretIndex = _log.Text.Length; }
     private void SetControls()
     {
+        _localTest.IsEnabled = !_busy && !_running && !_refreshing;
         var account = _account.View;
         _accountStatus.Text = account.Status + "\n" + account.PlayerName + "\n" + account.Storage;
         _signInButton.IsEnabled = !_accountBusy && !_running && !_busy && account.Configured && !LocalSingleplayer.Enabled;
@@ -229,9 +246,9 @@ internal sealed class DesktopWindow : Window
         _cancelButton.IsVisible = _accountBusy;
         _offline.IsEnabled = !LocalSingleplayer.Enabled && !_accountBusy && !_running && !_busy && (account.OfflineAvailable || _settings.OfflineMode);
         _repair.IsEnabled = !_busy && !_running && !_refreshing && !_accountBusy;
-        _play.IsEnabled = _repair.IsEnabled && (LocalSingleplayer.Enabled || (account.SignedIn && (!_settings.OfflineMode || account.OfflineAvailable)));
+        _play.IsEnabled = _repair.IsEnabled;
         _refresh.IsEnabled = !_busy && !_refreshing; _update.IsEnabled = !_busy && !_running;
-        _play.Content = _running ? "MINECRAFT IS RUNNING" : _busy ? "CODA IS PREPARING..." : LocalSingleplayer.Enabled ? "PLAY LOCAL" : _settings.OfflineMode ? "PLAY OFFLINE" : "PLAY";
+        _play.Content = _running ? "MINECRAFT IS RUNNING" : _busy ? "CODA IS PREPARING..." : _settings.LocalTestMode ? "PLAY LOCAL (TEST)" : "OPEN MINECRAFT LAUNCHER";
     }
     private void OpenFolder(string path) { Directory.CreateDirectory(path); Open(path); }
     private void Open(string target)

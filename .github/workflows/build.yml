@@ -31,6 +31,8 @@ jobs:
         run: dotnet run --project tests/official/OfficialLauncherTests.csproj -c Release
       - name: Test managed mod installation
         run: dotnet run --project tests/ManagedModsTests.csproj -c Release
+      - name: Test Nightly newest-release selection
+        run: dotnet run --project tests/nightly/NightlyReleaseTests.csproj -c Release
       - name: Restore
         run: dotnet restore
       - name: Build
@@ -92,5 +94,7 @@ jobs:
         run: dotnet run --project tests/official/OfficialLauncherTests.csproj -c Release
       - name: Test managed mod installation
         run: dotnet run --project tests/ManagedModsTests.csproj -c Release
+      - name: Test Nightly newest-release selection
+        run: dotnet run --project tests/nightly/NightlyReleaseTests.csproj -c Release
       - name: Compile and smoke-test native desktop edition
         run: dotnet run --project Desktop/CodaLauncher.Desktop.csproj -c Release -- --smoke-test

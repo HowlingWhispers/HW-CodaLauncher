@@ -24,6 +24,9 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Verify isolated Coda Wolf release downloader
         run: dotnet run --project tests/codawolf/CodaWolfReleaseTests.csproj -c Release
+      - name: Smoke-test real published Coda Wolf release and Nightly auto-install
+        if: runner.os == 'Linux'
+        run: dotnet run --project tests/codawolf/CodaWolfReleaseTests.csproj -c Release -- --live-release
       - name: Compile Windows launcher
         if: runner.os == 'Windows'
         run: dotnet build CodaLauncher.csproj -c Release

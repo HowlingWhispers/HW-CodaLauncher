@@ -6,6 +6,28 @@ using System.Text;
 using System.Text.Json;
 using HowlingWhispers.CodaLauncher;
 
+if (args.Contains("--live-release", StringComparer.Ordinal))
+{
+    string scratch = Path.Combine(Path.GetTempPath(), "codawolf-live-smoke-" + Guid.NewGuid().ToString("N"));
+    try
+    {
+        using var installerHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(90) };
+        installerHttp.DefaultRequestHeaders.UserAgent.ParseAdd("CodaLauncher-Release-Smoke/0.1");
+        var installer = new CodaWolfNightlyInstaller(installerHttp, scratch);
+        string found = await installer.InstallLatestAsync(Console.WriteLine, CancellationToken.None);
+        if (!found.StartsWith(CodaWolfNightlyInstaller.TagPrefix, StringComparison.Ordinal)
+            || !installer.HasManagedInstall()
+            || !File.Exists(Path.Combine(scratch, "mods", CodaWolfNightlyInstaller.ModJar)))
+            throw new Exception("The published GitHub release was not discovered or installed.");
+        Console.WriteLine("PASS: live GitHub release was automatically discovered, downloaded and installed: " + found);
+    }
+    finally
+    {
+        if (Directory.Exists(scratch)) Directory.Delete(scratch, recursive: true);
+    }
+    return;
+}
+
 int count = 0;
 void Check(bool expected, string why)
 {

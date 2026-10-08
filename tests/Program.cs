@@ -80,6 +80,19 @@ try
             SearchOption.AllDirectories).Any(p => File.ReadAllText(p) == "custom player mod v1"),
         "old mod contents and unresolved conflict retained in backup");
     Check(ManagedMods.IsCurrent(loader, game), "current-state check reads embedded official mod");
+
+    // Explicit uninstall affects only the managed optional JAR and SHA marker.
+    ManagedMods.Uninstall(game, _ => {});
+    Check(!File.Exists(target), "Optional Essentials uninstall removes the JAR");
+    Check(!ManagedMods.IsManagedInstall(game), "Uninstalled Essentials is no longer managed");
+    Check(File.ReadAllText(config) == "max-homes=25"
+          && File.ReadAllText(home) == "saved home",
+          "Uninstall must preserve settings and every existing world save");
+    ManagedMods.Install(loader, game, _ => {});
+    File.WriteAllText(target, "user-edited private copy");
+    Refuses(() => ManagedMods.Uninstall(game, _ => {}));
+    Check(File.ReadAllText(target) == "user-edited private copy",
+          "Uninstall must refuse a tampered Essentials JAR");
     Console.WriteLine($"Managed mod installation and no-clobber migration tests passed: {checks} checks.");
 }
 finally { if (Directory.Exists(root)) Directory.Delete(root, true); }

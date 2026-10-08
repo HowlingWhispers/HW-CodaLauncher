@@ -68,6 +68,28 @@ try
     Check(modifiedBc.ReleaseStatus == "Modified" && modifiedBc.ReleaseTag is null,
         "BuildCraft mismatched local bytes cannot be called verified");
 
+    // Loader can advance without changing the optional BuildCraft release.
+    File.WriteAllText(Path.Combine(mods, ".howl-buildcraft-managed.sha256"), bcHash);
+    File.WriteAllText(Path.Combine(mods, ".howl-buildcraft-tag"), bcTag);
+    File.WriteAllText(Path.Combine(loader, ".nightly-tag"), "nightly-buildcraft-20261009-newruntime");
+    var untouchedBuildcraft = NightlyModIdentity.Attach(buildcraft, nightly);
+    Check(untouchedBuildcraft.ReleaseTag == bcTag,
+        "Required runtime update must not relabel an unchanged optional BuildCraft JAR");
+
+    File.WriteAllBytes(bcFile, [1, 2, 3, 4, 5]);
+    var catalog = OptionalModCatalog.Build([wolf, buildcraft], nightly, true);
+    Check(catalog.Count == 3 && catalog.All(x => x.Recommended),
+        "All three add-ons are optional, visible and recommended.");
+    Check(catalog.First(x => x.Id == "coda_wolf").Installed,
+        "Present Coda Wolf appears installed even if manually modified");
+    Check(!catalog.First(x => x.Id == "hw_essentials").Installed,
+        "Uninstalled Essentials still appears available for explicit installation");
+    var stableCatalog = OptionalModCatalog.Build([], stable, false);
+    Check(stableCatalog.All(x => !x.Installed),
+        "Fresh Stable profile does not auto-provision add-ons");
+    Check(stableCatalog.First(x => x.Id == "buildcraft_cml").NightlyOnly,
+        "Experimental BuildCraft is flagged as Nightly only");
+
     Console.WriteLine("PASS: " + count + " offline Nightly release-tag / SHA-256 identity assertions");
 }
 finally { Directory.Delete(temporary, recursive: true); }

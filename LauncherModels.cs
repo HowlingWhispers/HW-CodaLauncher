@@ -8,6 +8,9 @@ public sealed class LauncherSettings
     // Deliberately opt-in: the default uses the official Minecraft Launcher.
     public bool LocalTestMode { get; set; }
     public bool CloseAfterLaunch { get; set; }
+    // Stable is the backward-compatible default for every existing install.
+    // Experimental nightlies are local-only and use a separate Minecraft root.
+    public string UpdateChannel { get; set; } = "stable";
 }
 
 public sealed class CmlBasePackInfo

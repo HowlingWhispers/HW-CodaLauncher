@@ -123,6 +123,7 @@ window.chrome.webview.addEventListener('message',e=>{
   }
   if(m.type==='modsState'&&state){
     state.mods=m.mods||[];
+    state.optionalMods=m.optionalMods||[];
     state.modCount=m.modCount??state.mods.filter(x=>x.valid).length;
     state.minecraftRoot=m.minecraftRoot||state.minecraftRoot;
     render();
@@ -149,6 +150,15 @@ window.chrome.webview.addEventListener('message',e=>{
     box.style.color=m.ok?'#8df0bb':'#ffb28a';
     setInstallBusy(!!m.busy,m.message);
     if(!m.busy&&state) render();
+  }
+  if(m.type==='modActionStatus'){
+    setInstallBusy(!!m.busy,m.message||'');
+    const status=$('mod-action-result');
+    if(status){
+      status.textContent=m.message||'';
+      status.className='mod-action-result '+(m.ok?'ok':'error');
+    }
+    if(state) render();
   }
   if(m.type==='sessionStatus'){
     if(state) state.gameRunning=!!m.running;
@@ -185,7 +195,7 @@ function render(){
   if(state.gameRunning) $('play').textContent='RUNNING';
   else if(!installBusy) $('play').textContent=nightly?'PLAY NIGHTLY ▶':state.localSingleplayer?'PLAY LOCAL (TEST) ▶':'OPEN MINECRAFT LAUNCHER ▶';
   $('loader-summary').textContent=nightly
-    ? 'Experimental BuildCraft tests download into a separate Minecraft profile. Your normal saves stay in Stable.'
+    ? 'H.O.W.L. Nightly uses a separate Minecraft profile. Add-ons are optional; manage them in Mods.'
     : state.gameRunning
     ? 'Minecraft is running. Coda is keeping the clipboard warm.'
     : state.managedCurrent
@@ -221,6 +231,36 @@ function render(){
       setInstallBusy(true,'Preparing Resourcepack install…');
       post('installResourcePack');
     };
+  });
+  const modCatalog=state.optionalMods||[];
+  $('optional-mods').innerHTML=modCatalog.map(m=>{
+    const allowed=!m.nightlyOnly||nightly;
+    const managed=m.managed;
+    const actionsDisabled=installBusy||!!state.gameRunning||!allowed;
+    const installDisabled=actionsDisabled||(m.installed&&!managed);
+    const uninstallDisabled=actionsDisabled||!m.installed||!managed;
+    const detail=!allowed?'Available in Nightly only'
+      :m.installed?(managed?'Installed (launcher-managed)':'Present but not managed; review manually')
+      :'Not installed';
+    const label=m.installed?'CHECK / UPDATE':'INSTALL';
+    return '<article class="optional-mod"><div><b>'+esc(m.name)+'</b>'+
+      '<small>OPTIONAL'+(m.recommended?' · RECOMMENDED':'')+' · '+esc(detail)+'</small>'+
+      (m.installed?'<small>Manifest v'+esc(m.version||'?')+
+        (m.releaseTag?' · '+esc(m.releaseTag):'')+'</small>':'')+
+      '</div><div class="mod-actions"><button type="button" class="quiet mod-action" data-action="installMod" data-mod="'+escAttr(m.id)+'"'+
+      (installDisabled?' disabled':'')+'>'+label+'</button>'+
+      '<button type="button" class="quiet mod-action uninstall" data-action="uninstallMod" data-mod="'+escAttr(m.id)+'"'+
+      (uninstallDisabled?' disabled':'')+'>UNINSTALL</button></div></article>';
+  }).join('');
+  document.querySelectorAll('.mod-action').forEach(btn=>btn.onclick=()=>{
+    if(installBusy||state.gameRunning||btn.disabled) return;
+    const mod=modCatalog.find(m=>m.id===btn.dataset.mod);
+    if(!mod) return;
+    if(btn.dataset.action==='uninstallMod'&&!window.confirm(
+        'Uninstall '+mod.name+'? This removes only the managed JAR. Your worlds and mod data will be preserved.')) return;
+    setInstallBusy(true,(btn.dataset.action==='uninstallMod'?'Uninstalling ':'Checking / installing ')+mod.name+'…');
+    post(btn.dataset.action,{id:mod.id});
+    render();
   });
   $('mods-count').textContent=state.mods.length+' jar'+(state.mods.length===1?'':'s');
   $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>{

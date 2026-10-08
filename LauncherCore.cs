@@ -310,10 +310,14 @@ internal sealed class InstallService
                 ? $"Installing CodaLoader {latestLoader.Version}..."
                 : $"Updating CodaLoader {installedLoaderVersion} -> {latestLoader.Version}...");
             await InstallLoaderAsync(latestLoader, progress, ct);
+            var confirmedVersion = ReadInstalledLoaderVersion();
+            if (!string.Equals(confirmedVersion, latestLoader.Version, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"CodaLoader installation verification failed: expected {latestLoader.Version}, found {confirmedVersion ?? "unknown"}.");
+            progress($"CodaLoader update completed and verified: installed {confirmedVersion}; latest release {latestLoader.Version}.");
         }
         else
         {
-            progress($"CodaLoader {installedLoaderVersion} is current; keeping installed loader.");
+            progress($"CodaLoader checked: installed {installedLoaderVersion}; latest release {latestLoader.Version}; no update needed.");
         }
 
         var resource = ResolveCmlBaseResources(feed);

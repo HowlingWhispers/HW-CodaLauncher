@@ -212,6 +212,8 @@ internal sealed class NightlyBuildInstaller
         using var response = await Http.GetAsync(ReleasesApi, ct);
         response.EnsureSuccessStatusCode();
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+        NightlyRelease? newest = null;
+        DateTimeOffset newestPublished = DateTimeOffset.MinValue;
         foreach (var release in document.RootElement.EnumerateArray())
         {
             if (!release.TryGetProperty("prerelease", out var prerelease) || !prerelease.GetBoolean()) continue;
@@ -230,8 +232,20 @@ internal sealed class NightlyBuildInstaller
                 if (name == Package) zip = url;
                 else if (name == Checksum) sha = url;
             }
-            if (zip != null && sha != null) return new NightlyRelease(tag, zip, sha);
+            if (zip == null || sha == null) continue;
+            // GitHub returns release entries in repository/tag order, which is
+            // NOT necessarily publish order. Never blindly pick the first
+            // matching Nightly, or users silently get stale feature builds.
+            string published = release.TryGetProperty("published_at", out var publishedValue)
+                ? publishedValue.GetString() ?? "" : "";
+            if (!DateTimeOffset.TryParse(published, out var publishedAt)) continue;
+            if (newest == null || publishedAt > newestPublished)
+            {
+                newestPublished = publishedAt;
+                newest = new NightlyRelease(tag, zip, sha);
+            }
         }
+        if (newest is not null) return newest;
         throw new InvalidOperationException("No verified public BuildCraft nightly release is published yet. Stable has not been modified.");
     }
 

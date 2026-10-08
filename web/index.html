@@ -77,8 +77,8 @@
     <div class="actions"><button id="account-signin" class="save">Sign in with Microsoft</button><button id="account-verify" class="quiet">Verify again</button><button id="account-signout" class="quiet">Sign out</button><button id="account-cancel" class="quiet" hidden>Cancel sign-in</button></div>
     <p id="account-code" class="signin-code" hidden></p>
     <p id="account-message" role="status" aria-live="polite"></p>
-    <label class="toggle"><div><b>Local singleplayer</b><small>Enabled for development. No Azure sign-in or online account verification. Minecraft assets may still need to download on first install. Online CML services stay disabled.</small></div><input id="account-offline" type="checkbox"></label>
-    <small>Microsoft account tools are temporarily paused, not deleted. They can be enabled later without changing your existing worlds.</small>
+    <label class="toggle"><div><b>Previously verified offline mode</b><small>Reserved for when direct Microsoft authentication returns. Use Settings → Local Test Mode for unverified testing instead.</small></div><input id="account-offline" type="checkbox"></label>
+    <small>Microsoft account tools in CodaLauncher are paused. Normally, the official Minecraft Launcher signs you in. For offline testing, enable Local Test Mode in Settings.</small>
   </div>
   <div class="cards">
     <article><img class="profile-face" src="assets/coda-headshot.png" alt="Coda"><b>CML Avatar</b><small>Your CML face across supported Howling Whispers experiences.</small></article>
@@ -93,7 +93,8 @@
   <div class="panel settings">
     <label><span>CodaLoader folder override</span><input id="loader-path" type="text" placeholder="Leave blank for managed install"><small>Default: %APPDATA%\.howlingshispers\loader</small></label>
     <label><span>Launcher feed URL</span><input id="feed-url" type="text" placeholder="https://thehowlingwhispers.com/launcher"><small>Defaults to https://thehowlingwhispers.com/launcher. CodaLauncher appends /api/feed automatically.</small></label>
-    <label class="toggle"><div><span>Close after PLAY</span><small>Leave this off if you want Coda to stay on standby while Minecraft is running.</small></div><input id="close-after" type="checkbox"></label>
+    <label class="toggle"><div><span>Local Test Mode</span><small>For developing menus without Microsoft sign-in. Uses the existing CodaPlayer local save identity; no authenticated multiplayer, friends, or shared services. Turn off to launch through the official Minecraft Launcher.</small></div><input id="local-test-mode" type="checkbox"></label>
+    <label class="toggle"><div><span>Close after PLAY</span><small>Only applies to direct Local Test Mode. Official Minecraft Launcher remains a separate window.</small></div><input id="close-after" type="checkbox"></label>
     <div class="coming"><b>Managed install</b><small>Coda keeps Minecraft, CodaLoader, required Packs, and Resourcepacks current before the world opens.</small></div>
     <button id="save" class="save">Save settings</button>
   </div>

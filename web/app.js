@@ -3,6 +3,7 @@ let state=null;
 let installBusy=false;
 let launcherUpdateVersion=null;
 let launcherUpdateBusy=false;
+let loaderUpdateMessage='Update check has not completed yet.';
 const $=id=>document.getElementById(id);
 
 function renderLauncherUpdateNotice(){
@@ -97,6 +98,7 @@ window.chrome.webview.addEventListener('message',e=>{
   }
   if(m.type==='copyLogsResult') $('copy-logs-status').textContent=m.ok?'Copied '+m.count+' log lines to clipboard.':('Copy failed: '+m.message);
   if(m.type==='log') appendLog(m.line);
+  if(m.type==='loaderUpdateStatus'){loaderUpdateMessage=m.message;const result=$('loader-update-result');if(result) result.textContent=loaderUpdateMessage;}
   if(m.type==='installStatus'){
     const box=$('launch-message');
     box.textContent=m.message;
@@ -125,6 +127,8 @@ function render(){
   $('version').textContent='CodaLauncher '+state.launcherVersion;
   $('home-heading').textContent=state.gameRunning?'World session active.':'Ready when you are.';
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
+  $('loader-versions').textContent='Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
+  $('loader-update-result').textContent=loaderUpdateMessage;
   $('loader-chip').textContent=state.loaderCurrent?'CML CURRENT':(state.loaderReady?'CML UPDATE READY':'CML INSTALL');
   $('loader-chip').className=state.loaderCurrent?'good':(state.loaderReady?'warn':'bad');
   $('pack-chip').textContent=state.basePackReady?'CML BASE CURRENT':(state.managedInstalled?'CML BASE UPDATE READY':'CML BASE INSTALL');

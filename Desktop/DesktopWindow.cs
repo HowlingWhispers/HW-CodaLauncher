@@ -200,7 +200,7 @@ internal sealed class DesktopWindow : Window
             else if (_settings.LocalTestMode) _launcher.Launch(AppPaths.LoaderRoot, identity!);
             else {
                 await OfficialMinecraftLauncher.InstallProfileAsync(
-                    Path.Combine(AppPaths.LoaderRoot, "CodaLoader.jar"), AppPaths.MinecraftRoot, _lifetime.Token);
+                    Path.Combine(AppPaths.LoaderRoot, "CodaLoader.jar"), AppPaths.MinecraftRoot, _lifetime.Token, basePackDirectory: AppPaths.CmlBaseResourcesRoot);
                 var opened = OfficialMinecraftLauncher.TryOpenLauncher();
                 _status.Text = opened
                     ? "Minecraft Launcher opened. Select Howling Whispers | CodaLoader and press Play."

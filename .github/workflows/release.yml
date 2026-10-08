@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.1
-  CODA_TAG: v0.7.1
+  CODA_VERSION: 0.7.2
+  CODA_TAG: v0.7.2
 
 jobs:
   gate:
@@ -160,7 +160,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.1 (prerelease)
+          # CodaLauncher 0.7.2 (prerelease)
+
+          Settings confirmation fix for Windows and a compatible cross-platform launcher.
+
+          - Saving Settings now displays Saving..., a visible Settings saved
+            confirmation, or a precise error beside the Save button.
+          - Save button blocks duplicate submissions until the write completes.
+          - Settings are confirmed only after a successful persistent write;
+            transient failures while refreshing the Home screen no longer
+            masquerade as failed Settings saves.
+          - Keeps official Minecraft Launcher login, Local Test Mode switch,
+            CodaLoader 0.0.25 integration and existing player worlds.
+          - CI tests include the Settings save success/error flows.
 
           Official Minecraft Launcher integration and optional Local Test Mode.
 
@@ -185,4 +197,4 @@ jobs:
           - Real-device verification with Minecraft 26.4 Snapshot 3 remains
             required. This is an early-access prerelease.
           EOF
-          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.7.1" --notes-file release-notes.md
+          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.7.2" --notes-file release-notes.md

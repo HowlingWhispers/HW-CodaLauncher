@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.14
-  CODA_TAG: v0.7.14
+  CODA_VERSION: 0.7.15
+  CODA_TAG: v0.7.15
 
 jobs:
   gate:
@@ -170,7 +170,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.14 (prerelease)
+          # CodaLauncher 0.7.15 (prerelease)
+
+          - **Real mod version support:** Coda Wolf Nightly now accepts safely validated incrementing semantic versions (for example `0.1.1-dev`) instead of rejecting everything except `0.1.0-dev`.
+          - Release tags, SHA-256 checksums, isolated Nightly installs, and protection of user-edited mods remain unchanged.
+          - Compatibility preserved with existing `0.1.0-dev` Coda Wolf downloads, including temporary GitHub outages.
 
           - **Transparent mod builds:** Mods shelf distinguishes the manifest version (which may remain `0.1.0-dev`) from the exact **installed GitHub Nightly release tag** for BuildCraft and Coda Wolf.
           - Reads locally stored release markers and independently checks installed JAR bytes against their SHA-256 markers; modified or untracked mods are labeled instead of wrongly claiming verified latest.

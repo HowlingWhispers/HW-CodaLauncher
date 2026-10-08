@@ -196,11 +196,21 @@ internal sealed class CodaWolfNightlyInstaller
                 && e.GetString() == value;
         if (!Has(root, "id", "coda_wolf")
             || !Has(root, "name", "Coda Wolf Companion")
-            || !Has(root, "version", "0.1.0-dev")
+            || !root.TryGetProperty("version", out var version)
+            || version.ValueKind != JsonValueKind.String
+            || !IsVersion(version.GetString())
             || !Has(root, "minecraft", "26.4-snapshot-3")
             || !Has(root, "entrypoint", "dev.howlingwhispers.codawolf.CodaWolfMod"))
             throw new InvalidDataException("Unexpected Coda Wolf metadata; installation refused.");
     }
+
+    // GitHub release tag and asset SHA-256 identify the exact binary. The
+    // manifest version is an independently incremented human-readable semver,
+    // not a fixed 0.1.0-dev string that blocks future compatible releases.
+    private static bool IsVersion(string? value) =>
+        value is { Length: >= 5 and <= 48 } &&
+        System.Text.RegularExpressions.Regex.IsMatch(value,
+            @"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$");
 
     private async Task<byte[]> DownloadAsync(Uri url, int limit, CancellationToken ct)
     {

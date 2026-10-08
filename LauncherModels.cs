@@ -5,6 +5,8 @@ public sealed class LauncherSettings
     public string LoaderPath { get; set; } = "";
     public string FeedUrl { get; set; } = "https://thehowlingwhispers.com/launcher";
     public bool OfflineMode { get; set; }
+    // Deliberately opt-in: the default uses the official Minecraft Launcher.
+    public bool LocalTestMode { get; set; }
     public bool CloseAfterLaunch { get; set; }
 }
 

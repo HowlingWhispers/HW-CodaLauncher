@@ -28,6 +28,25 @@ internal sealed class NightlyBuildInstaller
     public static string LoaderRoot => Path.Combine(AppPaths.InstallRoot, "nightly", "loader");
     public static string GameRoot => Path.Combine(AppPaths.InstallRoot, "nightly", "minecraft");
 
+    /// <summary>File presence and checksum only, not proof Minecraft enabled terrain.</summary>
+    public static bool QuietInstalled
+    {
+        get
+        {
+            try
+            {
+                string worldgen = Path.Combine(GameRoot, "config", "codaloader", "worldgen");
+                string quiet = Path.Combine(worldgen, ActiveQuietPack);
+                string marker = quiet + ".sha256";
+                return File.Exists(quiet) && File.Exists(marker)
+                    && HashFile(quiet).Equals(File.ReadAllText(marker).Trim(),
+                        StringComparison.OrdinalIgnoreCase);
+            }
+            catch (IOException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+        }
+    }
+
     public static bool Installed
     {
         get

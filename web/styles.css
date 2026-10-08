@@ -28,3 +28,5 @@
 #nightly-warning{border-color:#a27234;background:#251b10}
 #nightly-warning small{color:#e0bf8a}
 #nightly-warning[hidden]{display:none}
+
+#nightly-quiet-card[hidden] { display: none; }

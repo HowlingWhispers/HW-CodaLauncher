@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.3
-  CODA_TAG: v0.7.3
+  CODA_VERSION: 0.7.4
+  CODA_TAG: v0.7.4
 
 jobs:
   gate:
@@ -71,6 +71,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - name: Test release version consistency
+        run: node tests/release-version.test.cjs
       - name: Test Settings save feedback
         run: |
           node --check web/app.js
@@ -88,6 +90,8 @@ jobs:
           dotnet publish CodaLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/payload
           if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
           if (!(Test-Path dist/payload/web/assets/coda-headshot.png)) { throw "Coda portrait missing" }
+          $actual = ([System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path dist/payload/CodaLauncher.exe).Path).ProductVersion -split '\+', 2)[0]
+          if ($actual -ne $env:CODA_VERSION) { throw "Built launcher reports $actual, expected $env:CODA_VERSION" }
           New-Item -ItemType Directory -Force dist/release | Out-Null
           $bundle = "CodaLauncher-v$env:CODA_VERSION-win64.zip"
           Compress-Archive -Path dist/payload/* -DestinationPath "dist/release/$bundle"
@@ -160,9 +164,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.3 (prerelease)
+          # CodaLauncher 0.7.4 (prerelease)
 
-          First H.O.W.L. branding release. CodaLauncher remains the player launcher.
+          Fixes the Windows reboot loop: 0.7.3 reported itself as 0.7.2 after
+          a successful update. Windows and portable launcher versions now come
+          from build metadata. CI checks release and binary version alignment.
+
+          Previous H.O.W.L. branding and player features remain included.
 
           - H.O.W.L. means Howling Open Works Loader. Home, mod shelf, profile
             labels and both desktop editions now use the chosen name.
@@ -203,4 +211,4 @@ jobs:
           - Real-device verification with Minecraft 26.4 Snapshot 3 remains
             required. This is an early-access prerelease.
           EOF
-          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.7.3" --notes-file release-notes.md
+          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.7.4" --notes-file release-notes.md

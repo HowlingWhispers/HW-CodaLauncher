@@ -94,6 +94,18 @@ $('play').onclick=()=>{
 $('open-loader').onclick=()=>post('openLoaderFolder');
 $('open-mods-folder').onclick=()=>post('openModsFolder');
 $('refresh-mods').onclick=()=>post('refreshMods');
+$('quiet-install').onclick=()=>{
+  if(installBusy||state?.gameRunning) return;
+  setInstallBusy(true,'Installing optional Quiet Underground…');
+  post('installMod',{id:'quiet_underground'});
+};
+$('quiet-uninstall').onclick=()=>{
+  if(installBusy||state?.gameRunning||!window.confirm(
+      'Remove the optional Quiet Underground preset? Existing worlds will not be deleted.')) return;
+  setInstallBusy(true,'Removing optional Quiet Underground…');
+  post('uninstallMod',{id:'quiet_underground'});
+};
+
 $('save').onclick=()=>{
   if(settingsSaving) return;
   settingsSaving=true;
@@ -218,9 +230,11 @@ function render(){
   });
   $('nightly-quiet-card').hidden=!nightly;
   if(nightly){
-    $('nightly-quiet-status').textContent=state.nightlyQuietInstalled
-      ? 'Installed for new worlds' : 'Awaiting Nightly download';
-    $('nightly-quiet-status').className='pill '+(state.nightlyQuietInstalled?'online':'offline');
+    const hasQuiet=!!state.nightlyQuietInstalled;
+    $('nightly-quiet-status').textContent=hasQuiet ? 'Optional · Installed' : 'Optional · Not installed';
+    $('nightly-quiet-status').className='pill '+(hasQuiet?'online':'offline');
+    $('quiet-install').disabled=installBusy||!!state.gameRunning;
+    $('quiet-uninstall').disabled=installBusy||!!state.gameRunning||!hasQuiet;
   }
   $('resourcepacks-list').innerHTML=(state.resourcePacks||[]).map(r=>'<article class="pack-card"><div class="pack-top"><div><em>'+(r.required?'REQUIRED DEPENDENCY':'OPTIONAL')+'</em><h3>'+esc(r.name)+'</h3></div><span class="pill '+(r.current?'online':(r.installed?'update':'offline'))+'">'+esc(r.status)+'</span></div><p>'+esc(r.description)+'</p><div class="dependency-note">Required by: '+esc((r.requiredBy||[]).join(', ')||'None')+'</div><div class="contents-note">'+(r.contents||[]).map(x=>'<span>'+esc(x)+'</span>').join('')+'</div><div class="pack-meta"><span>Available v'+esc(r.availableVersion||'?')+'</span><span>'+esc(r.source||'')+'</span></div>'+(r.required?'<div class="managed-label">Managed automatically by '+esc((r.requiredBy||[]).join(', ')||'HOWL')+'</div>':'<button class="resourcepack-action save" data-resourcepack="'+escAttr(r.id)+'">INSTALL</button>')+'</article>').join('');
   document.querySelectorAll('.resourcepack-action').forEach(btn=>{

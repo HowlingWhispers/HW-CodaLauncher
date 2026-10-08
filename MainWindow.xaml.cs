@@ -216,6 +216,9 @@ public partial class MainWindow : Window
                 case "openModsFolder":
                     OpenModsFolder();
                     break;
+                case "refreshMods":
+                    SendMods();
+                    break;
                 case "openExternal":
                     if (root.TryGetProperty("url", out var u)) OpenExternal(u.GetString());
                     break;
@@ -232,12 +235,24 @@ public partial class MainWindow : Window
         }
     }
 
+    private void SendMods()
+    {
+        var gameRoot = _settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot;
+        var found = _mods.Scan(gameRoot);
+        Send(new
+        {
+            type = "modsState",
+            mods = found,
+            modCount = found.Count(m => m.Valid),
+            minecraftRoot = gameRoot
+        });
+    }
+
     private async Task SendState()
     {
         var loader = _settings.UpdateChannel == "nightly" && NightlyBuildInstaller.Installed
             ? NightlyBuildInstaller.LoaderRoot : LoaderLocator.Resolve(_settings.LoaderPath);
-        var mods = _mods.Scan(_settings.UpdateChannel == "nightly"
-            ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot);
         var feedUrl = string.IsNullOrWhiteSpace(_settings.FeedUrl)
                 ? "https://thehowlingwhispers.com/launcher"
                 : _settings.FeedUrl;
@@ -258,6 +273,10 @@ public partial class MainWindow : Window
         var basePackReady = managed.PackCurrent;
         var readyToPlay = managed.Current;
         var news = _systemNews.Concat(feed.News).ToList();
+        // Count the active game JARs after asynchronous feed and install-state
+        // checks, not before. Mods can appear during that work.
+        var mods = _mods.Scan(_settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot);
 
         Send(new
         {

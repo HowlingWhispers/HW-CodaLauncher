@@ -103,7 +103,19 @@ internal sealed class DesktopWindow : Window
         tabs.Items.Add(Tab("SETTINGS", Stack(Text("Launcher feed", 20), _feedUrl, save,
             Text("Minecraft requires Java 25 or newer on PATH. Profile handles Microsoft sign-in; CodaLoader handles Minecraft downloads.", 15),
             Text("Install folder: " + AppPaths.InstallRoot, 14), openData)));
-        tabs.Items.Add(Tab("LOGS", _log)); root.Children.Add(tabs); Content = root;
+        var copyLogs = new Button { Content = "COPY ALL LOGS" };
+        var copyStatus = Text("", 13);
+        copyLogs.Click += async (_, _) => {
+            try {
+                var clipboard = Clipboard;
+                if (clipboard == null) throw new InvalidOperationException("Clipboard unavailable.");
+                var lines = _logs.Snapshot();
+                await clipboard.SetTextAsync(string.Join(Environment.NewLine, lines));
+                copyStatus.Text = "Copied " + lines.Length + " log lines.";
+            }
+            catch (Exception ex) { copyStatus.Text = "Copy failed: " + ex.Message; }
+        };
+        tabs.Items.Add(Tab("LOGS", Stack(copyLogs, copyStatus, _log))); root.Children.Add(tabs); Content = root;
         _play.Click += async (_, _) => await PrepareAsync(true);
         _repair.Click += async (_, _) => await PrepareAsync(false);
         _refresh.Click += async (_, _) => await RefreshAsync();

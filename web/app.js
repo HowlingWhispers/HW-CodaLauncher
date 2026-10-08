@@ -170,7 +170,9 @@ function render(){
   $('play').disabled=installBusy||state.gameRunning||state.accountBusy;
   if(state.gameRunning) $('play').textContent='RUNNING';
   else if(!installBusy) $('play').textContent=nightly?'PLAY NIGHTLY ▶':state.localSingleplayer?'PLAY LOCAL (TEST) ▶':'OPEN MINECRAFT LAUNCHER ▶';
-  $('loader-summary').textContent=state.gameRunning
+  $('loader-summary').textContent=nightly
+    ? 'Experimental BuildCraft tests download into a separate Minecraft profile. Your normal saves stay in Stable.'
+    : state.gameRunning
     ? 'Minecraft is running. Coda is keeping the clipboard warm.'
     : state.managedCurrent
       ? 'Coda checked the essentials. Everything is where it belongs.'

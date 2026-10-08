@@ -74,6 +74,26 @@ internal sealed class NightlyBuildInstaller
     public async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation)
     {
         ArgumentNullException.ThrowIfNull(report);
+        try
+        {
+            return await InstallOnlineAsync(report, cancellation);
+        }
+        catch (Exception error) when (error is HttpRequestException
+                || (error is OperationCanceledException && !cancellation.IsCancellationRequested))
+        {
+            if (!Installed)
+                throw new IOException("GitHub is unreachable and no checksum-verified BuildCraft Nightly is installed. " +
+                    "Check your internet connection, then retry Play. Your worlds and mods were not deleted.", error);
+            var installedTag = File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim();
+            report("GitHub update check unavailable (" + error.GetType().Name + "). " +
+                "Using previously installed BuildCraft " + installedTag +
+                " with locally verified BuildCraft and Quiet Underground checksums. New updates are pending.");
+            return LoaderRoot;
+        }
+    }
+
+    private async Task<string> InstallOnlineAsync(Action<string> report, CancellationToken cancellation)
+    {
         var release = await GetReleaseAsync(cancellation);
         if (Installed && File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim() == release.Tag)
         {

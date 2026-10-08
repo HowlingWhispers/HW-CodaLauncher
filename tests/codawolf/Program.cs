@@ -96,10 +96,14 @@ using (var parsed = JsonDocument.Parse(releases))
         CodaWolfNightlyInstaller.TagPrefix, jarName, jarName + ".sha256")?.Tag == tag,
         "Only newest Coda Wolf releases selected, not BuildCraft.");
 
+bool offline = false, timeout = false, badChecksum = false;
 using var handler = new FakeHandler((url) =>
 {
+    if (offline) throw new HttpRequestException("Simulated api.github.com:443 timeout");
+    if (timeout) throw new TaskCanceledException("Simulated GitHub request timeout");
     if (url.Host == "api.github.com") return Encoding.UTF8.GetBytes(releases);
-    if (url.AbsolutePath.EndsWith(".sha256")) return Encoding.UTF8.GetBytes(sha + "  " + jarName + "\n");
+    if (url.AbsolutePath.EndsWith(".sha256"))
+        return Encoding.UTF8.GetBytes((badChecksum ? new string('0', 64) : sha) + "  " + jarName + "\n");
     if (url.AbsolutePath.EndsWith(".jar")) return bytes;
     throw new InvalidOperationException("Unexpected remote " + url);
 });
@@ -122,11 +126,32 @@ try
     await installer.InstallLatestAsync(output.Add, CancellationToken.None);
     Check(handler.JarDownloads == downloads, "Same release never re-downloads JAR.");
 
+    offline = true;
+    Check(await installer.InstallLatestAsync(output.Add, CancellationToken.None) == tag,
+        "Installed checksum-verified Coda Wolf survives GitHub API outage.");
+    Check(output.Any(m => m.Contains("Using checksum-verified local Coda Wolf")),
+        "Offline fallback explains cached build and pending updates.");
+    var fresh = new CodaWolfNightlyInstaller(http, Path.Combine(root, "fresh"));
+    await ExpectFailure(async () => { await fresh.InstallLatestAsync(output.Add, CancellationToken.None); },
+        "Fresh profile without verified Coda Wolf refuses offline installation.");
+    timeout = true; offline = false;
+    Check(await installer.InstallLatestAsync(output.Add, CancellationToken.None) == tag,
+        "Installed verified Coda Wolf survives a GitHub request timeout.");
+    timeout = false;
+    badChecksum = true;
+    await ExpectFailure(async () => { await installer.InstallLatestAsync(output.Add, CancellationToken.None); },
+        "Corrupt remote SHA-256 must never trigger offline fallback.");
+    badChecksum = false;
+
     File.WriteAllBytes(path, MakeMod("tampered_id"));
     await ExpectFailure(async () => { await installer.InstallLatestAsync(output.Add, CancellationToken.None); },
         "Manually changed Coda Wolf JAR is not overwritten.");
     Check(File.ReadAllBytes(path).SequenceEqual(MakeMod("tampered_id")),
         "User modification preserved.");
+    offline = true;
+    await ExpectFailure(async () => { await installer.InstallLatestAsync(output.Add, CancellationToken.None); },
+        "Tampered local Coda Wolf must never count as verified offline fallback.");
+    offline = false;
 
     File.Delete(path);
     File.Delete(Path.Combine(root, "mods", ".howl-codawolf-managed.sha256"));

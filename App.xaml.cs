@@ -4,7 +4,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class App : Application
 {
-    internal const string LauncherVersion = "0.7.0";
+    internal const string LauncherVersion = "0.7.1";
 
     internal static bool IsSmokeTest { get; private set; }
 

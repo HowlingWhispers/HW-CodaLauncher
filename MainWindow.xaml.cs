@@ -584,7 +584,7 @@ public partial class MainWindow : Window
             else
             {
                 var profile = await OfficialMinecraftLauncher.InstallProfileAsync(
-                    Path.Combine(loader!, "CodaLoader.jar"), AppPaths.MinecraftRoot, _windowLifetime.Token);
+                    Path.Combine(loader!, "CodaLoader.jar"), AppPaths.MinecraftRoot, _windowLifetime.Token, basePackDirectory: AppPaths.CmlBaseResourcesRoot);
                 var opened = OfficialMinecraftLauncher.TryOpenLauncher();
                 var message = opened
                     ? "Official Minecraft Launcher opened. Select Howling Whispers | CodaLoader, then press Play."

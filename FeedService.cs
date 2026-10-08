@@ -21,7 +21,7 @@ internal sealed class FeedService
     private static readonly TimeSpan OfflineTtl = TimeSpan.FromMinutes(2);
 
     private readonly HttpClient _http;
-    private readonly string? _newsRoot;
+    private readonly GitHubNewsService _news;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private LauncherFeed? _cache;
     private string? _cachedUrl;
@@ -30,21 +30,21 @@ internal sealed class FeedService
     internal FeedService(HttpClient? http = null, string? newsRoot = null)
     {
         _http = http ?? SharedHttp;
-        _newsRoot = newsRoot;
+        _news = new GitHubNewsService(_http, newsRoot, newsRoot);
     }
 
     internal async Task<LauncherFeed> FetchAsync(string raw, CancellationToken ct)
     {
-        var news = BundledNews.Load(_newsRoot);
+        var (news, newsSource) = await _news.FetchAsync(ct);
         if (string.IsNullOrWhiteSpace(raw))
-            return Offline("Launcher pack catalog URL is not configured.", news);
+            return Offline("Launcher pack catalog URL is not configured.", news, newsSource);
 
         var url = raw.TrimEnd('/');
         await _gate.WaitAsync(ct);
         try
         {
             if (_cache is not null && _cachedUrl == url && DateTimeOffset.UtcNow < _expires)
-                return CopyWithNews(_cache, news);
+                return CopyWithNews(_cache, news, newsSource);
 
             try
             {
@@ -57,43 +57,46 @@ internal sealed class FeedService
                 feed.Online = true;
                 feed.Error = null;
                 feed.News = news;
+                feed.NewsSource = newsSource;
                 _cache = feed;
                 _cachedUrl = url;
                 _expires = DateTimeOffset.UtcNow.Add(SuccessTtl);
-                return CopyWithNews(feed, news);
+                return CopyWithNews(feed, news, newsSource);
             }
             catch (Exception ex) when (!ct.IsCancellationRequested
                 && ex is HttpRequestException or IOException or JsonException
                     or TaskCanceledException or UriFormatException)
             {
                 var offline = _cache is not null && _cachedUrl == url
-                    ? CopyWithNews(_cache, news)
-                    : Offline(ex.Message, news);
+                    ? CopyWithNews(_cache, news, newsSource)
+                    : Offline(ex.Message, news, newsSource);
                 offline.Online = false;
                 offline.Error = ex.Message;
                 _cache = offline;
                 _cachedUrl = url;
                 _expires = DateTimeOffset.UtcNow.Add(OfflineTtl);
-                return CopyWithNews(offline, news);
+                return CopyWithNews(offline, news, newsSource);
             }
         }
         finally { _gate.Release(); }
     }
 
-    private static LauncherFeed CopyWithNews(LauncherFeed source, List<NewsItem> news)
+    private static LauncherFeed CopyWithNews(LauncherFeed source, List<NewsItem> news, string sourceName)
     {
         // Pack catalog compatibility functions may mutate feed data. Do not
         // let callers accidentally mutate the in-memory HTTP response cache.
         var copy = JsonSerializer.Deserialize<LauncherFeed>(JsonSerializer.Serialize(source, Json), Json)
             ?? new LauncherFeed();
         copy.News = news;
+        copy.NewsSource = sourceName;
         return copy;
     }
 
-    private static LauncherFeed Offline(string reason, List<NewsItem> news) => new()
+    private static LauncherFeed Offline(string reason, List<NewsItem> news, string sourceName) => new()
     {
         Online = false,
         Error = reason,
-        News = news
+        News = news,
+        NewsSource = sourceName
     };
 }

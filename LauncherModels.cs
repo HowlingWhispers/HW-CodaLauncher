@@ -56,6 +56,7 @@ public sealed class LauncherFeed
     public List<PackCatalogInfo> Packs { get; set; } = [];
     public List<ResourcePackCatalogInfo> ResourcePacks { get; set; } = [];
     public List<NewsItem> News { get; set; } = [];
+    public string NewsSource { get; set; } = "Bundled";
     public bool Online { get; set; }
     public string? Error { get; set; }
 }

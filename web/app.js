@@ -194,9 +194,10 @@ function render(){
         ? 'Coda found a few things that need freshening up. PLAY will handle them automatically.'
         : 'Coda will install H.O.W.L., HOWL Base and the required Resourcepacks for you.';
   const feed=state.feed;
-  $('feed-pill').textContent='NEWS INCLUDED';
-  $('feed-pill').className='pill online';
-  $('feed-note').textContent='From this CodaLauncher release. New notes arrive with the next update.';
+  const newsSource=['GitHub','Cached','Bundled'].includes(feed.newsSource)?feed.newsSource:'Bundled';
+  $('feed-pill').textContent='NEWS '+newsSource.toUpperCase();
+  $('feed-pill').className='pill '+(newsSource==='GitHub'?'online':'offline');
+  $('feed-note').textContent=newsSource==='GitHub'?'Latest notes from our GitHub noticeboard.':newsSource==='Cached'?'Saved news from GitHub, available offline.':'Bundled news, available offline.';
   $('news').innerHTML=(feed.news||[]).map(n=>'<article><time>'+esc(n.date||'')+'</time><b>'+esc(n.title||'Untitled')+'</b><p>'+esc(n.text||'')+'</p>'+(n.link?'<button class="news-link" data-link="'+escAttr(n.link)+'">Open</button>':'')+'</article>').join('');
   document.querySelectorAll('.news-link').forEach(btn=>btn.onclick=()=>post('openExternal',{url:btn.dataset.link}));
   $('packs-list').innerHTML=(state.packs||[]).map(p=>'<article class="pack-card"><div class="pack-top"><div><em>'+(p.required?'REQUIRED':'OPTIONAL')+'</em><h3>'+esc(p.name)+'</h3></div><span class="pill '+(p.current?'online':(p.installed?'update':'offline'))+'">'+esc(p.status)+'</span></div><p>'+esc(p.description)+'</p><div class="dependency-note">Requires: '+esc((p.dependencies||[]).join(', ')||'None')+'</div><div class="pack-meta"><span>Available v'+esc(p.availableVersion||'?')+'</span><span>'+esc(p.source||'')+'</span></div>'+(p.required?'<div class="managed-label">Managed automatically when you press PLAY</div>':'<button class="pack-action save" data-pack="'+escAttr(p.id)+'">INSTALL</button>')+'</article>').join('');

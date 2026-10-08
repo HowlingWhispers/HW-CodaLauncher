@@ -19,6 +19,7 @@
     <Compile Include="../LauncherCore.cs" Link="Shared/LauncherCore.cs" />
     <Compile Include="../FeedService.cs" Link="Shared/FeedService.cs" />
     <Compile Include="../BundledNews.cs" Link="Shared/BundledNews.cs" />
+    <Compile Include="../GitHubNewsService.cs" Link="Shared/GitHubNewsService.cs" />
     <Content Include="../web/news.json" Link="news.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../LauncherModels.cs" Link="Shared/LauncherModels.cs" />
     <Compile Include="../ManagedMods.cs" Link="Shared/ManagedMods.cs" />

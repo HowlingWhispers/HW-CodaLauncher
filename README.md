@@ -1,5 +1,19 @@
 # CodaLauncher
 
+## GitHub-hosted Coda News (independent of launcher updates)
+
+The player-facing News panel reads the public `web/news.json` file on the
+`main` branch of `HowlingWhispers/HW-CodaLauncher` through
+`https://raw.githubusercontent.com/HowlingWhispers/HW-CodaLauncher/main/web/news.json`.
+Changes to this file appear in the launcher without publishing a new executable.
+The launcher checks at most hourly per running session, stores a validated
+copy under its local launcher data folder and falls back to that cache or the
+news included with the executable if GitHub is unreachable. The GitHub API is
+not used for articles. Server `/api/feed` remains responsible for pack and
+resource update metadata, cached separately (30 minutes online, 2 minutes
+after a failure). Keep articles player-facing and nontechnical.
+
+
 ## CodaLauncher 0.7.12: reliable Nightly updates during GitHub API rate limits
 
 GitHub's anonymous API has a shared request quota. When GitHub REST release discovery returns HTTP 403/429, both Coda Wolf and BuildCraft Nightly automatically discover published release tags through GitHub's public Atom feed instead. Downloaded official assets still require valid SHA-256 sidecars, and user-edited files cannot be overwritten. Previously verified local mods remain available when *both* discovery routes are unavailable. The background self-updater backs off for an hour after GitHub rate limiting, avoiding unnecessary repeated requests. No changes to the loader, worlds or Stable channel.

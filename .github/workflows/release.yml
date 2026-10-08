@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.13
-  CODA_TAG: v0.7.13
+  CODA_VERSION: 0.7.14
+  CODA_TAG: v0.7.14
 
 jobs:
   gate:
@@ -170,7 +170,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.13 (prerelease)
+          # CodaLauncher 0.7.14 (prerelease)
+
+          - **Transparent mod builds:** Mods shelf distinguishes the manifest version (which may remain `0.1.0-dev`) from the exact **installed GitHub Nightly release tag** for BuildCraft and Coda Wolf.
+          - Reads locally stored release markers and independently checks installed JAR bytes against their SHA-256 markers; modified or untracked mods are labeled instead of wrongly claiming verified latest.
+          - No changes to update eligibility, H.O.W.L. gameplay, mod archives, worlds or separate Stable profiles.
 
           - **GitHub News:** Coda's launcher bulletin reads public GitHub Raw `web/news.json` directly. Owners can publish a news item by editing the repo file, without redeploying a server or rebuilding the executable.
           - News refreshes at most hourly, remains available offline through cached and bundled copies, and never uses GitHub REST API or unauthenticated release quotas.

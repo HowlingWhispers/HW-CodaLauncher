@@ -355,6 +355,9 @@ internal sealed class InstallService
         // The example Hello Coda is no longer installed by default.
         // User-supplied copies are handled by no-clobber legacy migration.
         ManagedMods.Install(AppPaths.LoaderRoot, AppPaths.MinecraftRoot, progress);
+        // Do not remove any legacy content. Once every active mod is in place,
+        // move the old duplicate folder into a named preserved backup.
+        ManagedMods.ArchiveLegacy(AppPaths.LoaderRoot, progress);
         progress("Install ready.");
     }
 

@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.2
-  CODA_TAG: v0.7.2
+  CODA_VERSION: 0.7.3
+  CODA_TAG: v0.7.3
 
 jobs:
   gate:
@@ -160,19 +160,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.2 (prerelease)
+          # CodaLauncher 0.7.3 (prerelease)
 
-          Settings confirmation fix for Windows and a compatible cross-platform launcher.
+          First H.O.W.L. branding release. CodaLauncher remains the player launcher.
 
-          - Saving Settings now displays Saving..., a visible Settings saved
-            confirmation, or a precise error beside the Save button.
-          - Save button blocks duplicate submissions until the write completes.
-          - Settings are confirmed only after a successful persistent write;
-            transient failures while refreshing the Home screen no longer
-            masquerade as failed Settings saves.
-          - Keeps official Minecraft Launcher login, Local Test Mode switch,
-            CodaLoader 0.0.25 integration and existing player worlds.
-          - CI tests include the Settings save success/error flows.
+          - H.O.W.L. means Howling Open Works Loader. Home, mod shelf, profile
+            labels and both desktop editions now use the chosen name.
+          - The official Minecraft installation is renamed in place to
+            Howling Whispers | H.O.W.L. Existing profile/version identifiers,
+            game directories, worlds and custom JVM settings are preserved.
+          - Migration recognizes the legacy CodaLoader profile even when the
+            official launcher removes its custom ownership marker.
+          - Existing CML pack/resource IDs, assets, hashes and update filenames
+            remain compatible with older installations and launcher feeds.
+          - Loader update confirmation remains visible beside installed/latest
+            versions. Copy All Logs and the Local Test Mode switch remain available.
+          - Windows Settings save feedback is retained. Linux/macOS now display
+            save success or failure beside the Save button as well.
+          - Tests cover old/new profile names, repeat registration, preserved
+            JVM settings, unrelated-profile protection and Settings feedback.
 
           Official Minecraft Launcher integration and optional Local Test Mode.
 
@@ -180,7 +186,7 @@ jobs:
             the official Minecraft Launcher instead of requiring Azure app
             registration or reading Minecraft account tokens.
           - The official launcher handles Microsoft account sign-in and game
-            ownership. Players select the CodaLoader installation and press Play.
+            ownership. Players select the H.O.W.L. installation and press Play.
           - Settings has a Local Test Mode switch for direct singleplayer
             development with the original local CodaPlayer identity. This mode
             does not authorize online Howling Whispers services.
@@ -197,4 +203,4 @@ jobs:
           - Real-device verification with Minecraft 26.4 Snapshot 3 remains
             required. This is an early-access prerelease.
           EOF
-          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.7.2" --notes-file release-notes.md
+          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.7.3" --notes-file release-notes.md

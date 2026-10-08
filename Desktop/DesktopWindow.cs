@@ -62,7 +62,7 @@ internal sealed class DesktopWindow : Window
         var root = new DockPanel { Margin = new Thickness(28) };
         var heading = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 22, Margin = new Thickness(0, 0, 0, 18) };
         heading.Children.Add(new Image { Source = _portrait, Width = 150, Height = 150, Stretch = Stretch.Uniform });
-        var title = Stack(Text("HOWLING WHISPERS", 14), Text("CodaLauncher", 32), Text("Clipboard ready. Adventure pending.", 16), Text(Program.Version, 12));
+        var title = Stack(Text("HOWLING WHISPERS", 14), Text("CodaLauncher", 32), Text("H.O.W.L. · Howling Open Works Loader", 16), Text(Program.Version, 12));
         title.VerticalAlignment = VerticalAlignment.Center;
         heading.Children.Add(title);
         DockPanel.SetDock(heading, Dock.Top); root.Children.Add(heading);
@@ -73,7 +73,7 @@ internal sealed class DesktopWindow : Window
         tabs.Items.Add(Tab("HOME", Stack(_status, _versions, Text("Coda's noticeboard", 22), _news)));
         var openMods = new Button { Content = "OPEN MODS FOLDER" };
         openMods.Click += (_, _) => OpenFolder(Path.Combine(AppPaths.MinecraftRoot, "mods"));
-        tabs.Items.Add(Tab("MODS", Stack(Text("Your CML mods", 22), _mods, openMods)));
+        tabs.Items.Add(Tab("MODS", Stack(Text("Your HOWL mods", 22), _mods, openMods)));
         _signInButton.Click += async (_, _) => await AccountActionAsync(false);
         _verifyButton.Click += async (_, _) => await AccountActionAsync(true);
         _cancelButton.Click += (_, _) => _signIn?.Cancel();
@@ -102,16 +102,27 @@ internal sealed class DesktopWindow : Window
             Text("Microsoft sign-in is paused for this development build. Local singleplayer does not verify ownership or enable online services.", 14))));
         SetControls();
         var save = new Button { Content = "SAVE SETTINGS" };
+        var saveStatus = Text("", 14);
         save.Click += async (_, _) => {
+            if (!save.IsEnabled) return;
             if (!Uri.TryCreate(_feedUrl.Text, UriKind.Absolute, out var uri) || (uri.Scheme != "https" && uri.Scheme != "http"))
-            { _status.Text = "Use a valid http or https feed URL."; return; }
-            _settings.FeedUrl = uri.ToString(); _settingsStore.Save(_settings); await RefreshAsync();
+            { saveStatus.Text = "Use a valid http or https feed URL."; return; }
+            save.IsEnabled = false;
+            saveStatus.Text = "Saving...";
+            try {
+                _settings.FeedUrl = uri.ToString();
+                _settingsStore.Save(_settings);
+                saveStatus.Text = "Settings saved. Coda filed the paperwork.";
+            }
+            catch (Exception ex) { saveStatus.Text = "Could not save Settings: " + ex.Message; return; }
+            finally { save.IsEnabled = true; }
+            await RefreshAsync();
         };
         var openData = new Button { Content = "OPEN INSTALL FOLDER" };
         openData.Click += (_, _) => OpenFolder(AppPaths.InstallRoot);
-        tabs.Items.Add(Tab("SETTINGS", Stack(Text("Launcher feed", 20), _feedUrl, save,
+        tabs.Items.Add(Tab("SETTINGS", Stack(Text("Launcher feed", 20), _feedUrl, save, saveStatus,
             Text("Play normally through the official Minecraft Launcher. Enable local testing only for unverified singleplayer development.", 14), _localTest,
-            Text("Minecraft requires Java 25 or newer on PATH. Profile handles Microsoft sign-in; CodaLoader handles Minecraft downloads.", 15),
+            Text("Minecraft requires Java 25 or newer on PATH. Profile handles Microsoft sign-in; H.O.W.L. handles Minecraft downloads.", 15),
             Text("Install folder: " + AppPaths.InstallRoot, 14), openData)));
         var copyLogs = new Button { Content = "COPY ALL LOGS" };
         var copyStatus = Text("", 13);
@@ -167,7 +178,7 @@ internal sealed class DesktopWindow : Window
             var feed = await _feeds.FetchAsync(_settings.FeedUrl, _lifetime.Token);
             _installer.CurrentFeedBase = new Uri(_settings.FeedUrl.TrimEnd('/') + "/");
             var state = await Task.Run(() => _installer.CheckManagedStateAsync(feed, _lifetime.Token));
-            _versions.Text = $"Minecraft 26.4 Snapshot 3 • CodaLoader {state.InstalledLoaderVersion ?? "not installed"} • Latest {state.LatestLoaderVersion}";
+            _versions.Text = $"Minecraft 26.4 Snapshot 3 • H.O.W.L. {state.InstalledLoaderVersion ?? "not installed"} • Latest {state.LatestLoaderVersion}";
             if (replaceStatus && !_running) _status.Text = state.Current ? "Everything is where it belongs. Ready to play." : "Coda has updates to file. PLAY prepares everything automatically.";
             _news.Text = string.Join("\n\n", feed.News.Take(8).Select(n => n.Title + "\n" + n.Text));
             ScanMods();
@@ -203,8 +214,8 @@ internal sealed class DesktopWindow : Window
                     Path.Combine(AppPaths.LoaderRoot, "CodaLoader.jar"), AppPaths.MinecraftRoot, _lifetime.Token, basePackDirectory: AppPaths.CmlBaseResourcesRoot);
                 var opened = OfficialMinecraftLauncher.TryOpenLauncher();
                 _status.Text = opened
-                    ? "Minecraft Launcher opened. Select Howling Whispers | CodaLoader and press Play."
-                    : "Open Minecraft Launcher, select Howling Whispers | CodaLoader, then press Play.";
+                    ? "Minecraft Launcher opened. Select Howling Whispers | H.O.W.L. and press Play."
+                    : "Open Minecraft Launcher, select Howling Whispers | H.O.W.L., then press Play.";
             }
         }
         catch (OperationCanceledException) { }
@@ -230,7 +241,7 @@ internal sealed class DesktopWindow : Window
     private void ScanMods()
     {
         var mods = new ModScanner().Scan(AppPaths.MinecraftRoot);
-        _mods.Text = mods.Count == 0 ? "No CML mods installed yet. PLAY installs HW Essentials automatically."
+        _mods.Text = mods.Count == 0 ? "No HOWL mods installed yet. PLAY installs HW Essentials automatically."
             : string.Join("\n\n", mods.Select(m => $"{m.Name} {m.Version} • {m.Id}\n{m.FileName} • {(m.Valid ? "Ready" : m.Error)}"));
     }
     private void Report(string message) { _status.Text = message; _logs.Add(message); UpdateLog(); }

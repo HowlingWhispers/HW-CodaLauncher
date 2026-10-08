@@ -307,29 +307,29 @@ internal sealed class InstallService
                 StringComparison.OrdinalIgnoreCase))
         {
             progress(installedLoaderVersion is null
-                ? $"Installing CodaLoader {latestLoader.Version}..."
-                : $"Updating CodaLoader {installedLoaderVersion} -> {latestLoader.Version}...");
+                ? $"Installing H.O.W.L. {latestLoader.Version}..."
+                : $"Updating H.O.W.L. {installedLoaderVersion} -> {latestLoader.Version}...");
             await InstallLoaderAsync(latestLoader, progress, ct);
             var confirmedVersion = ReadInstalledLoaderVersion();
             if (!string.Equals(confirmedVersion, latestLoader.Version, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException($"CodaLoader installation verification failed: expected {latestLoader.Version}, found {confirmedVersion ?? "unknown"}.");
-            progress($"CodaLoader update completed and verified: installed {confirmedVersion}; latest release {latestLoader.Version}.");
+                throw new InvalidOperationException($"H.O.W.L. installation verification failed: expected {latestLoader.Version}, found {confirmedVersion ?? "unknown"}.");
+            progress($"H.O.W.L. update completed and verified: installed {confirmedVersion}; latest release {latestLoader.Version}.");
         }
         else
         {
-            progress($"CodaLoader checked: installed {installedLoaderVersion}; latest release {latestLoader.Version}; no update needed.");
+            progress($"H.O.W.L. checked: installed {installedLoaderVersion}; latest release {latestLoader.Version}; no update needed.");
         }
 
         var resource = ResolveCmlBaseResources(feed);
-        progress("Resolving CML Base dependencies...");
+        progress("Resolving HOWL Base dependencies...");
         if (!CmlBaseResourcesReady(resource.Version, resource.Sha256))
         {
-            progress("Updating required resource pack: CML Base Resources...");
+            progress("Updating required resource pack: HOWL Base Resources...");
             await InstallCmlBaseResourcesAsync(resource, progress, ct);
         }
         else
         {
-            progress("CML Base Resources is current.");
+            progress("HOWL Base Resources is current.");
         }
 
         var pack = feed.Packs.FirstOrDefault(item =>
@@ -341,7 +341,7 @@ internal sealed class InstallService
         Directory.CreateDirectory(AppPaths.CmlBasePackRoot);
         File.WriteAllText(AppPaths.CmlBasePackMarker, packVersion);
         File.WriteAllText(AppPaths.CmlBasePackFingerprint, PackFingerprint(packVersion, resource));
-        progress("CML Base is current.");
+        progress("HOWL Base is current.");
 
         var bundledHello = Path.Combine(AppPaths.LoaderRoot, "run", "mods", "hello-coda.jar");
         var gameMods = Path.Combine(AppPaths.MinecraftRoot, "mods");
@@ -365,11 +365,11 @@ internal sealed class InstallService
         var resource = ResolveCmlBaseResources(feed);
         if (CmlBaseResourcesReady(resource.Version, resource.Sha256))
         {
-            progress("CML Base Resources is already current.");
+            progress("HOWL Base Resources is already current.");
             return;
         }
 
-        progress("Updating resource pack: CML Base Resources...");
+        progress("Updating resource pack: HOWL Base Resources...");
         await InstallCmlBaseResourcesAsync(resource, progress, ct);
         progress("CML Base Resources ready.");
     }
@@ -454,11 +454,11 @@ internal sealed class InstallService
 
         try
         {
-            progress($"Downloading CodaLoader {release.Version} from HW-CodaLoader Releases...");
+            progress($"Downloading H.O.W.L. {release.Version} from HW-CodaLoader Releases...");
             await DownloadAsync(new Uri(release.BundleUrl), zip, ct, progress);
             ZipFile.ExtractToDirectory(zip, staging, true);
 
-            progress($"Installing CodaLoader {release.Version}...");
+            progress($"Installing H.O.W.L. {release.Version}...");
             ReplaceDirectory(staging, AppPaths.LoaderRoot);
         }
         finally
@@ -499,10 +499,10 @@ internal sealed class InstallService
         return new ResourcePackCatalogInfo
         {
             Id = "cml-base-resources",
-            Name = "CML Base Resources",
+            Name = "HOWL Base Resources",
             Version = CmlBaseResourcesVersion,
             Required = true,
-            Description = "Official CML title branding, panorama scenes, menu music, splashes and shared presentation assets.",
+            Description = "Official HOWL title branding, panorama scenes, menu music, splashes and shared presentation assets.",
             Url = string.IsNullOrWhiteSpace(feed.BasePack.Url)
                 ? "/assets/CML-Base-Resources-v1.zip"
                 : feed.BasePack.Url,
@@ -578,7 +578,7 @@ internal sealed class InstallService
             if (!Directory.Exists(Path.Combine(staging, "branding"))
                 || !Directory.Exists(Path.Combine(staging, "music", "default")))
                 throw new InvalidDataException(
-                    "CML Base Resources is missing required branding or default music.");
+                    "HOWL Base Resources is missing required branding or default music.");
 
             progress($"Installing resource pack to: {AppPaths.CmlBaseResourcesRoot}");
             ReplaceDirectory(staging, AppPaths.CmlBaseResourcesRoot);

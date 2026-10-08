@@ -285,7 +285,7 @@ public partial class MainWindow : Window
                         current = managed.PackCurrent,
                         installedVersion = managed.PackInstalled ? pack.Version : "",
                         availableVersion = pack.Version,
-                        source = "CML Pack Catalog",
+                        source = "HOWL Pack Catalog",
                         dependencies = pack.ResourcePacks,
                         status = managed.PackCurrent
                             ? "Current"
@@ -360,7 +360,7 @@ public partial class MainWindow : Window
                 message =>
                 {
                     _logs.Add(message);
-                    if (message.StartsWith("CodaLoader ", StringComparison.Ordinal))
+                    if (message.StartsWith("H.O.W.L. ", StringComparison.Ordinal))
                         Dispatcher.Invoke(() => Send(new { type = "loaderUpdateStatus", message }));
                     Dispatcher.Invoke(() => Send(new
                     {
@@ -374,7 +374,7 @@ public partial class MainWindow : Window
 
             _settings.LoaderPath = AppPaths.LoaderRoot;
             _settingsStore.Save(_settings);
-            Send(new { type = "installStatus", busy = false, ok = true, message = "CML install ready." });
+            Send(new { type = "installStatus", busy = false, ok = true, message = "HOWL install ready." });
             await SendState();
         }
         catch (Exception ex)
@@ -465,7 +465,7 @@ public partial class MainWindow : Window
             feed.Packs.Add(new PackCatalogInfo
             {
                 Id = "cml-base",
-                Name = "CML Base",
+                Name = "HOWL Base",
                 Version = "1",
                 Required = true,
                 Description = "Required foundation pack for Howling Whispers Minecraft.",
@@ -479,7 +479,7 @@ public partial class MainWindow : Window
             feed.ResourcePacks.Add(new ResourcePackCatalogInfo
             {
                 Id = "cml-base-resources",
-                Name = "CML Base Resources",
+                Name = "HOWL Base Resources",
                 Version = "1",
                 Required = true,
                 Description = "Official title banner, panorama scenes, menu music, splashes and shared presentation assets.",
@@ -488,6 +488,10 @@ public partial class MainWindow : Window
                 RequiredBy = ["cml-base"]
             });
         }
+        foreach (var pack in feed.Packs)
+            if (pack.Id.Equals("cml-base", StringComparison.OrdinalIgnoreCase)) pack.Name = "HOWL Base";
+        foreach (var resource in feed.ResourcePacks)
+            if (resource.Id.Equals("cml-base-resources", StringComparison.OrdinalIgnoreCase)) resource.Name = "HOWL Base Resources";
     }
 
     private static string FriendlyInstallError(Exception ex)
@@ -596,9 +600,9 @@ public partial class MainWindow : Window
                     Path.Combine(loader!, "CodaLoader.jar"), AppPaths.MinecraftRoot, _windowLifetime.Token, basePackDirectory: AppPaths.CmlBaseResourcesRoot);
                 var opened = OfficialMinecraftLauncher.TryOpenLauncher();
                 var message = opened
-                    ? "Official Minecraft Launcher opened. Select Howling Whispers | CodaLoader, then press Play."
-                    : "Official profile installed. Open Minecraft Launcher, select Howling Whispers | CodaLoader, then press Play.";
-                _logs.Add("CodaLoader official installation registered in " + profile);
+                    ? "Official Minecraft Launcher opened. Select Howling Whispers | H.O.W.L., then press Play."
+                    : "Official profile installed. Open Minecraft Launcher, select Howling Whispers | H.O.W.L., then press Play.";
+                _logs.Add("H.O.W.L. official installation registered in " + profile);
                 _logs.Add(message);
                 Send(new { type = "installStatus", busy = false, ok = true, message });
                 Send(new { type = "launchStatus", ok = true, message });

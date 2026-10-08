@@ -1,6 +1,18 @@
 # CodaLauncher
 
-Desktop launcher for Howling Whispers Minecraft, pinned to **Minecraft Java 26.4 Snapshot 3**.
+Desktop launcher for **H.O.W.L. (Howling Open Works Loader)** and Howling Whispers Minecraft, pinned to **Minecraft Java 26.4 Snapshot 3**.
+
+## H.O.W.L. 0.7.3 branding release
+
+CodaLauncher keeps its name. The loader and player-facing mod platform now use
+H.O.W.L.; the official Minecraft installation is renamed in place. Legacy
+profile IDs, loader filenames, CML pack IDs, asset names, Java API packages,
+settings and save directories remain compatible. Custom official-launcher JVM
+settings are preserved. Both launch modes and Copy All Logs remain available.
+
+Linux/macOS Settings now show save confirmation or an error next to Save.
+Windows retains its existing save feedback. Live Snapshot 3 launch and menu
+verification remains outstanding; this is an early-access prerelease.
 
 ## Downloads
 
@@ -14,7 +26,7 @@ Choose the package for your computer from [GitHub Releases](https://github.com/H
 | Intel Mac | `macos-x64.zip` |
 | Apple Silicon Mac | `macos-arm64.zip` |
 
-Windows: download and run `CodaLauncher-v0.7.2-win64-Setup.exe`. Setup installs to `%LOCALAPPDATA%\Programs\CodaLauncher`, adds a Start Menu shortcut and offers a desktop shortcut (selected by default). Open CodaLauncher when Setup finishes. Administrator access is not required. If WebView2 is missing, Setup installs it from Microsoft; this step needs internet access.
+Windows: download and run `CodaLauncher-v0.7.3-win64-Setup.exe`. Setup installs to `%LOCALAPPDATA%\Programs\CodaLauncher`, adds a Start Menu shortcut and offers a desktop shortcut (selected by default). Open CodaLauncher when Setup finishes. Administrator access is not required. If WebView2 is missing, Setup installs it from Microsoft; this step needs internet access.
 
 For portable Windows use, extract the whole ZIP and open CodaLauncher.exe. Keep the ZIP available for the existing self-updater; Setup is the player-facing download.
 
@@ -38,9 +50,9 @@ Microsoft password or OAuth token into CodaLauncher.
 2. **Close it** before clicking Play in CodaLauncher; otherwise Minecraft
    Launcher may overwrite the installation-profile file on exit.
 3. CodaLauncher checks the published CodaLoader and mods, registers its own
-   `Howling Whispers | CodaLoader` installation in the official launcher,
+   `Howling Whispers | H.O.W.L.` installation in the official launcher,
    and asks the official launcher to open.
-4. Select the **Howling Whispers | CodaLoader** installation (enable modded
+4. Select the **Howling Whispers | H.O.W.L.** installation (enable modded
    installations if necessary), then click Play in Minecraft Launcher.
 5. The official launcher supplies your Minecraft credentials. CodaLoader's
    Java agent supplies the HW menus, game hooks, and managed mods.
@@ -66,7 +78,7 @@ integration is still awaiting a live game test on Minecraft 26.4 Snapshot 3.
 
 ## Play and mods
 
-PLAY checks the current CodaLoader release, prepares CML Base Resources and installs/updates HW Essentials in the active Minecraft profile before starting the game. Mod versions are read from `coda.mod.json` in the active profile's `mods` folder.
+PLAY checks the current CodaLoader release, prepares HOWL Base Resources and installs/updates HW Essentials in the active Minecraft profile before starting the game. Mod versions are read from `coda.mod.json` in the active profile's `mods` folder.
 
 Known official mod files share CodaLoader's ownership marker. Manually modified conflicting files are preserved and reported. Player worlds, homes, settings and custom music are stored outside the launcher application folder.
 
@@ -84,7 +96,7 @@ Linux/macOS check for launcher updates while open, every five minutes, on activa
 
 Data is stored below the OS ApplicationData directory in `.howlingshispers`: Windows normally uses %APPDATA%, Linux normally ~/.config, macOS normally ~/Library/Application Support. Settings live in `launcher/settings.json`; Minecraft lives in `minecraft/`.
 
-Default feed: https://thehowlingwhispers.com/launcher. The client appends `api/feed` and offers offline news fallback. CML Base Resources downloads remain SHA-256 checked.
+Default feed: https://thehowlingwhispers.com/launcher. The client appends `api/feed` and offers offline news fallback. HOWL Base Resources downloads remain SHA-256 checked.
 
 ## Build
 
@@ -113,7 +125,7 @@ On Windows with Inno Setup 6 and .NET 8 installed:
 
 ```powershell
 dotnet publish CodaLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/payload
-./packaging/windows/build-installer.ps1 -Version 0.7.2
+./packaging/windows/build-installer.ps1 -Version 0.7.3
 ```
 
 The build script downloads Microsoft's WebView2 bootstrapper and verifies its Authenticode signature before embedding it. Setup and shortcut icons use the approved bundled Coda portrait. CI runs `test-installer.ps1` on a clean Windows runner to check install/reinstall, shortcut targets, Installed Apps registration, actual WebView2 UI startup, uninstall and saved-world preservation. Run that test only on a disposable Windows environment. The installer itself is currently unsigned.
@@ -122,4 +134,4 @@ Landing-page Windows download buttons should link directly to the release's `win
 
 ## Account verification in development
 
-The source now extends **Profile** with Microsoft sign-in, Minecraft Java ownership verification, sign-out, and explicit offline selection. This is not in the published 0.7.2 installer yet. Live sign-in awaits CodaLauncher's own registered Microsoft application ID and API access. See [authentication setup](docs/microsoft-authentication.md) for configuration, storage behavior and release prerequisites.
+The source now extends **Profile** with Microsoft sign-in, Minecraft Java ownership verification, sign-out, and explicit offline selection. This is not in the published 0.7.3 installer yet. Live sign-in awaits CodaLauncher's own registered Microsoft application ID and API access. See [authentication setup](docs/microsoft-authentication.md) for configuration, storage behavior and release prerequisites.

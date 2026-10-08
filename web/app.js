@@ -153,9 +153,9 @@ function render(){
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
   $('loader-versions').textContent='Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
   $('loader-update-result').textContent=loaderUpdateMessage;
-  $('loader-chip').textContent=state.loaderCurrent?'CML CURRENT':(state.loaderReady?'CML UPDATE READY':'CML INSTALL');
+  $('loader-chip').textContent=state.loaderCurrent?'HOWL CURRENT':(state.loaderReady?'HOWL UPDATE READY':'HOWL INSTALL');
   $('loader-chip').className=state.loaderCurrent?'good':(state.loaderReady?'warn':'bad');
-  $('pack-chip').textContent=state.basePackReady?'CML BASE CURRENT':(state.managedInstalled?'CML BASE UPDATE READY':'CML BASE INSTALL');
+  $('pack-chip').textContent=state.basePackReady?'HOWL BASE CURRENT':(state.managedInstalled?'HOWL BASE UPDATE READY':'HOWL BASE INSTALL');
   $('pack-chip').className=state.basePackReady?'good':(state.managedInstalled?'warn':'bad');
   $('mod-chip').textContent=state.modCount+' mod'+(state.modCount===1?'':'s');
   $('play').disabled=installBusy||state.gameRunning||state.accountBusy;
@@ -167,7 +167,7 @@ function render(){
       ? 'Coda checked the essentials. Everything is where it belongs.'
       : state.managedInstalled
         ? 'Coda found a few things that need freshening up. PLAY will handle them automatically.'
-        : 'Coda will install CodaLoader, CML Base and the required Resourcepacks for you.';
+        : 'Coda will install H.O.W.L., HOWL Base and the required Resourcepacks for you.';
   const feed=state.feed;
   $('feed-pill').textContent=feed.online?'NEWS ONLINE':'NEWS OFFLINE';
   $('feed-pill').className='pill '+(feed.online?'online':'offline');
@@ -180,7 +180,7 @@ function render(){
     if(installBusy) btn.textContent='WORKING…';
     btn.onclick=requestInstall;
   });
-  $('resourcepacks-list').innerHTML=(state.resourcePacks||[]).map(r=>'<article class="pack-card"><div class="pack-top"><div><em>'+(r.required?'REQUIRED DEPENDENCY':'OPTIONAL')+'</em><h3>'+esc(r.name)+'</h3></div><span class="pill '+(r.current?'online':(r.installed?'update':'offline'))+'">'+esc(r.status)+'</span></div><p>'+esc(r.description)+'</p><div class="dependency-note">Required by: '+esc((r.requiredBy||[]).join(', ')||'None')+'</div><div class="contents-note">'+(r.contents||[]).map(x=>'<span>'+esc(x)+'</span>').join('')+'</div><div class="pack-meta"><span>Available v'+esc(r.availableVersion||'?')+'</span><span>'+esc(r.source||'')+'</span></div>'+(r.required?'<div class="managed-label">Managed automatically by '+esc((r.requiredBy||[]).join(', ')||'CML')+'</div>':'<button class="resourcepack-action save" data-resourcepack="'+escAttr(r.id)+'">INSTALL</button>')+'</article>').join('');
+  $('resourcepacks-list').innerHTML=(state.resourcePacks||[]).map(r=>'<article class="pack-card"><div class="pack-top"><div><em>'+(r.required?'REQUIRED DEPENDENCY':'OPTIONAL')+'</em><h3>'+esc(r.name)+'</h3></div><span class="pill '+(r.current?'online':(r.installed?'update':'offline'))+'">'+esc(r.status)+'</span></div><p>'+esc(r.description)+'</p><div class="dependency-note">Required by: '+esc((r.requiredBy||[]).join(', ')||'None')+'</div><div class="contents-note">'+(r.contents||[]).map(x=>'<span>'+esc(x)+'</span>').join('')+'</div><div class="pack-meta"><span>Available v'+esc(r.availableVersion||'?')+'</span><span>'+esc(r.source||'')+'</span></div>'+(r.required?'<div class="managed-label">Managed automatically by '+esc((r.requiredBy||[]).join(', ')||'HOWL')+'</div>':'<button class="resourcepack-action save" data-resourcepack="'+escAttr(r.id)+'">INSTALL</button>')+'</article>').join('');
   document.querySelectorAll('.resourcepack-action').forEach(btn=>{
     btn.disabled=installBusy;
     if(installBusy) btn.textContent='WORKING…';
@@ -191,7 +191,7 @@ function render(){
     };
   });
   $('mods-count').textContent=state.mods.length+' jar'+(state.mods.length===1?'':'s');
-  $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Ready':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No CML mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
+  $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Ready':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No HOWL mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
   $('loader-path').value=state.settings.loaderPath||'';$('feed-url').value=state.settings.feedUrl||'';$('close-after').checked=!!state.settings.closeAfterLaunch;
   $('local-test-mode').checked=!!state.settings.localTestMode;
   $('p-cml').textContent=state.profile.cmlAccount;$('p-mc').textContent=state.localSingleplayer?'Unverified (local test)':'Handled by Minecraft Launcher';$('p-discord').textContent=state.profile.discord;

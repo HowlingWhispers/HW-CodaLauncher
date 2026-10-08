@@ -4,8 +4,8 @@
   <key>CFBundleName</key><string>CodaLauncher</string>
   <key>CFBundleDisplayName</key><string>CodaLauncher</string>
   <key>CFBundleIdentifier</key><string>dev.howlingwhispers.codalauncher</string>
-  <key>CFBundleVersion</key><string>0.6.0</string>
-  <key>CFBundleShortVersionString</key><string>0.6.0</string>
+  <key>CFBundleVersion</key><string>0.7.3</string>
+  <key>CFBundleShortVersionString</key><string>0.7.3</string>
   <key>CFBundleExecutable</key><string>CodaLauncher</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>NSHighResolutionCapable</key><true/>

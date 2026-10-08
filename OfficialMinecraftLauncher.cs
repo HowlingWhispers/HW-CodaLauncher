@@ -18,6 +18,8 @@ internal static class OfficialMinecraftLauncher
     internal const string MinecraftVersion = "26.4-snapshot-3";
     internal const string VersionId = "codaloader-" + MinecraftVersion;
     internal const string ProfileId = "HowlingWhispers-CodaLoader";
+    internal const string ProfileName = "Howling Whispers | H.O.W.L.";
+    private const string LegacyProfileName = "Howling Whispers | CodaLoader";
     private const string ManifestUrl = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
     internal static string DefaultMinecraftDirectory =>
@@ -107,7 +109,7 @@ internal static class OfficialMinecraftLauncher
         // removed, while still refusing an unrelated profile collision.
         bool recognizable = existing is not null && (
             existing["codaloaderManaged"]?.ToString() == "true" ||
-            (existing["name"]?.ToString() == "Howling Whispers | CodaLoader" &&
+            ((existing["name"]?.ToString() == ProfileName || existing["name"]?.ToString() == LegacyProfileName) &&
              existing["lastVersionId"]?.ToString() == VersionId &&
              existing["gameDir"]?.ToString() == gameDirectory));
         if (entries.ContainsKey(ProfileId) && !recognizable)
@@ -115,7 +117,7 @@ internal static class OfficialMinecraftLauncher
 
         var now = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
         var profile = existing is null ? new JsonObject() : (JsonObject)existing.DeepClone();
-        profile["name"] = "Howling Whispers | CodaLoader";
+        profile["name"] = ProfileName;
         profile["type"] = "custom";
         profile["lastVersionId"] = VersionId;
         profile["gameDir"] = gameDirectory;

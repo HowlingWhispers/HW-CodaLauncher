@@ -8,7 +8,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 internal static class Program
 {
-    internal const string Version = "0.7.2";
+    internal const string Version = "0.7.3";
     internal static bool SmokeUi;
 
     [STAThread]

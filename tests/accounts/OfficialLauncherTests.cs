@@ -27,6 +27,8 @@ internal static class OfficialLauncherTests
             Check(updated["clientToken"]?.ToString() == "leave-me-alone", "unrelated launcher metadata changed");
             Check(updated["profiles"]?["otherProfile"]?["name"]?.ToString() == "Friend's world", "unrelated profile changed");
             Check(updated["profiles"]?[OfficialMinecraftLauncher.ProfileId]?["gameDir"]?.ToString() == Path.GetFullPath(coda), "isolated world directory missing");
+            Check(updated["profiles"]?[OfficialMinecraftLauncher.ProfileId]?["name"]?.ToString() == OfficialMinecraftLauncher.ProfileName,
+                "HOWL installation name missing");
             Check(updated["profiles"]?[OfficialMinecraftLauncher.ProfileId]?["lastVersionId"]?.ToString() == OfficialMinecraftLauncher.VersionId,
                 "custom version association missing");
             Check(File.Exists(launcherProfiles + ".codaloader-backup"), "profile backup missing");
@@ -44,11 +46,21 @@ internal static class OfficialLauncherTests
                 "repeated registration duplicated profiles");
 
             var p = JsonNode.Parse(await File.ReadAllTextAsync(launcherProfiles))!;
+            p["profiles"]![OfficialMinecraftLauncher.ProfileId]!["name"] = "Howling Whispers | CodaLoader";
+            p["profiles"]![OfficialMinecraftLauncher.ProfileId]!["javaArgs"] = "-Xmx4G";
             p["profiles"]![OfficialMinecraftLauncher.ProfileId]!.AsObject().Remove("codaloaderManaged");
             await File.WriteAllTextAsync(launcherProfiles, p.ToJsonString());
             await OfficialMinecraftLauncher.InstallProfileAsync(jar, coda, default, minecraft, http);
             Check(JsonNode.Parse(await File.ReadAllTextAsync(launcherProfiles))!["profiles"]!.AsObject().Count == 2,
                 "profile was lost when Mojang removed custom metadata");
+            var migrated = JsonNode.Parse(await File.ReadAllTextAsync(launcherProfiles))!["profiles"]![OfficialMinecraftLauncher.ProfileId]!;
+            Check(migrated["name"]?.ToString() == OfficialMinecraftLauncher.ProfileName && migrated["javaArgs"]?.ToString() == "-Xmx4G",
+                "legacy profile migration lost its name or custom memory settings");
+            migrated.AsObject().Remove("codaloaderManaged");
+            var rewritten = JsonNode.Parse(await File.ReadAllTextAsync(launcherProfiles))!;
+            rewritten["profiles"]![OfficialMinecraftLauncher.ProfileId] = migrated.DeepClone();
+            await File.WriteAllTextAsync(launcherProfiles, rewritten.ToJsonString());
+            await OfficialMinecraftLauncher.InstallProfileAsync(jar, coda, default, minecraft, http);
             p = JsonNode.Parse(await File.ReadAllTextAsync(launcherProfiles))!;
             p["profiles"]![OfficialMinecraftLauncher.ProfileId]!["codaloaderManaged"] = false;
             p["profiles"]![OfficialMinecraftLauncher.ProfileId]!["name"] = "Unrelated profile";

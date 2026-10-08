@@ -38,16 +38,41 @@ internal sealed class CodaWolfNightlyInstaller
     {
         try
         {
-            return File.Exists(JarPath) && File.Exists(HashMarker) && File.Exists(TagMarker)
-                && HashFile(JarPath).Equals(File.ReadAllText(HashMarker).Trim(), StringComparison.OrdinalIgnoreCase);
+            if (!File.Exists(JarPath) || !File.Exists(HashMarker) || !File.Exists(TagMarker)
+                || !HashFile(JarPath).Equals(File.ReadAllText(HashMarker).Trim(), StringComparison.OrdinalIgnoreCase)
+                || !File.ReadAllText(TagMarker).Trim().StartsWith(TagPrefix, StringComparison.Ordinal))
+                return false;
+            VerifyJar(JarPath);
+            return true;
         }
         catch (IOException) { return false; }
         catch (UnauthorizedAccessException) { return false; }
+        catch (InvalidDataException) { return false; }
     }
 
     internal async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation)
     {
         ArgumentNullException.ThrowIfNull(report);
+        try
+        {
+            return await InstallOnlineAsync(report, cancellation);
+        }
+        catch (Exception error) when (error is HttpRequestException
+                || (error is OperationCanceledException && !cancellation.IsCancellationRequested))
+        {
+            if (!HasManagedInstall())
+                throw new IOException("GitHub is unreachable and Coda Wolf has no verified local installation. " +
+                    "Retry when your GitHub connection works. Existing world saves and mods are untouched.", error);
+            string installedTag = File.ReadAllText(TagMarker).Trim();
+            report("GitHub Coda Wolf update check unavailable (" + error.GetType().Name + "). " +
+                "Using checksum-verified local Coda Wolf " + installedTag +
+                ". New updates will be checked next time.");
+            return installedTag;
+        }
+    }
+
+    private async Task<string> InstallOnlineAsync(Action<string> report, CancellationToken cancellation)
+    {
         var release = await FindNewestAsync(cancellation);
         // Never trust a version name without verifying its released checksum.
         byte[] checksum = await DownloadAsync(release.ChecksumUrl, 4096, cancellation);

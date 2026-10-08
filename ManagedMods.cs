@@ -123,7 +123,8 @@ internal static class ManagedMods
 
     public static void Install(string loaderRoot, string gameRoot, Action<string> progress)
     {
-        MigrateLegacy(loaderRoot, gameRoot, progress);
+        // Explicit action installs ONLY Essentials; never silently migrates
+        // third-party mods from a legacy loader folder.
         var bytes = BundledEssentials(loaderRoot);
         var expected = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         var mods = Path.Combine(gameRoot, "mods");

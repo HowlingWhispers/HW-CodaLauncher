@@ -118,9 +118,12 @@ internal sealed class NightlyBuildInstaller
         catch (Exception error) when (error is HttpRequestException
                 || (error is OperationCanceledException && !cancellation.IsCancellationRequested))
         {
+            if (installBuildCraft || installQuiet)
+                throw new IOException("Cannot check/download optional mod updates while GitHub is unreachable. "
+                    + "Your installed mods and saves were preserved.", error);
             if (!Installed)
-                throw new IOException("GitHub is unreachable and no installed H.O.W.L. Nightly runtime is available. " +
-                    "Check your internet connection, then retry Play. Your worlds and mods were not deleted.", error);
+                throw new IOException("GitHub is unreachable and no checksum-verified H.O.W.L. Nightly runtime is available. "
+                    + "Check your connection, then retry Play. Your worlds and mods were not deleted.", error);
             var installedTag = File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim();
             report("GitHub update check unavailable (" + error.GetType().Name + "). " +
                 "Using previously installed BuildCraft " + installedTag +

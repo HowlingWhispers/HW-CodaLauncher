@@ -70,7 +70,8 @@ internal sealed class CodaWolfNightlyInstaller
         report("Coda Wolf Companion uninstalled. Saved worlds and companion data preserved.");
     }
 
-    internal async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation)
+    internal async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation,
+        bool allowCachedFallback = true)
     {
         ArgumentNullException.ThrowIfNull(report);
         try
@@ -80,6 +81,9 @@ internal sealed class CodaWolfNightlyInstaller
         catch (Exception error) when (error is HttpRequestException
                 || (error is OperationCanceledException && !cancellation.IsCancellationRequested))
         {
+            if (!allowCachedFallback)
+                throw new IOException("GitHub cannot be reached, so the optional Coda Wolf install/update "
+                    + "could not be checked. Existing files are preserved.", error);
             if (!HasManagedInstall())
                 throw new IOException("GitHub is unreachable and Coda Wolf has no verified local installation. " +
                     "Retry when your GitHub connection works. Existing world saves and mods are untouched.", error);

@@ -138,7 +138,7 @@ internal sealed class LogBuffer
         lock (_gate)
         {
             _lines.Enqueue(line);
-            while (_lines.Count > 500) _lines.Dequeue();
+            while (_lines.Count > 10000) _lines.Dequeue();
         }
         return line;
     }

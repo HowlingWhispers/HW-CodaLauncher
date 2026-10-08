@@ -44,7 +44,14 @@ internal static class OfficialLauncherTests
                 "repeated registration duplicated profiles");
 
             var p = JsonNode.Parse(await File.ReadAllTextAsync(launcherProfiles))!;
+            p["profiles"]![OfficialMinecraftLauncher.ProfileId]!.AsObject().Remove("codaloaderManaged");
+            await File.WriteAllTextAsync(launcherProfiles, p.ToJsonString());
+            await OfficialMinecraftLauncher.InstallProfileAsync(jar, coda, default, minecraft, http);
+            Check(JsonNode.Parse(await File.ReadAllTextAsync(launcherProfiles))!["profiles"]!.AsObject().Count == 2,
+                "profile was lost when Mojang removed custom metadata");
+            p = JsonNode.Parse(await File.ReadAllTextAsync(launcherProfiles))!;
             p["profiles"]![OfficialMinecraftLauncher.ProfileId]!["codaloaderManaged"] = false;
+            p["profiles"]![OfficialMinecraftLauncher.ProfileId]!["name"] = "Unrelated profile";
             await File.WriteAllTextAsync(launcherProfiles, p.ToJsonString());
             string protectedOriginal = await File.ReadAllTextAsync(launcherProfiles);
             bool rejected = false;

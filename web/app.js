@@ -74,6 +74,11 @@ $('account-signout').onclick=()=>post('signOutAccount');
 $('account-cancel').onclick=()=>post('cancelSignIn');
 $('account-offline').onchange=()=>post('setPlayMode',{offline:$('account-offline').checked});
 $('copy-all-logs').onclick=()=>post('copyAllLogs');
+$('update-channel').onchange=()=>{
+  const nightly=$('update-channel').value==='nightly';
+  $('nightly-warning').hidden=!nightly;
+  if(nightly) $('local-test-mode').checked=true;
+};
 $('refresh').onclick=()=>post('refresh');
 $('play').onclick=()=>{
   if(installBusy) return;

@@ -54,17 +54,18 @@ function renderAccount(){
   const a=state?.account;
   if(!a) return;
   const locked=!!state.gameRunning||!!state.accountBusy||installBusy;
-  $('account-status').textContent=a.status;
-  $('account-name').textContent=a.signedIn?a.playerName:'Not signed in';
+  const local=!!state.localSingleplayer;
+  $('account-status').textContent=local?'Microsoft sign-in is paused. Local singleplayer is available without Azure.':a.status;
+  $('account-name').textContent=local?'CodaPlayer (local only)':a.signedIn?a.playerName:'Not signed in';
   $('account-verified').textContent=a.verifiedAt?'Last verified: '+new Date(a.verifiedAt).toLocaleString():'';
   $('account-storage').textContent=a.storage;
-  $('account-signin').disabled=locked||!a.configured;
-  $('account-verify').disabled=locked||!a.signedIn||!a.configured;
-  $('account-signout').disabled=!!state.gameRunning||installBusy||!a.signedIn;
+  $('account-signin').disabled=local||locked||!a.configured;
+  $('account-verify').disabled=local||locked||!a.signedIn||!a.configured;
+  $('account-signout').disabled=local||!!state.gameRunning||installBusy||!a.signedIn;
   $('account-cancel').hidden=!state.accountBusy;
-  $('account-offline').checked=!!state.settings.offlineMode;
-  $('account-offline').disabled=locked||(!a.offlineAvailable&&!state.settings.offlineMode);
-  $('p-mc').textContent=a.signedIn?'Previously verified':'Not verified';
+  $('account-offline').checked=local||!!state.settings.offlineMode;
+  $('account-offline').disabled=local||locked||(!a.offlineAvailable&&!state.settings.offlineMode);
+  $('p-mc').textContent=local?'Unverified (local only)':a.signedIn?'Previously verified':'Not verified';
 }
 $('account-signin').onclick=()=>post('signInMicrosoft');
 $('account-verify').onclick=()=>post('verifyAccount');
@@ -134,9 +135,9 @@ function render(){
   $('pack-chip').textContent=state.basePackReady?'CML BASE CURRENT':(state.managedInstalled?'CML BASE UPDATE READY':'CML BASE INSTALL');
   $('pack-chip').className=state.basePackReady?'good':(state.managedInstalled?'warn':'bad');
   $('mod-chip').textContent=state.modCount+' mod'+(state.modCount===1?'':'s');
-  $('play').disabled=installBusy||state.gameRunning||state.accountBusy||!state.account?.signedIn||(state.settings.offlineMode&&!state.account.offlineAvailable);
+  $('play').disabled=installBusy||state.gameRunning||state.accountBusy||(!state.localSingleplayer&&(!state.account?.signedIn||(state.settings.offlineMode&&!state.account.offlineAvailable)));
   if(state.gameRunning) $('play').textContent='RUNNING';
-  else if(!installBusy) $('play').textContent=state.settings.offlineMode?'PLAY OFFLINE ▶':state.managedInstalled?'PLAY ▶':'INSTALL & PLAY ▶';
+  else if(!installBusy) $('play').textContent=state.localSingleplayer?'PLAY LOCAL ▶':state.settings.offlineMode?'PLAY OFFLINE ▶':state.managedInstalled?'PLAY ▶':'INSTALL & PLAY ▶';
   $('loader-summary').textContent=state.gameRunning
     ? 'Minecraft is running. Coda is keeping the clipboard warm.'
     : state.managedCurrent
@@ -169,7 +170,7 @@ function render(){
   $('mods-count').textContent=state.mods.length+' jar'+(state.mods.length===1?'':'s');
   $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Ready':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No CML mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
   $('loader-path').value=state.settings.loaderPath||'';$('feed-url').value=state.settings.feedUrl||'';$('close-after').checked=!!state.settings.closeAfterLaunch;
-  $('p-cml').textContent=state.profile.cmlAccount;$('p-mc').textContent=state.profile.minecraftOwnership;$('p-discord').textContent=state.profile.discord;
+  $('p-cml').textContent=state.profile.cmlAccount;$('p-mc').textContent=state.localSingleplayer?'Unverified (local only)':state.profile.minecraftOwnership;$('p-discord').textContent=state.profile.discord;
   $('log-output').textContent=(state.logs||[]).join('\n')||'Nothing interesting has happened yet.';
 }
 function appendLog(line){const pre=$('log-output');pre.textContent=(pre.textContent==='Nothing interesting has happened yet.'?'':pre.textContent+'\n')+line;pre.parentElement.scrollTop=pre.parentElement.scrollHeight;}

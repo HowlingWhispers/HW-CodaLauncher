@@ -205,6 +205,12 @@ function render(){
     if(installBusy) btn.textContent='WORKING…';
     btn.onclick=requestInstall;
   });
+  $('nightly-quiet-card').hidden=!nightly;
+  if(nightly){
+    $('nightly-quiet-status').textContent=state.nightlyQuietInstalled
+      ? 'Installed for new worlds' : 'Awaiting Nightly download';
+    $('nightly-quiet-status').className='pill '+(state.nightlyQuietInstalled?'online':'offline');
+  }
   $('resourcepacks-list').innerHTML=(state.resourcePacks||[]).map(r=>'<article class="pack-card"><div class="pack-top"><div><em>'+(r.required?'REQUIRED DEPENDENCY':'OPTIONAL')+'</em><h3>'+esc(r.name)+'</h3></div><span class="pill '+(r.current?'online':(r.installed?'update':'offline'))+'">'+esc(r.status)+'</span></div><p>'+esc(r.description)+'</p><div class="dependency-note">Required by: '+esc((r.requiredBy||[]).join(', ')||'None')+'</div><div class="contents-note">'+(r.contents||[]).map(x=>'<span>'+esc(x)+'</span>').join('')+'</div><div class="pack-meta"><span>Available v'+esc(r.availableVersion||'?')+'</span><span>'+esc(r.source||'')+'</span></div>'+(r.required?'<div class="managed-label">Managed automatically by '+esc((r.requiredBy||[]).join(', ')||'HOWL')+'</div>':'<button class="resourcepack-action save" data-resourcepack="'+escAttr(r.id)+'">INSTALL</button>')+'</article>').join('');
   document.querySelectorAll('.resourcepack-action').forEach(btn=>{
     btn.disabled=installBusy;

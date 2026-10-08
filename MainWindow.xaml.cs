@@ -615,7 +615,20 @@ public partial class MainWindow : Window
                 _logs.Add("Nightly world directory: " + NightlyBuildInstaller.GameRoot);
                 _launcher.Launch(nightRoot, identity!, NightlyBuildInstaller.GameRoot);
                 if (_settings.CloseAfterLaunch) Close();
-                else await SendState();
+                else
+                {
+                    // Game launch is already successful. A subsequent GitHub update-status
+                    // refresh must never make the launcher report "launch preparation failed".
+                    try { await SendState(); }
+                    catch (Exception error) when (error is HttpRequestException
+                            || error is TaskCanceledException)
+                    {
+                        var notice = "Minecraft Nightly launch started. GitHub status refresh is unavailable; " +
+                                     "your installed game was not interrupted.";
+                        _logs.Add(notice + " " + error.Message);
+                        Send(new { type = "launchStatus", ok = true, message = notice });
+                    }
+                }
                 return;
             }
             if (!_settings.LocalTestMode && _settings.OfflineMode && !LocalSingleplayer.Enabled)

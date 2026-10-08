@@ -28,7 +28,11 @@ internal static class NightlyModIdentity
             info.FileName.Equals("buildcraft-cml-0.1.0-dev.jar", StringComparison.OrdinalIgnoreCase))
         {
             marker = Path.Combine(gameRoot, "mods", ".howl-buildcraft-managed.sha256");
-            tagFile = Path.Combine(Path.GetDirectoryName(gameRoot)!, "loader", ".nightly-tag");
+            // BuildCraft is optional and can stay at an older release while
+            // the required H.O.W.L. runtime updates independently.
+            tagFile = Path.Combine(gameRoot, "mods", ".howl-buildcraft-tag");
+            if (!File.Exists(tagFile))
+                tagFile = Path.Combine(Path.GetDirectoryName(gameRoot)!, "loader", ".nightly-tag");
             prefix = "nightly-buildcraft-";
         }
         else return info;

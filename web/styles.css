@@ -30,3 +30,18 @@
 #nightly-warning[hidden]{display:none}
 
 #nightly-quiet-card[hidden] { display: none; }
+
+/* Optional add-ons are explicit actions, never part of automatic PLAY. */
+.mod-help{font-size:12px;color:var(--muted);line-height:1.55;margin:15px 0}
+.optional-mods{display:grid;gap:11px;margin:18px 0 22px}
+.optional-mod{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;border:1px solid #294957;border-radius:11px;background:#0b1b22}
+.optional-mod b,.optional-mod small{display:block}
+.optional-mod small{color:var(--muted);font-size:11px;margin-top:5px}
+.mod-actions{display:flex;gap:8px;flex-wrap:wrap}
+.mod-actions button{white-space:nowrap;font-size:11px}
+.mod-actions .uninstall{border-color:#775048;color:#e8b5ac}
+.installed-mod-heading{font-size:15px;padding-top:8px}
+.mod-action-result{font-size:12px;min-height:20px;padding:4px 0}
+.mod-action-result.ok{color:#8df0bb}
+.mod-action-result.error{color:#ffb28a}
+@media(max-width:660px){.optional-mod{flex-direction:column;align-items:stretch}.mod-actions{justify-content:flex-start}}

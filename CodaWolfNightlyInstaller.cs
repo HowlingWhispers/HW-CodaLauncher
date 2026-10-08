@@ -50,7 +50,28 @@ internal sealed class CodaWolfNightlyInstaller
         catch (InvalidDataException) { return false; }
     }
 
-    internal async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation)
+    /// <summary>
+    /// Explicit uninstall of this one SHA-256-owned optional companion.
+    /// Minecraft saves, ownership data and every other mod remain untouched.
+    /// </summary>
+    internal void UninstallManaged(Action<string> report)
+    {
+        if (!File.Exists(JarPath))
+        {
+            report("Coda Wolf is already uninstalled.");
+            return;
+        }
+        if (!HasManagedInstall())
+            throw new IOException("Coda Wolf JAR is modified or not launcher-managed. "
+                + "Your file is preserved; review it using Open Mods Folder.");
+        File.Delete(JarPath);
+        if (File.Exists(HashMarker)) File.Delete(HashMarker);
+        if (File.Exists(TagMarker)) File.Delete(TagMarker);
+        report("Coda Wolf Companion uninstalled. Saved worlds and companion data preserved.");
+    }
+
+    internal async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation,
+        bool allowCachedFallback = true)
     {
         ArgumentNullException.ThrowIfNull(report);
         try
@@ -60,6 +81,9 @@ internal sealed class CodaWolfNightlyInstaller
         catch (Exception error) when (error is HttpRequestException
                 || (error is OperationCanceledException && !cancellation.IsCancellationRequested))
         {
+            if (!allowCachedFallback)
+                throw new IOException("GitHub cannot be reached, so the optional Coda Wolf install/update "
+                    + "could not be checked. Existing files are preserved.", error);
             if (!HasManagedInstall())
                 throw new IOException("GitHub is unreachable and Coda Wolf has no verified local installation. " +
                     "Retry when your GitHub connection works. Existing world saves and mods are untouched.", error);

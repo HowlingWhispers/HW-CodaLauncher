@@ -8,5 +8,7 @@
   <ItemGroup>
     <Compile Include="../../LauncherModels.cs" Link="LauncherModels.cs" />
     <Compile Include="../../NightlyModIdentity.cs" Link="NightlyModIdentity.cs" />
+    <Compile Include="../../OptionalModCatalog.cs" Link="OptionalModCatalog.cs" />
+    <Compile Include="../../ManagedMods.cs" Link="ManagedMods.cs" />
   </ItemGroup>
 </Project>

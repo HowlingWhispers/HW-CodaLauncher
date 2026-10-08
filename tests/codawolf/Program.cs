@@ -189,11 +189,25 @@ try
         "Updated fallback release tag persisted.");
     apiRateLimited = false;
 
+    var savedWorld = Path.Combine(root, "saves", "world", "coda-wolf", "data.json");
+    Directory.CreateDirectory(Path.GetDirectoryName(savedWorld)!);
+    File.WriteAllText(savedWorld, "player's companion data");
+    installer.UninstallManaged(output.Add);
+    Check(!File.Exists(path) && !installer.HasManagedInstall(),
+        "Explicit Wolf uninstall removes only the managed companion JAR and markers");
+    Check(File.ReadAllText(savedWorld) == "player's companion data",
+        "Removing Coda must not erase existing world data");
+    await installer.InstallLatestAsync(output.Add, CancellationToken.None);
+    Check(installer.HasManagedInstall(), "Coda can be installed again only after explicit action.");
+
     File.WriteAllBytes(path, MakeMod("tampered_id"));
     await ExpectFailure(async () => { await installer.InstallLatestAsync(output.Add, CancellationToken.None); },
         "Manually changed Coda Wolf JAR is not overwritten.");
     Check(File.ReadAllBytes(path).SequenceEqual(MakeMod("tampered_id")),
         "User modification preserved.");
+    await ExpectFailure(async () => { installer.UninstallManaged(output.Add); await Task.CompletedTask; },
+        "Uninstall refuses a modified or unmanaged companion JAR.");
+    Check(File.Exists(path), "Uninstall never deletes edited user file.");
     offline = true;
     await ExpectFailure(async () => { await installer.InstallLatestAsync(output.Add, CancellationToken.None); },
         "Tampered local Coda Wolf must never count as verified offline fallback.");

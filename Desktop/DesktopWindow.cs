@@ -33,6 +33,10 @@ internal sealed class DesktopWindow : Window
     private readonly TextBlock _versions = Text("Minecraft 26.4 Snapshot 3", 14);
     private readonly TextBlock _news = Text("News is on its way.", 15);
     private readonly TextBlock _mods = Text("Checking your Minecraft profile...", 16);
+    private readonly TextBlock _optionalHint = Text("HW Essentials is optional · Recommended. BuildCraft and Coda Wolf are Nightly-only add-ons currently managed by the Windows launcher.", 13);
+    private readonly Button _essentialsInstall = new() { Content = "INSTALL / UPDATE HW ESSENTIALS" };
+    private readonly Button _essentialsUninstall = new() { Content = "UNINSTALL HW ESSENTIALS" };
+    private bool _confirmEssentialsUninstall;
     private readonly TextBox _log = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 400 };
     private readonly Button _play = new() { Content = "PLAY", FontSize = 20, Padding = new Thickness(30, 14), Background = Brush.Parse("#25576a") };
     private readonly Button _repair = new() { Content = "INSTALL / REPAIR" };
@@ -73,7 +77,10 @@ internal sealed class DesktopWindow : Window
         tabs.Items.Add(Tab("HOME", Stack(_status, _versions, Text("Coda's noticeboard", 22), _news)));
         var openMods = new Button { Content = "OPEN MODS FOLDER" };
         openMods.Click += (_, _) => OpenFolder(Path.Combine(AppPaths.MinecraftRoot, "mods"));
-        tabs.Items.Add(Tab("MODS", Stack(Text("Your HOWL mods", 22), _mods, openMods)));
+        _essentialsInstall.Click += async (_, _) => await ManageEssentialsAsync(false);
+        _essentialsUninstall.Click += async (_, _) => await ManageEssentialsAsync(true);
+        tabs.Items.Add(Tab("MODS", Stack(Text("Optional HOWL mods", 22), _optionalHint,
+            _essentialsInstall, _essentialsUninstall, Text("Installed JARs", 17), _mods, openMods)));
         _signInButton.Click += async (_, _) => await AccountActionAsync(false);
         _verifyButton.Click += async (_, _) => await AccountActionAsync(true);
         _cancelButton.Click += (_, _) => _signIn?.Cancel();
@@ -241,7 +248,7 @@ internal sealed class DesktopWindow : Window
     private void ScanMods()
     {
         var mods = new ModScanner().Scan(AppPaths.MinecraftRoot);
-        _mods.Text = mods.Count == 0 ? "No HOWL mods installed yet. PLAY installs HW Essentials automatically."
+        _mods.Text = mods.Count == 0 ? "No optional HOWL mods installed. Use the buttons above to install them."
             : string.Join("\n\n", mods.Select(m =>
                 $"{m.Name} • {m.Id}\nManifest v{m.Version} • {m.FileName}" +
                 (m.ReleaseStatus == "Verified" ? $"\nRelease: {m.ReleaseTag} • SHA-256 verified locally" :
@@ -249,6 +256,34 @@ internal sealed class DesktopWindow : Window
                  m.ReleaseStatus == "Untracked" ? "\nNo verified Nightly release marker" : "") +
                 $"\n{(m.Valid ? "Recognized (not gameplay verified)" : m.Error)}"));
     }
+    private async Task ManageEssentialsAsync(bool uninstall)
+    {
+        if (_busy || _running || _refreshing) return;
+        if (uninstall && !_confirmEssentialsUninstall)
+        {
+            _confirmEssentialsUninstall = true;
+            _essentialsUninstall.Content = "CONFIRM UNINSTALL (saves preserved)";
+            return;
+        }
+        _confirmEssentialsUninstall = false;
+        _essentialsUninstall.Content = "UNINSTALL HW ESSENTIALS";
+        _busy = true; SetControls();
+        try
+        {
+            if (uninstall) ManagedMods.Uninstall(AppPaths.MinecraftRoot, Report);
+            else
+            {
+                if (!File.Exists(Path.Combine(AppPaths.LoaderRoot, "CodaLoader.jar")))
+                    throw new IOException("H.O.W.L. must be installed before optional Essentials.");
+                await Task.Run(() => ManagedMods.Install(AppPaths.LoaderRoot,
+                    AppPaths.MinecraftRoot, message => Dispatcher.UIThread.Post(() => Report(message))));
+            }
+            ScanMods();
+        }
+        catch (Exception ex) { Report("Optional mod action failed: " + ex.Message); }
+        finally { _busy = false; SetControls(); }
+    }
+
     private void Report(string message) { _status.Text = message; _logs.Add(message); UpdateLog(); }
     private void UpdateLog() { _log.Text = string.Join("\n", _logs.Snapshot()); _log.CaretIndex = _log.Text.Length; }
     private void SetControls()
@@ -262,6 +297,9 @@ internal sealed class DesktopWindow : Window
         _cancelButton.IsVisible = _accountBusy;
         _offline.IsEnabled = !LocalSingleplayer.Enabled && !_accountBusy && !_running && !_busy && (account.OfflineAvailable || _settings.OfflineMode);
         _repair.IsEnabled = !_busy && !_running && !_refreshing && !_accountBusy;
+        _essentialsInstall.IsEnabled = !_busy && !_running && !_refreshing;
+        _essentialsUninstall.IsEnabled = !_busy && !_running && !_refreshing
+            && File.Exists(Path.Combine(AppPaths.MinecraftRoot, "mods", "hw-essentials.jar"));
         _play.IsEnabled = _repair.IsEnabled;
         _refresh.IsEnabled = !_busy && !_refreshing; _update.IsEnabled = !_busy && !_running;
         _play.Content = _running ? "MINECRAFT IS RUNNING" : _busy ? "CODA IS PREPARING..." : _settings.LocalTestMode ? "PLAY LOCAL (TEST)" : "OPEN MINECRAFT LAUNCHER";

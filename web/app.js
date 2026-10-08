@@ -94,6 +94,18 @@ $('play').onclick=()=>{
 $('open-loader').onclick=()=>post('openLoaderFolder');
 $('open-mods-folder').onclick=()=>post('openModsFolder');
 $('refresh-mods').onclick=()=>post('refreshMods');
+$('quiet-install').onclick=()=>{
+  if(installBusy||state?.gameRunning) return;
+  setInstallBusy(true,'Installing optional Quiet Underground…');
+  post('installMod',{id:'quiet_underground'});
+};
+$('quiet-uninstall').onclick=()=>{
+  if(installBusy||state?.gameRunning||!window.confirm(
+      'Remove the optional Quiet Underground preset? Existing worlds will not be deleted.')) return;
+  setInstallBusy(true,'Removing optional Quiet Underground…');
+  post('uninstallMod',{id:'quiet_underground'});
+};
+
 $('save').onclick=()=>{
   if(settingsSaving) return;
   settingsSaving=true;
@@ -123,6 +135,7 @@ window.chrome.webview.addEventListener('message',e=>{
   }
   if(m.type==='modsState'&&state){
     state.mods=m.mods||[];
+    state.optionalMods=m.optionalMods||[];
     state.modCount=m.modCount??state.mods.filter(x=>x.valid).length;
     state.minecraftRoot=m.minecraftRoot||state.minecraftRoot;
     render();
@@ -150,6 +163,19 @@ window.chrome.webview.addEventListener('message',e=>{
     setInstallBusy(!!m.busy,m.message);
     if(!m.busy&&state) render();
   }
+  if(m.type==='quietState'&&state){
+    state.nightlyQuietInstalled=!!m.installed;
+    render();
+  }
+  if(m.type==='modActionStatus'){
+    setInstallBusy(!!m.busy,m.message||'');
+    const status=$('mod-action-result');
+    if(status){
+      status.textContent=m.message||'';
+      status.className='mod-action-result '+(m.ok?'ok':'error');
+    }
+    if(state) render();
+  }
   if(m.type==='sessionStatus'){
     if(state) state.gameRunning=!!m.running;
     installBusy=false;
@@ -173,7 +199,7 @@ function render(){
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
   const nightly=state.activeChannel==='nightly';
   $('loader-versions').textContent=nightly
-    ? 'Nightly BuildCraft: '+(state.nightlyInstalled?'Installed in isolated profile':'Not installed yet')+' | Stable remains untouched'
+    ? 'Required H.O.W.L. Nightly: '+(state.nightlyInstalled?'Installed in isolated profile':'Not installed yet')+' | Optional mods are managed in Mods | Stable untouched'
     : 'Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
   $('loader-update-result').textContent=loaderUpdateMessage;
   $('loader-chip').textContent=nightly?'HOWL NIGHTLY':state.loaderCurrent?'HOWL CURRENT':(state.loaderReady?'HOWL UPDATE READY':'HOWL INSTALL');
@@ -185,7 +211,7 @@ function render(){
   if(state.gameRunning) $('play').textContent='RUNNING';
   else if(!installBusy) $('play').textContent=nightly?'PLAY NIGHTLY ▶':state.localSingleplayer?'PLAY LOCAL (TEST) ▶':'OPEN MINECRAFT LAUNCHER ▶';
   $('loader-summary').textContent=nightly
-    ? 'Experimental BuildCraft tests download into a separate Minecraft profile. Your normal saves stay in Stable.'
+    ? 'H.O.W.L. Nightly uses a separate Minecraft profile. Add-ons are optional; manage them in Mods.'
     : state.gameRunning
     ? 'Minecraft is running. Coda is keeping the clipboard warm.'
     : state.managedCurrent
@@ -208,9 +234,11 @@ function render(){
   });
   $('nightly-quiet-card').hidden=!nightly;
   if(nightly){
-    $('nightly-quiet-status').textContent=state.nightlyQuietInstalled
-      ? 'Installed for new worlds' : 'Awaiting Nightly download';
-    $('nightly-quiet-status').className='pill '+(state.nightlyQuietInstalled?'online':'offline');
+    const hasQuiet=!!state.nightlyQuietInstalled;
+    $('nightly-quiet-status').textContent=hasQuiet ? 'Optional · Installed' : 'Optional · Not installed';
+    $('nightly-quiet-status').className='pill '+(hasQuiet?'online':'offline');
+    $('quiet-install').disabled=installBusy||!!state.gameRunning;
+    $('quiet-uninstall').disabled=installBusy||!!state.gameRunning||!hasQuiet;
   }
   $('resourcepacks-list').innerHTML=(state.resourcePacks||[]).map(r=>'<article class="pack-card"><div class="pack-top"><div><em>'+(r.required?'REQUIRED DEPENDENCY':'OPTIONAL')+'</em><h3>'+esc(r.name)+'</h3></div><span class="pill '+(r.current?'online':(r.installed?'update':'offline'))+'">'+esc(r.status)+'</span></div><p>'+esc(r.description)+'</p><div class="dependency-note">Required by: '+esc((r.requiredBy||[]).join(', ')||'None')+'</div><div class="contents-note">'+(r.contents||[]).map(x=>'<span>'+esc(x)+'</span>').join('')+'</div><div class="pack-meta"><span>Available v'+esc(r.availableVersion||'?')+'</span><span>'+esc(r.source||'')+'</span></div>'+(r.required?'<div class="managed-label">Managed automatically by '+esc((r.requiredBy||[]).join(', ')||'HOWL')+'</div>':'<button class="resourcepack-action save" data-resourcepack="'+escAttr(r.id)+'">INSTALL</button>')+'</article>').join('');
   document.querySelectorAll('.resourcepack-action').forEach(btn=>{
@@ -221,6 +249,36 @@ function render(){
       setInstallBusy(true,'Preparing Resourcepack install…');
       post('installResourcePack');
     };
+  });
+  const modCatalog=state.optionalMods||[];
+  $('optional-mods').innerHTML=modCatalog.map(m=>{
+    const allowed=!m.nightlyOnly||nightly;
+    const managed=m.managed;
+    const actionsDisabled=installBusy||!!state.gameRunning||!allowed;
+    const installDisabled=actionsDisabled||(m.installed&&!managed);
+    const uninstallDisabled=actionsDisabled||!m.installed||!managed;
+    const detail=!allowed?'Available in Nightly only'
+      :m.installed?(managed?'Installed (launcher-managed)':'Present but not managed; review manually')
+      :'Not installed';
+    const label=m.installed?'CHECK / UPDATE':'INSTALL';
+    return '<article class="optional-mod"><div><b>'+esc(m.name)+'</b>'+
+      '<small>OPTIONAL'+(m.recommended?' · RECOMMENDED':'')+' · '+esc(detail)+'</small>'+
+      (m.installed?'<small>Manifest v'+esc(m.version||'?')+
+        (m.releaseTag?' · '+esc(m.releaseTag):'')+'</small>':'')+
+      '</div><div class="mod-actions"><button type="button" class="quiet mod-action" data-action="installMod" data-mod="'+escAttr(m.id)+'"'+
+      (installDisabled?' disabled':'')+'>'+label+'</button>'+
+      '<button type="button" class="quiet mod-action uninstall" data-action="uninstallMod" data-mod="'+escAttr(m.id)+'"'+
+      (uninstallDisabled?' disabled':'')+'>UNINSTALL</button></div></article>';
+  }).join('');
+  document.querySelectorAll('.mod-action').forEach(btn=>btn.onclick=()=>{
+    if(installBusy||state.gameRunning||btn.disabled) return;
+    const mod=modCatalog.find(m=>m.id===btn.dataset.mod);
+    if(!mod) return;
+    if(btn.dataset.action==='uninstallMod'&&!window.confirm(
+        'Uninstall '+mod.name+'? The managed JAR will be removed; saves and config files remain. BACK UP your worlds before reopening them without this mod: blocks and items may disappear.')) return;
+    setInstallBusy(true,(btn.dataset.action==='uninstallMod'?'Uninstalling ':'Checking / installing ')+mod.name+'…');
+    post(btn.dataset.action,{id:mod.id});
+    render();
   });
   $('mods-count').textContent=state.mods.length+' jar'+(state.mods.length===1?'':'s');
   $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>{

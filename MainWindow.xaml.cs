@@ -222,6 +222,12 @@ public partial class MainWindow : Window
                 case "refreshMods":
                     SendMods();
                     break;
+                case "installMod":
+                    await ManageOptionalModAsync(root.GetProperty("id").GetString(), uninstall: false);
+                    break;
+                case "uninstallMod":
+                    await ManageOptionalModAsync(root.GetProperty("id").GetString(), uninstall: true);
+                    break;
                 case "openExternal":
                     if (root.TryGetProperty("url", out var u)) OpenExternal(u.GetString());
                     break;
@@ -247,6 +253,8 @@ public partial class MainWindow : Window
         {
             type = "modsState",
             mods = found,
+            optionalMods = OptionalModCatalog.Build(found, gameRoot,
+                _settings.UpdateChannel == "nightly"),
             modCount = found.Count(m => m.Valid),
             minecraftRoot = gameRoot
         });
@@ -349,6 +357,10 @@ public partial class MainWindow : Window
                 },
                 modCount = mods.Count(m => m.Valid),
                 mods,
+                optionalMods = OptionalModCatalog.Build(mods,
+                    _settings.UpdateChannel == "nightly"
+                        ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot,
+                    _settings.UpdateChannel == "nightly"),
                 feed = new
                 {
                     feed.Schema,
@@ -399,14 +411,9 @@ public partial class MainWindow : Window
                     _logs.Add(message);
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
                 }, CancellationToken.None);
-                await _codaWolf.InstallLatestAsync(message =>
-                {
-                    _logs.Add(message);
-                    Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
-                }, CancellationToken.None);
                 SendMods();
                 Send(new { type = "installStatus", busy = false, ok = true,
-                    message = "Nightly BuildCraft and Coda Wolf downloaded and installed in the test profile." });
+                    message = "Required H.O.W.L. Nightly runtime checked. Optional mods unchanged." });
                 await SendState();
                 return;
             }
@@ -600,15 +607,10 @@ public partial class MainWindow : Window
             if (_settings.UpdateChannel == "nightly")
             {
                 if (!_settings.LocalTestMode)
-                    throw new InvalidOperationException("Nightly BuildCraft is local single-player only. Enable Local Test Mode in Settings.");
+                    throw new InvalidOperationException("H.O.W.L. Nightly currently supports local single-player only. Enable Local Test Mode in Settings.");
                 Send(new { type = "installStatus", busy = true, ok = true,
-                    message = "Checking opt-in BuildCraft Nightly (stable files stay untouched)..." });
+                    message = "Checking required H.O.W.L. Nightly runtime. Optional mods unchanged..." });
                 var nightRoot = await _nightly.InstallLatestAsync(message =>
-                {
-                    _logs.Add(message);
-                    Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
-                }, CancellationToken.None);
-                await _codaWolf.InstallLatestAsync(message =>
                 {
                     _logs.Add(message);
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
@@ -842,6 +844,96 @@ public partial class MainWindow : Window
             _installGate.Release();
             if (!_windowLifetime.IsCancellationRequested) SendLauncherUpdateNotice();
         }
+    }
+
+    private async Task ManageOptionalModAsync(string? id, bool uninstall)
+    {
+        if (_gameRunning || _accountBusy)
+            throw new InvalidOperationException("Close Minecraft before changing installed mods.");
+        if (!await _installGate.WaitAsync(0))
+            throw new InvalidOperationException("Another install/update operation is active.");
+        string title = id switch
+        {
+            "buildcraft_cml" => "BuildCraft CML",
+            "coda_wolf" => "Coda Wolf",
+            "hw_essentials" => "HW Essentials",
+            "quiet_underground" => "Quiet Underground",
+            _ => throw new InvalidOperationException("Unknown optional mod.")
+        };
+        var root = _settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot;
+        void Report(string message)
+        {
+            _logs.Add(message);
+            Dispatcher.Invoke(() => Send(new
+            {
+                type = "modActionStatus", busy = true, ok = true, message
+            }));
+        }
+
+        try
+        {
+            Send(new { type = "modActionStatus", busy = true, ok = true,
+                message = (uninstall ? "Uninstalling " : "Installing/updating ") + title + "..." });
+            if ((id is "buildcraft_cml" or "coda_wolf" or "quiet_underground")
+                && _settings.UpdateChannel != "nightly")
+                throw new InvalidOperationException(title + " is currently offered only in Nightly.");
+            if (uninstall)
+            {
+                switch (id)
+                {
+                    case "buildcraft_cml": NightlyBuildInstaller.UninstallBuildCraft(Report); break;
+                    case "quiet_underground": NightlyBuildInstaller.UninstallQuiet(Report); break;
+                    case "coda_wolf": _codaWolf.UninstallManaged(Report); break;
+                    case "hw_essentials": ManagedMods.Uninstall(root, Report); break;
+                }
+            }
+            else
+            {
+                switch (id)
+                {
+                    case "buildcraft_cml":
+                        if (!NightlyBuildInstaller.Installed)
+                            throw new InvalidOperationException("Install the required H.O.W.L. Nightly runtime first.");
+                        await _nightly.InstallLatestAsync(Report, CancellationToken.None,
+                            installBuildCraft: true);
+                        break;
+                    case "quiet_underground":
+                        if (!NightlyBuildInstaller.Installed)
+                            throw new InvalidOperationException("Install the required H.O.W.L. Nightly runtime first.");
+                        await _nightly.InstallLatestAsync(Report, CancellationToken.None,
+                            installQuiet: true);
+                        break;
+                    case "coda_wolf":
+                        if (!NightlyBuildInstaller.Installed)
+                            throw new InvalidOperationException("Install the required H.O.W.L. Nightly runtime first.");
+                        await _codaWolf.InstallLatestAsync(Report, CancellationToken.None,
+                            allowCachedFallback: false);
+                        break;
+                    case "hw_essentials":
+                        var loader = _settings.UpdateChannel == "nightly"
+                            ? NightlyBuildInstaller.LoaderRoot : LoaderLocator.Resolve(_settings.LoaderPath);
+                        if (string.IsNullOrWhiteSpace(loader)
+                            || !File.Exists(Path.Combine(loader, "CodaLoader.jar")))
+                            throw new InvalidOperationException("Install the required H.O.W.L. runtime first.");
+                        ManagedMods.Install(loader, root, Report);
+                        break;
+                }
+            }
+            SendMods();
+            if (id == "quiet_underground")
+                Send(new { type = "quietState", installed = NightlyBuildInstaller.QuietInstalled });
+            Send(new { type = "modActionStatus", busy = false, ok = true,
+                message = title + (uninstall ? " uninstalled." : " install/update completed.") });
+        }
+        catch (Exception ex)
+        {
+            var message = FriendlyInstallError(ex);
+            _logs.Add("Optional mod action failed: " + message);
+            Send(new { type = "modActionStatus", busy = false, ok = false, message });
+            SendMods();
+        }
+        finally { _installGate.Release(); }
     }
 
     private void OpenModsFolder()

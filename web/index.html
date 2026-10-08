@@ -46,7 +46,7 @@
 
 <section class="view" id="mods">
   <header><div><em>CODA'S MOD DRAWER</em><h1>Mods</h1><small class="header-note">Filed, checked, and ready to cause entirely responsible adventures.</small></div></header>
-  <div class="panel"><div class="panel-head"><div><b>HOWL mod shelf</b><small>Coda reads the active Minecraft profile's single mods folder.</small></div><div class="actions"><button id="refresh-mods" class="quiet" type="button">↻ REFRESH MODS</button><button id="open-mods-folder" class="quiet" type="button">OPEN MODS FOLDER</button><span id="mods-count" class="pill"></span></div></div><div id="mods-list"></div><small class="header-note">Recognized means the JAR metadata is readable, not that Minecraft confirmed loading it.</small></div>
+  <div class="panel"><div class="panel-head"><div><b>HOWL mod shelf</b><small>Coda reads the active Minecraft profile's single mods folder.</small></div><div class="actions"><button id="refresh-mods" class="quiet" type="button">↻ REFRESH MODS</button><button id="open-mods-folder" class="quiet" type="button">OPEN MODS FOLDER</button><span id="mods-count" class="pill"></span></div></div><p class="mod-help">Only H.O.W.L. and the required resource pack are automatic. All add-on mods are optional, even the recommended ones. PLAY never downloads or reinstalls an optional mod.</p><div id="optional-mods" class="optional-mods" aria-live="polite"></div><div id="mod-action-result" class="mod-action-result" role="status" aria-live="polite"></div><h3 class="installed-mod-heading">Installed JARs</h3><div id="mods-list"></div><small class="header-note">Recognized means the JAR metadata is readable, not that Minecraft confirmed loading it. Uninstalling a mod does not erase its world data.</small></div>
 </section>
 
 <section class="view" id="packs">
@@ -59,7 +59,7 @@
   <article id="nightly-quiet-card" class="pack-card" hidden>
     <div class="pack-top"><div><em>NIGHTLY WORLD GENERATION</em><h3>HW Quiet Underground</h3></div><span id="nightly-quiet-status" class="pill">Checking…</span></div>
     <p>Much rarer giant caves and ravines. Only affects brand-new Nightly worlds, never existing saves.</p>
-    <div class="managed-label">A verified datapack is staged for Minecraft's Create World screen. Installed does not mean Minecraft has successfully activated it yet.</div>
+    <div class="managed-label">Optional world-generation preset for future worlds. Not installed or updated automatically. Existing worlds are never changed.</div><div class="mod-actions" style="margin-top:13px"><button id="quiet-install" class="quiet quiet-addon-action" type="button">INSTALL / UPDATE</button><button id="quiet-uninstall" class="quiet quiet-addon-action uninstall" type="button">UNINSTALL</button></div>
   </article>
 </section>
 
@@ -98,11 +98,11 @@
   <div class="panel settings">
     <label><span>H.O.W.L. folder override</span><input id="loader-path" type="text" placeholder="Leave blank for managed install"><small>Default: %APPDATA%\.howlingshispers\loader</small></label>
     <label><span>Launcher feed URL</span><input id="feed-url" type="text" placeholder="https://thehowlingwhispers.com/launcher"><small>Defaults to https://thehowlingwhispers.com/launcher. CodaLauncher appends /api/feed automatically.</small></label>
-    <label><span>H.O.W.L. update channel</span><select id="update-channel"><option value="stable">Stable (recommended)</option><option value="nightly">Nightly (experimental)</option></select><small>Nightly automatically checks public BuildCraft test builds, installs them into a SEPARATE profile, and only supports local single-player. Your stable worlds and loader are untouched. Expect bugs.</small></label>
+    <label><span>H.O.W.L. update channel</span><select id="update-channel"><option value="stable">Stable (recommended)</option><option value="nightly">Nightly (experimental)</option></select><small>Nightly updates the required H.O.W.L. runtime in a SEPARATE profile. BuildCraft, Coda Wolf, Essentials and worldgen add-ons install only when you choose them in Mods/Packs. It only supports local single-player. Your stable worlds and loader are untouched. Expect bugs.</small></label>
     <div id="nightly-warning" class="coming" hidden><b>🐺 Coda's experimental workshop</b><small>Nightly uses its own world saves under .howlingshispers/nightly/minecraft. Use NEW test worlds. No shared play or Microsoft sign-in.</small></div>
     <label class="toggle"><div><span>Local Test Mode</span><small>For developing menus without Microsoft sign-in. Uses the existing CodaPlayer local save identity; no authenticated multiplayer, friends, or shared services. Turn off to launch through the official Minecraft Launcher.</small></div><input id="local-test-mode" type="checkbox"></label>
     <label class="toggle"><div><span>Close after PLAY</span><small>Only applies to direct Local Test Mode. Official Minecraft Launcher remains a separate window.</small></div><input id="close-after" type="checkbox"></label>
-    <div class="coming"><b>Managed install</b><small>Coda keeps Minecraft, H.O.W.L., required Packs, and Resourcepacks current before the world opens.</small></div>
+    <div class="coming"><b>Managed install</b><small>Coda keeps the required H.O.W.L. runtime and resource pack current. Optional mods are installed, updated or removed only on request.</small></div>
     <div class="settings-save-row"><button id="save" class="save" type="button">Save settings</button><span id="settings-save-result" class="settings-save-result" role="status" aria-live="polite" aria-atomic="true"></span></div>
   </div>
 </section>

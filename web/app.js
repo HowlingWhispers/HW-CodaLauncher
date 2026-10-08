@@ -157,7 +157,10 @@ function render(){
   $('version').textContent='CodaLauncher '+state.launcherVersion;
   $('home-heading').textContent=state.gameRunning?'World session active.':'Ready when you are.';
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
-  $('loader-versions').textContent='Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
+  const nightly=state.activeChannel==='nightly';
+  $('loader-versions').textContent=nightly
+    ? 'Nightly BuildCraft: '+(state.nightlyInstalled?'Installed in isolated profile':'Not installed yet')+' | Stable remains untouched'
+    : 'Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
   $('loader-update-result').textContent=loaderUpdateMessage;
   $('loader-chip').textContent=state.loaderCurrent?'HOWL CURRENT':(state.loaderReady?'HOWL UPDATE READY':'HOWL INSTALL');
   $('loader-chip').className=state.loaderCurrent?'good':(state.loaderReady?'warn':'bad');

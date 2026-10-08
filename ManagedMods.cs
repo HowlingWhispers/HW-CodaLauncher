@@ -155,6 +155,36 @@ internal static class ManagedMods
         progress("HW Essentials is ready in the active Minecraft mods folder.");
     }
 
+    public static bool IsManagedInstall(string gameRoot)
+    {
+        string target = Path.Combine(gameRoot, "mods", FileName);
+        string marker = Path.Combine(gameRoot, "config", "codaloader-managed", "hw-essentials.sha256");
+        try
+        {
+            return File.Exists(target) && File.Exists(marker)
+                && Hash(target).Equals(File.ReadAllText(marker).Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
+    }
+
+    public static void Uninstall(string gameRoot, Action<string> progress)
+    {
+        string target = Path.Combine(gameRoot, "mods", FileName);
+        if (!File.Exists(target))
+        {
+            progress("HW Essentials is already absent.");
+            return;
+        }
+        if (!IsManagedInstall(gameRoot))
+            throw new IOException("HW Essentials JAR is modified or unmanaged. "
+                + "Your file was preserved; review it using Open Mods Folder.");
+        File.Delete(target);
+        string marker = Path.Combine(gameRoot, "config", "codaloader-managed", "hw-essentials.sha256");
+        if (File.Exists(marker)) File.Delete(marker);
+        progress("HW Essentials uninstalled. H.O.W.L. and worlds untouched.");
+    }
+
     private static byte[] BundledEssentials(string loaderRoot)
     {
         var jar = Path.Combine(loaderRoot, "CodaLoader.jar");

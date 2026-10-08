@@ -50,6 +50,26 @@ internal sealed class CodaWolfNightlyInstaller
         catch (InvalidDataException) { return false; }
     }
 
+    /// <summary>
+    /// Explicit uninstall of this one SHA-256-owned optional companion.
+    /// Minecraft saves, ownership data and every other mod remain untouched.
+    /// </summary>
+    internal void UninstallManaged(Action<string> report)
+    {
+        if (!File.Exists(JarPath))
+        {
+            report("Coda Wolf is already uninstalled.");
+            return;
+        }
+        if (!HasManagedInstall())
+            throw new IOException("Coda Wolf JAR is modified or not launcher-managed. "
+                + "Your file is preserved; review it using Open Mods Folder.");
+        File.Delete(JarPath);
+        if (File.Exists(HashMarker)) File.Delete(HashMarker);
+        if (File.Exists(TagMarker)) File.Delete(TagMarker);
+        report("Coda Wolf Companion uninstalled. Saved worlds and companion data preserved.");
+    }
+
     internal async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation)
     {
         ArgumentNullException.ThrowIfNull(report);

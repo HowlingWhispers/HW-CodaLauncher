@@ -86,6 +86,7 @@ $('play').onclick=()=>{
   post('play');
 };
 $('open-loader').onclick=()=>post('openLoaderFolder');
+$('open-mods-folder').onclick=()=>post('openModsFolder');
 $('save').onclick=()=>{
   if(settingsSaving) return;
   settingsSaving=true;

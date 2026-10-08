@@ -10,6 +10,9 @@ namespace HowlingWhispers.CodaLauncher;
 public partial class MainWindow : Window
 {
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
+    private readonly MinecraftAccount _account = new();
+    private CancellationTokenSource? _accountSignIn;
+    private bool _accountBusy;
     private readonly SettingsStore _settingsStore = new();
     private readonly LogBuffer _logs = new();
     private readonly FeedService _feeds = new();
@@ -81,6 +84,34 @@ public partial class MainWindow : Window
         }
     }
 
+    private void SendAccount() => Send(new { type = "account", account = _account.View, busy = _accountBusy, offline = _settings.OfflineMode });
+
+    private async Task RunAccountAsync(bool verifyOnly)
+    {
+        if (_accountBusy || _gameRunning || _installGate.CurrentCount == 0) return;
+        _accountBusy = true;
+        _accountSignIn = CancellationTokenSource.CreateLinkedTokenSource(_windowLifetime.Token);
+        SendAccount();
+        try
+        {
+            if (verifyOnly) await _account.PrepareLaunchAsync(false, _accountSignIn.Token);
+            else await _account.SignInAsync(prompt => Dispatcher.Invoke(() =>
+            {
+                Send(new { type = "accountCode", code = prompt.Code, url = prompt.Url });
+                Process.Start(new ProcessStartInfo(prompt.Url) { UseShellExecute = true });
+            }), _accountSignIn.Token);
+            Send(new { type = "accountMessage", message = "Minecraft Java ownership verified. Coda has stamped the paperwork." });
+        }
+        catch (OperationCanceledException) { Send(new { type = "accountMessage", message = "Sign-in cancelled or expired. You can try again." }); }
+        catch (Exception ex) { Send(new { type = "accountMessage", message = ex.Message }); }
+        finally
+        {
+            _accountSignIn.Dispose(); _accountSignIn = null; _accountBusy = false;
+            Send(new { type = "accountCode", code = "", url = "" });
+            SendAccount();
+        }
+    }
+
     private async void OnWebMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
         try
@@ -105,10 +136,33 @@ public partial class MainWindow : Window
                 case "updateLauncher":
                     await OpenLauncherUpdateAsync();
                     break;
+                case "signInMicrosoft":
+                    await RunAccountAsync(false);
+                    break;
+                case "verifyAccount":
+                    await RunAccountAsync(true);
+                    break;
+                case "cancelSignIn":
+                    _accountSignIn?.Cancel();
+                    break;
+                case "signOutAccount":
+                    if (_gameRunning || _installGate.CurrentCount == 0) throw new InvalidOperationException("Close Minecraft and finish preparation before signing out.");
+                    _accountSignIn?.Cancel();
+                    await _account.SignOutAsync(_windowLifetime.Token);
+                    SendAccount();
+                    break;
+                case "setPlayMode":
+                    if (_gameRunning || _accountBusy || _installGate.CurrentCount == 0) throw new InvalidOperationException("Finish the current session before changing play mode.");
+                    _settings.OfflineMode = root.GetProperty("offline").GetBoolean();
+                    _settingsStore.Save(_settings);
+                    SendAccount();
+                    break;
                 case "saveSettings":
                     if (root.TryGetProperty("settings", out var s))
                     {
-                        _settings = s.Deserialize<LauncherSettings>(_json) ?? new();
+                        var updated = s.Deserialize<LauncherSettings>(_json) ?? new();
+                        updated.OfflineMode = _settings.OfflineMode;
+                        _settings = updated;
                         if (string.IsNullOrWhiteSpace(_settings.FeedUrl))
                             _settings.FeedUrl = "https://thehowlingwhispers.com/launcher";
                         _settingsStore.Save(_settings);
@@ -245,7 +299,9 @@ public partial class MainWindow : Window
                 },
                 settings = _settings,
                 logs = _logs.Snapshot(),
-                profile = new { cmlAccount = "Not configured", minecraftOwnership = "Not verified", discord = "Not linked", avatar = "Coming later" }
+                account = _account.View,
+                accountBusy = _accountBusy,
+                profile = new { cmlAccount = "Not configured", minecraftOwnership = _account.View.SignedIn ? "Previously verified" : "Not verified", discord = "Not linked", avatar = "Coming later" }
             }
         });
     }
@@ -446,6 +502,16 @@ public partial class MainWindow : Window
 
         try
         {
+            if (_accountBusy) throw new InvalidOperationException("Finish account verification before launching Minecraft.");
+            var identity = await _account.PrepareLaunchAsync(_settings.OfflineMode, _windowLifetime.Token);
+            if (_settings.OfflineMode)
+            {
+                var installed = LoaderLocator.Resolve(_settings.LoaderPath);
+                if (!LoaderLocator.IsReady(installed)) throw new InvalidOperationException("Install Minecraft and CodaLoader while online before using offline play.");
+                _launcher.Launch(installed!, identity);
+                if (_settings.CloseAfterLaunch) Close();
+                return;
+            }
             EnsureCmlBaseCatalog(_lastFeed);
             Send(new
             {
@@ -485,7 +551,7 @@ public partial class MainWindow : Window
                 message = "Everything is where it belongs. Coda is opening Minecraft..."
             });
 
-            _launcher.Launch(loader!);
+            _launcher.Launch(loader!, identity);
 
             if (_settings.CloseAfterLaunch) Close();
             else await SendState();

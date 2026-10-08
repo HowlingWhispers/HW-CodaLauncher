@@ -10,6 +10,16 @@ namespace HowlingWhispers.CodaLauncher;
 
 internal sealed class DesktopWindow : Window
 {
+    private readonly MinecraftAccount _account = new();
+    private CancellationTokenSource? _signIn;
+    private bool _accountBusy;
+    private readonly TextBlock _accountStatus = Text("", 16);
+    private readonly TextBlock _accountCode = Text("", 22);
+    private readonly Button _signInButton = new() { Content = "SIGN IN WITH MICROSOFT" };
+    private readonly Button _verifyButton = new() { Content = "VERIFY AGAIN" };
+    private readonly Button _signOutButton = new() { Content = "SIGN OUT" };
+    private readonly Button _cancelButton = new() { Content = "CANCEL SIGN-IN", IsVisible = false };
+    private readonly CheckBox _offline = new() { Content = "Play offline (local worlds only)" };
     private readonly InstallService _installer = new();
     private readonly FeedService _feeds = new();
     private readonly SettingsStore _settingsStore = new();
@@ -63,6 +73,25 @@ internal sealed class DesktopWindow : Window
         var openMods = new Button { Content = "OPEN MODS FOLDER" };
         openMods.Click += (_, _) => OpenFolder(Path.Combine(AppPaths.MinecraftRoot, "mods"));
         tabs.Items.Add(Tab("MODS", Stack(Text("Your CML mods", 22), _mods, openMods)));
+        _signInButton.Click += async (_, _) => await AccountActionAsync(false);
+        _verifyButton.Click += async (_, _) => await AccountActionAsync(true);
+        _cancelButton.Click += (_, _) => _signIn?.Cancel();
+        _signOutButton.Click += async (_, _) => {
+            if (_running || _busy) return;
+            _signIn?.Cancel();
+            try { await _account.SignOutAsync(_lifetime.Token); SetControls(); }
+            catch (Exception ex) { _accountStatus.Text = ex.Message; }
+        };
+        _offline.IsChecked = _settings.OfflineMode;
+        _offline.IsCheckedChanged += (_, _) => {
+            if (_running || _accountBusy) return;
+            _settings.OfflineMode = _offline.IsChecked == true;
+            _settingsStore.Save(_settings); SetControls();
+        };
+        tabs.Items.Add(Tab("PROFILE", Stack(Text("Minecraft account", 22), _accountStatus, _accountCode,
+            _signInButton, _verifyButton, _signOutButton, _cancelButton, _offline,
+            Text("Microsoft handles your password. Verify ownership first; offline access lasts 30 days. Install Minecraft while online. Signing out keeps saved worlds.", 14))));
+        SetControls();
         var save = new Button { Content = "SAVE SETTINGS" };
         save.Click += async (_, _) => {
             if (!Uri.TryCreate(_feedUrl.Text, UriKind.Absolute, out var uri) || (uri.Scheme != "https" && uri.Scheme != "http"))
@@ -72,7 +101,7 @@ internal sealed class DesktopWindow : Window
         var openData = new Button { Content = "OPEN INSTALL FOLDER" };
         openData.Click += (_, _) => OpenFolder(AppPaths.InstallRoot);
         tabs.Items.Add(Tab("SETTINGS", Stack(Text("Launcher feed", 20), _feedUrl, save,
-            Text("Minecraft requires Java 25 or newer on PATH. CodaLoader handles Minecraft downloads and sign-in.", 15),
+            Text("Minecraft requires Java 25 or newer on PATH. Profile handles Microsoft sign-in; CodaLoader handles Minecraft downloads.", 15),
             Text("Install folder: " + AppPaths.InstallRoot, 14), openData)));
         tabs.Items.Add(Tab("LOGS", _log)); root.Children.Add(tabs); Content = root;
         _play.Click += async (_, _) => await PrepareAsync(true);
@@ -83,6 +112,28 @@ internal sealed class DesktopWindow : Window
         Opened += async (_, _) => { if (!Program.SmokeUi) { _updates.Start(); await RefreshAsync(); } };
         Activated += async (_, _) => { if (!Program.SmokeUi) await CheckUpdateAsync(); };
         Closed += (_, _) => { _updates.Stop(); _lifetime.Cancel(); _portrait.Dispose(); };
+    }
+
+    private async Task AccountActionAsync(bool verifyOnly)
+    {
+        if (_accountBusy || _running || _busy) return;
+        _accountBusy = true; _signIn = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token); SetControls();
+        string? result = null;
+        try
+        {
+            if (verifyOnly) await _account.PrepareLaunchAsync(false, _signIn.Token);
+            else await _account.SignInAsync(prompt => Dispatcher.UIThread.Post(() => {
+                _accountCode.Text = "Enter " + prompt.Code + " at " + prompt.Url;
+                Open(prompt.Url);
+            }), _signIn.Token);
+        }
+        catch (OperationCanceledException) { result = "Sign-in cancelled or expired."; }
+        catch (Exception ex) { result = ex.Message; }
+        finally
+        {
+            _signIn.Dispose(); _signIn = null; _accountBusy = false; _accountCode.Text = ""; SetControls();
+            if (result is not null) _accountStatus.Text = result;
+        }
     }
 
     private async Task RefreshAsync(bool replaceStatus = true)
@@ -111,13 +162,19 @@ internal sealed class DesktopWindow : Window
         _busy = true; SetControls();
         try
         {
+            var identity = launch ? await _account.PrepareLaunchAsync(_settings.OfflineMode, _lifetime.Token) : null;
+            if (launch && _settings.OfflineMode)
+            {
+                _launcher.Launch(AppPaths.LoaderRoot, identity!);
+                return;
+            }
             var feed = await _feeds.FetchAsync(_settings.FeedUrl, _lifetime.Token);
             _installer.CurrentFeedBase = new Uri(_settings.FeedUrl.TrimEnd('/') + "/");
             await Task.Run(() => _installer.InstallOrRepairAsync(feed,
                 message => Dispatcher.UIThread.Post(() => Report(message)), _lifetime.Token));
             _settings.LoaderPath = AppPaths.LoaderRoot; _settingsStore.Save(_settings);
             ScanMods();
-            if (launch) _launcher.Launch(AppPaths.LoaderRoot);
+            if (launch) _launcher.Launch(AppPaths.LoaderRoot, identity!);
             else _status.Text = "Install ready. Coda has checked the essentials.";
         }
         catch (OperationCanceledException) { }
@@ -150,9 +207,17 @@ internal sealed class DesktopWindow : Window
     private void UpdateLog() { _log.Text = string.Join("\n", _logs.Snapshot()); _log.CaretIndex = _log.Text.Length; }
     private void SetControls()
     {
-        _play.IsEnabled = _repair.IsEnabled = !_busy && !_running && !_refreshing;
+        var account = _account.View;
+        _accountStatus.Text = account.Status + "\n" + account.PlayerName + "\n" + account.Storage;
+        _signInButton.IsEnabled = !_accountBusy && !_running && !_busy && account.Configured;
+        _verifyButton.IsEnabled = _signInButton.IsEnabled && account.SignedIn;
+        _signOutButton.IsEnabled = !_running && !_busy && account.SignedIn;
+        _cancelButton.IsVisible = _accountBusy;
+        _offline.IsEnabled = !_accountBusy && !_running && !_busy && (account.OfflineAvailable || _settings.OfflineMode);
+        _repair.IsEnabled = !_busy && !_running && !_refreshing && !_accountBusy;
+        _play.IsEnabled = _repair.IsEnabled && account.SignedIn && (!_settings.OfflineMode || account.OfflineAvailable);
         _refresh.IsEnabled = !_busy && !_refreshing; _update.IsEnabled = !_busy && !_running;
-        _play.Content = _running ? "MINECRAFT IS RUNNING" : _busy ? "CODA IS PREPARING..." : "PLAY";
+        _play.Content = _running ? "MINECRAFT IS RUNNING" : _busy ? "CODA IS PREPARING..." : _settings.OfflineMode ? "PLAY OFFLINE" : "PLAY";
     }
     private void OpenFolder(string path) { Directory.CreateDirectory(path); Open(path); }
     private void Open(string target)

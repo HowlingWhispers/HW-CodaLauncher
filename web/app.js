@@ -49,6 +49,27 @@ function requestInstall(){
   post('install');
 }
 document.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.view).classList.add('active');}));
+function renderAccount(){
+  const a=state?.account;
+  if(!a) return;
+  const locked=!!state.gameRunning||!!state.accountBusy||installBusy;
+  $('account-status').textContent=a.status;
+  $('account-name').textContent=a.signedIn?a.playerName:'Not signed in';
+  $('account-verified').textContent=a.verifiedAt?'Last verified: '+new Date(a.verifiedAt).toLocaleString():'';
+  $('account-storage').textContent=a.storage;
+  $('account-signin').disabled=locked||!a.configured;
+  $('account-verify').disabled=locked||!a.signedIn||!a.configured;
+  $('account-signout').disabled=!!state.gameRunning||installBusy||!a.signedIn;
+  $('account-cancel').hidden=!state.accountBusy;
+  $('account-offline').checked=!!state.settings.offlineMode;
+  $('account-offline').disabled=locked||(!a.offlineAvailable&&!state.settings.offlineMode);
+  $('p-mc').textContent=a.signedIn?'Previously verified':'Not verified';
+}
+$('account-signin').onclick=()=>post('signInMicrosoft');
+$('account-verify').onclick=()=>post('verifyAccount');
+$('account-signout').onclick=()=>post('signOutAccount');
+$('account-cancel').onclick=()=>post('cancelSignIn');
+$('account-offline').onchange=()=>post('setPlayMode',{offline:$('account-offline').checked});
 $('refresh').onclick=()=>post('refresh');
 $('play').onclick=()=>{
   if(installBusy) return;
@@ -59,6 +80,10 @@ $('open-loader').onclick=()=>post('openLoaderFolder');
 $('save').onclick=()=>post('saveSettings',{settings:{loaderPath:$('loader-path').value.trim(),feedUrl:$('feed-url').value.trim(),closeAfterLaunch:$('close-after').checked}});
 window.chrome.webview.addEventListener('message',e=>{
   const m=e.data;
+  if(m.type==='account'&&state){state.account=m.account;state.accountBusy=m.busy;state.settings.offlineMode=m.offline;render();}
+  if(m.type==='accountMessage') $('account-message').textContent=m.message;
+  if(m.type==='accountCode'){ $('account-code').hidden=!m.code; $('account-code').textContent=m.code?'Enter '+m.code+' at '+m.url:''; }
+
   if(m.type==='state'){
     state=m.data;
     launcherUpdateVersion=state.launcherUpdateVersion||null;
@@ -93,6 +118,7 @@ window.chrome.webview.addEventListener('message',e=>{
   if(m.type==='error') $('launch-message').textContent=m.message;
 });
 function render(){
+  renderAccount();
   renderLauncherUpdateNotice();
   $('version').textContent='CodaLauncher '+state.launcherVersion;
   $('home-heading').textContent=state.gameRunning?'World session active.':'Ready when you are.';
@@ -102,9 +128,9 @@ function render(){
   $('pack-chip').textContent=state.basePackReady?'CML BASE CURRENT':(state.managedInstalled?'CML BASE UPDATE READY':'CML BASE INSTALL');
   $('pack-chip').className=state.basePackReady?'good':(state.managedInstalled?'warn':'bad');
   $('mod-chip').textContent=state.modCount+' mod'+(state.modCount===1?'':'s');
-  $('play').disabled=installBusy||state.gameRunning;
+  $('play').disabled=installBusy||state.gameRunning||state.accountBusy||!state.account?.signedIn||(state.settings.offlineMode&&!state.account.offlineAvailable);
   if(state.gameRunning) $('play').textContent='RUNNING';
-  else if(!installBusy) $('play').textContent=state.managedInstalled?'PLAY ▶':'INSTALL & PLAY ▶';
+  else if(!installBusy) $('play').textContent=state.settings.offlineMode?'PLAY OFFLINE ▶':state.managedInstalled?'PLAY ▶':'INSTALL & PLAY ▶';
   $('loader-summary').textContent=state.gameRunning
     ? 'Minecraft is running. Coda is keeping the clipboard warm.'
     : state.managedCurrent

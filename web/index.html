@@ -68,6 +68,17 @@
 
 <section class="view" id="profile">
   <header><div><em>CML IDENTITY</em><h1>Your profile</h1><small class="header-note">One Howling Whispers identity, wherever CML takes you.</small></div></header>
+  <div class="panel account-panel">
+    <h3>Minecraft account</h3>
+    <p id="account-status" role="status">Coda is checking your account paperwork.</p>
+    <p><b id="account-name">Not signed in</b> <small id="account-verified"></small></p>
+    <p id="account-storage"></p>
+    <div class="actions"><button id="account-signin" class="save">Sign in with Microsoft</button><button id="account-verify" class="quiet">Verify again</button><button id="account-signout" class="quiet">Sign out</button><button id="account-cancel" class="quiet" hidden>Cancel sign-in</button></div>
+    <p id="account-code" class="signin-code" hidden></p>
+    <p id="account-message" role="status" aria-live="polite"></p>
+    <label class="toggle"><div><b>Play offline</b><small>Local worlds only. Verify ownership first; install the game while online. Reverification is required after 30 days.</small></div><input id="account-offline" type="checkbox"></label>
+    <small>Your Microsoft password stays with Microsoft. Signing out removes saved launcher credentials; your worlds stay here.</small>
+  </div>
   <div class="cards">
     <article><img class="profile-face" src="assets/coda-headshot.png" alt="Coda"><b>CML Avatar</b><small>Your CML face across supported Howling Whispers experiences.</small></article>
     <article><label>CML Account</label><b id="p-cml">Not configured</b><small>Howling Whispers identity</small></article>

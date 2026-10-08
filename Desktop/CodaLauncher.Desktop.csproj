@@ -8,9 +8,12 @@
     <Version>0.7.0</Version>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
     <PackageReference Include="Avalonia" Version="11.3.21" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.21" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.21" />
+    <Compile Include="../MinecraftAccount.cs" Link="Shared/MinecraftAccount.cs" />
+    <Content Include="../auth/microsoft.json" Link="auth/microsoft.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../LauncherCore.cs" Link="Shared/LauncherCore.cs" />
     <Compile Include="../LauncherModels.cs" Link="Shared/LauncherModels.cs" />
     <Compile Include="../ManagedMods.cs" Link="Shared/ManagedMods.cs" />

@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - name: Test account verification
+        run: dotnet run --project tests/accounts/AccountsTests.csproj -c Release
       - name: Test managed mod installation
         run: dotnet run --project tests/ManagedModsTests.csproj -c Release
       - name: Restore
@@ -61,6 +63,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - name: Test account verification
+        run: dotnet run --project tests/accounts/AccountsTests.csproj -c Release
       - name: Test managed mod installation
         run: dotnet run --project tests/ManagedModsTests.csproj -c Release
       - name: Compile and smoke-test native desktop edition

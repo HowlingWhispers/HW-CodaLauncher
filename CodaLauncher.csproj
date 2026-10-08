@@ -11,9 +11,11 @@
     <Version>0.7.0</Version>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="auth/microsoft.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="web\**\*" CopyToOutputDirectory="PreserveNewest" />
     <Compile Remove="tests/**/*.cs" />
     <Compile Remove="Desktop/**/*.cs" />

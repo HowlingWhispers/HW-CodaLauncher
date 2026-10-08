@@ -32,8 +32,9 @@ jobs:
         run: |
           existing="$(git rev-parse --verify "refs/tags/$CODA_TAG" 2>/dev/null || true)"
           if [ -n "$existing" ] && [ "$existing" != "$GITHUB_SHA" ]; then
-            echo "Bump the version; this release belongs to another commit." >&2
-            exit 1
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "Source-only change: existing release remains unchanged."
+            exit 0
           fi
           if gh release view "$CODA_TAG" >/dev/null 2>&1; then
             echo "publish=false" >> "$GITHUB_OUTPUT"
@@ -70,6 +71,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - name: Test account verification
+        run: dotnet run --project tests/accounts/AccountsTests.csproj -c Release
       - name: Test managed mod installation
         run: dotnet run --project tests/ManagedModsTests.csproj -c Release
       - name: Publish Windows

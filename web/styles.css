@@ -12,3 +12,5 @@
 .launcher-update-notice button{flex-shrink:0}
 .launcher-update-notice button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:650px){.launcher-update-notice{align-items:flex-start;flex-direction:column}}
+
+.account-panel{padding:24px;margin-bottom:22px}.account-panel p{color:var(--muted);line-height:1.5}.account-panel .actions{flex-wrap:wrap}.account-panel .toggle{margin:22px 0}.account-panel small{display:block;color:var(--muted)}.signin-code{font-size:20px;color:var(--cyan)!important;font-weight:700}button:disabled{opacity:.5;cursor:not-allowed}

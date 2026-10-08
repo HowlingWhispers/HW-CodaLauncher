@@ -83,3 +83,7 @@ dotnet publish CodaLauncher.csproj -c Release -r win-x64 --self-contained true -
 The build script downloads Microsoft's WebView2 bootstrapper and verifies its Authenticode signature before embedding it. Setup and shortcut icons use the approved bundled Coda portrait. CI runs `test-installer.ps1` on a clean Windows runner to check install/reinstall, shortcut targets, Installed Apps registration, actual WebView2 UI startup, uninstall and saved-world preservation. Run that test only on a disposable Windows environment. The installer itself is currently unsigned.
 
 Landing-page Windows download buttons should link directly to the release's `win64-Setup.exe`; the update manifest continues pointing to `win64.zip`. Do not advertise automatic Java installation: Java management is not included in this release.
+
+## Account verification in development
+
+The source now extends **Profile** with Microsoft sign-in, Minecraft Java ownership verification, sign-out, and explicit offline selection. This is not in the published 0.7.0 installer yet. Live sign-in awaits CodaLauncher's own registered Microsoft application ID and API access. See [authentication setup](docs/microsoft-authentication.md) for configuration, storage behavior and release prerequisites.

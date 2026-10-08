@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="accounts/**/*.cs" />
     <Compile Include="../ManagedMods.cs" Link="ManagedMods.cs" />
   </ItemGroup>
 </Project>

@@ -84,6 +84,12 @@ CodaLauncher controls are paused. Azure app registration can be completed in a
 future version without affecting this launch path. The official-profile
 integration is still awaiting a live game test on Minecraft 26.4 Snapshot 3.
 
+## Required first-party mods
+
+Official H.O.W.L. builds do not offer optional first-party gameplay mods. PLAY installs and checks all officially bundled modules. Development-only projects such as BuildCraft CML and HW Quiet Underground are not released player mods. Once Quiet Underground passes worldgen validation, its rules belong in required automatic new-world content, not an optional data-pack selector; existing saves must be protected.
+
+The current Mod Drawer displays installed JARs, not unreleased prototypes or world data packs.
+
 ## Play and mods
 
 PLAY checks the current CodaLoader release, prepares HOWL Base Resources and installs/updates HW Essentials in the active Minecraft profile before starting the game. Mod versions are read from `coda.mod.json` in the active profile's `mods` folder.

@@ -55,8 +55,8 @@ function renderAccount(){
   if(!a) return;
   const locked=!!state.gameRunning||!!state.accountBusy||installBusy;
   const local=!!state.localSingleplayer;
-  $('account-status').textContent=local?'Microsoft sign-in is paused. Local singleplayer is available without Azure.':a.status;
-  $('account-name').textContent=local?'CodaPlayer (local only)':a.signedIn?a.playerName:'Not signed in';
+  $('account-status').textContent=local?'Local Test Mode enabled. Minecraft account verification is bypassed for local gameplay only.':'Official Minecraft Launcher handles sign-in. CodaLauncher Microsoft sign-in is paused.';
+  $('account-name').textContent=local?'CodaPlayer (local test)': 'Official Launcher sign-in';
   $('account-verified').textContent=a.verifiedAt?'Last verified: '+new Date(a.verifiedAt).toLocaleString():'';
   $('account-storage').textContent=a.storage;
   $('account-signin').disabled=local||locked||!a.configured;
@@ -80,7 +80,7 @@ $('play').onclick=()=>{
   post('play');
 };
 $('open-loader').onclick=()=>post('openLoaderFolder');
-$('save').onclick=()=>post('saveSettings',{settings:{loaderPath:$('loader-path').value.trim(),feedUrl:$('feed-url').value.trim(),closeAfterLaunch:$('close-after').checked}});
+$('save').onclick=()=>post('saveSettings',{settings:{loaderPath:$('loader-path').value.trim(),feedUrl:$('feed-url').value.trim(),localTestMode:$('local-test-mode').checked,closeAfterLaunch:$('close-after').checked}});
 window.chrome.webview.addEventListener('message',e=>{
   const m=e.data;
   if(m.type==='account'&&state){state.account=m.account;state.accountBusy=m.busy;state.settings.offlineMode=m.offline;render();}
@@ -135,9 +135,9 @@ function render(){
   $('pack-chip').textContent=state.basePackReady?'CML BASE CURRENT':(state.managedInstalled?'CML BASE UPDATE READY':'CML BASE INSTALL');
   $('pack-chip').className=state.basePackReady?'good':(state.managedInstalled?'warn':'bad');
   $('mod-chip').textContent=state.modCount+' mod'+(state.modCount===1?'':'s');
-  $('play').disabled=installBusy||state.gameRunning||state.accountBusy||(!state.localSingleplayer&&(!state.account?.signedIn||(state.settings.offlineMode&&!state.account.offlineAvailable)));
+  $('play').disabled=installBusy||state.gameRunning||state.accountBusy;
   if(state.gameRunning) $('play').textContent='RUNNING';
-  else if(!installBusy) $('play').textContent=state.localSingleplayer?'PLAY LOCAL ▶':state.settings.offlineMode?'PLAY OFFLINE ▶':state.managedInstalled?'PLAY ▶':'INSTALL & PLAY ▶';
+  else if(!installBusy) $('play').textContent=state.localSingleplayer?'PLAY LOCAL (TEST) ▶':'OPEN MINECRAFT LAUNCHER ▶';
   $('loader-summary').textContent=state.gameRunning
     ? 'Minecraft is running. Coda is keeping the clipboard warm.'
     : state.managedCurrent
@@ -170,7 +170,8 @@ function render(){
   $('mods-count').textContent=state.mods.length+' jar'+(state.mods.length===1?'':'s');
   $('mods-list').innerHTML=state.mods.length?state.mods.map(m=>'<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · '+esc(m.version)+' · '+esc(m.fileName)+'</small></div><div class="'+(m.valid?'':'bad-text')+'">'+(m.valid?'Ready':'Invalid')+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>').join(''):'<div class="mod"><div><b>No CML mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
   $('loader-path').value=state.settings.loaderPath||'';$('feed-url').value=state.settings.feedUrl||'';$('close-after').checked=!!state.settings.closeAfterLaunch;
-  $('p-cml').textContent=state.profile.cmlAccount;$('p-mc').textContent=state.localSingleplayer?'Unverified (local only)':state.profile.minecraftOwnership;$('p-discord').textContent=state.profile.discord;
+  $('local-test-mode').checked=!!state.settings.localTestMode;
+  $('p-cml').textContent=state.profile.cmlAccount;$('p-mc').textContent=state.localSingleplayer?'Unverified (local test)':'Handled by Minecraft Launcher';$('p-discord').textContent=state.profile.discord;
   $('log-output').textContent=(state.logs||[]).join('\n')||'Nothing interesting has happened yet.';
 }
 function appendLog(line){const pre=$('log-output');pre.textContent=(pre.textContent==='Nothing interesting has happened yet.'?'':pre.textContent+'\n')+line;pre.parentElement.scrollTop=pre.parentElement.scrollHeight;}

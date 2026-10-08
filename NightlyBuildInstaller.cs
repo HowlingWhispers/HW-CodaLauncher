@@ -230,41 +230,12 @@ internal sealed class NightlyBuildInstaller
         using var response = await Http.GetAsync(ReleasesApi, ct);
         response.EnsureSuccessStatusCode();
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-        NightlyRelease? newest = null;
-        DateTimeOffset newestPublished = DateTimeOffset.MinValue;
-        foreach (var release in document.RootElement.EnumerateArray())
-        {
-            if (!release.TryGetProperty("prerelease", out var prerelease) || !prerelease.GetBoolean()) continue;
-            if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
-            string tag = release.GetProperty("tag_name").GetString() ?? "";
-            if (!tag.StartsWith(TagPrefix, StringComparison.Ordinal)) continue;
-            Uri? zip = null;
-            Uri? sha = null;
-            foreach (var asset in release.GetProperty("assets").EnumerateArray())
-            {
-                string name = asset.GetProperty("name").GetString() ?? "";
-                string? link = asset.GetProperty("browser_download_url").GetString();
-                if (!Uri.TryCreate(link, UriKind.Absolute, out var url) || url.Scheme != Uri.UriSchemeHttps
-                    || !url.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
-                    continue;
-                if (name == Package) zip = url;
-                else if (name == Checksum) sha = url;
-            }
-            if (zip == null || sha == null) continue;
-            // GitHub returns release entries in repository/tag order, which is
-            // NOT necessarily publish order. Never blindly pick the first
-            // matching Nightly, or users silently get stale feature builds.
-            string published = release.TryGetProperty("published_at", out var publishedValue)
-                ? publishedValue.GetString() ?? "" : "";
-            if (!DateTimeOffset.TryParse(published, out var publishedAt)) continue;
-            if (newest == null || publishedAt > newestPublished)
-            {
-                newestPublished = publishedAt;
-                newest = new NightlyRelease(tag, zip, sha);
-            }
-        }
-        if (newest is not null) return newest;
-        throw new InvalidOperationException("No verified public BuildCraft nightly release is published yet. Stable has not been modified.");
+        var selected = NightlyReleaseSelector.SelectNewest(
+            document.RootElement, TagPrefix, Package, Checksum);
+        if (selected is null)
+            throw new InvalidOperationException(
+                "No valid public BuildCraft Nightly release is published yet. Stable remains unchanged.");
+        return new NightlyRelease(selected.Tag, selected.PackageUrl, selected.ChecksumUrl);
     }
 
     private static async Task<byte[]> DownloadAsync(Uri url, int max, CancellationToken ct)

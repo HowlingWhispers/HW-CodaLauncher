@@ -42,6 +42,44 @@ try
     File.Copy(bundled, target, true);
     ManagedMods.Install(loader, game, _ => {});
     Check(ManagedMods.IsCurrent(loader, game), "matching untracked official JAR adopted");
-    Console.WriteLine($"Managed mod installation tests passed: {checks} checks.");
+    // Historic loader/run/mods is migration input, never an active scanner.
+    var legacyCustom = Path.Combine(loader, "run", "mods", "custom-howling.jar");
+    var liveCustom = Path.Combine(game, "mods", "custom-howling.jar");
+    File.WriteAllText(legacyCustom, "custom player mod v1");
+    var migrationLog = new List<string>();
+    ManagedMods.MigrateLegacy(loader, game, migrationLog.Add);
+    Check(File.ReadAllText(liveCustom) == "custom player mod v1", "third-party mod copied to game/mods");
+    Check(File.ReadAllText(legacyCustom) == "custom player mod v1", "source preserved after migration");
+    File.WriteAllText(liveCustom, "player edited version");
+    ManagedMods.MigrateLegacy(loader, game, migrationLog.Add);
+    Check(File.ReadAllText(liveCustom) == "player edited version", "different target is not overwritten");
+    Check(File.ReadAllText(legacyCustom) == "custom player mod v1", "conflicting source is preserved");
+    Check(migrationLog.Any(line => line.Contains("CONFLICT")), "conflict reported to user");
+
+    // The new distribution does not need a second mods seed directory.
+    // HW Essentials is embedded as an archive entry in CodaLoader.jar.
+    var loaderJar = Path.Combine(loader, "CodaLoader.jar");
+    using (var zip = System.IO.Compression.ZipFile.Open(loaderJar,
+        System.IO.Compression.ZipArchiveMode.Create))
+    {
+        var embedded = zip.CreateEntry("codaloader/mods/hw-essentials.jar");
+        using var stream = new StreamWriter(embedded.Open());
+        stream.Write("third official mod embedded in loader");
+    }
+    ManagedMods.Install(loader, game, migrationLog.Add);
+    Check(File.ReadAllText(target) == "third official mod embedded in loader",
+        "embedded official JAR supersedes old distribution seed");
+    ManagedMods.ArchiveLegacy(loader, migrationLog.Add);
+    Check(!Directory.Exists(Path.Combine(loader, "run", "mods")),
+        "legacy duplicate path no longer exists after archival");
+    Check(File.ReadAllText(liveCustom) == "player edited version",
+        "archival does not affect active mods");
+    var backups = Path.Combine(root, "legacy-loader-mods-backup");
+    Check(Directory.Exists(backups), "preserved legacy archive exists");
+    Check(Directory.EnumerateFiles(backups, "custom-howling.jar",
+            SearchOption.AllDirectories).Any(p => File.ReadAllText(p) == "custom player mod v1"),
+        "old mod contents and unresolved conflict retained in backup");
+    Check(ManagedMods.IsCurrent(loader, game), "current-state check reads embedded official mod");
+    Console.WriteLine($"Managed mod installation and no-clobber migration tests passed: {checks} checks.");
 }
 finally { if (Directory.Exists(root)) Directory.Delete(root, true); }

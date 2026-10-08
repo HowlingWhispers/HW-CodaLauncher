@@ -70,6 +70,7 @@ $('account-verify').onclick=()=>post('verifyAccount');
 $('account-signout').onclick=()=>post('signOutAccount');
 $('account-cancel').onclick=()=>post('cancelSignIn');
 $('account-offline').onchange=()=>post('setPlayMode',{offline:$('account-offline').checked});
+$('copy-all-logs').onclick=()=>post('copyAllLogs');
 $('refresh').onclick=()=>post('refresh');
 $('play').onclick=()=>{
   if(installBusy) return;
@@ -94,6 +95,7 @@ window.chrome.webview.addEventListener('message',e=>{
     launcherUpdateBusy=!!m.busy;
     renderLauncherUpdateNotice();
   }
+  if(m.type==='copyLogsResult') $('copy-logs-status').textContent=m.ok?'Copied '+m.count+' log lines to clipboard.':('Copy failed: '+m.message);
   if(m.type==='log') appendLog(m.line);
   if(m.type==='installStatus'){
     const box=$('launch-message');

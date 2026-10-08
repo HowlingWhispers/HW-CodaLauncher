@@ -984,6 +984,7 @@ internal sealed class LauncherService
     {
         if (string.IsNullOrWhiteSpace(identity.Uuid) || string.IsNullOrWhiteSpace(identity.PlayerName) ||
             (!identity.Offline && (string.IsNullOrWhiteSpace(identity.AccessToken) || identity.AccessToken == "0")))
+            || (identity.LocalOnly && (!identity.Offline || identity.AccessToken != "0" || identity.ClientId != ""))
             throw new InvalidOperationException("A verified Minecraft identity is required.");
         var jar = Path.Combine(loaderDirectory, "CodaLoader.jar");
         if (!File.Exists(jar)) throw new FileNotFoundException("CodaLoader.jar was not found.", jar);
@@ -1006,12 +1007,12 @@ internal sealed class LauncherService
         info.Environment["CODA_PLAYER_NAME"] = identity.PlayerName;
         info.Environment["CODA_PLAYER_UUID"] = identity.Uuid;
         info.Environment["CODA_ACCESS_TOKEN"] = identity.AccessToken;
-        info.Environment["CODA_PLAY_MODE"] = identity.Offline ? "offline" : "online";
+        info.Environment["CODA_PLAY_MODE"] = identity.LocalOnly ? "local" : identity.Offline ? "offline" : "online";
         info.Environment["CODA_AUTH_CLIENT_ID"] = identity.ClientId;
         // Older loaders use a test identity; never silently launch one after verification.
         using (var jarArchive = ZipFile.OpenRead(jar))
             if (jarArchive.GetEntry("dev/howlingwhispers/codaloader/bootstrap/LaunchIdentity.class") is null)
-                throw new InvalidOperationException("This CodaLoader does not support verified accounts. Update it before playing.");
+                throw new InvalidOperationException("This CodaLoader does not support the current launcher identity contract. Update it before playing.");
         info.Environment["CODA_NO_PAUSE"] = "1";
         info.Environment["CODA_LAUNCHED_BY"] = "CodaLauncher";
 

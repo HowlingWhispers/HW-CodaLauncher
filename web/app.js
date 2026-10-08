@@ -199,7 +199,7 @@ function render(){
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
   const nightly=state.activeChannel==='nightly';
   $('loader-versions').textContent=nightly
-    ? 'Nightly BuildCraft: '+(state.nightlyInstalled?'Installed in isolated profile':'Not installed yet')+' | Stable remains untouched'
+    ? 'Required H.O.W.L. Nightly: '+(state.nightlyInstalled?'Installed in isolated profile':'Not installed yet')+' | Optional mods are managed in Mods | Stable untouched'
     : 'Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
   $('loader-update-result').textContent=loaderUpdateMessage;
   $('loader-chip').textContent=nightly?'HOWL NIGHTLY':state.loaderCurrent?'HOWL CURRENT':(state.loaderReady?'HOWL UPDATE READY':'HOWL INSTALL');

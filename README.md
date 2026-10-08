@@ -2,6 +2,22 @@
 
 Desktop launcher for **H.O.W.L. (Howling Open Works Loader)** and Howling Whispers Minecraft, pinned to **Minecraft Java 26.4 Snapshot 3**.
 
+## CodaLauncher 0.7.6: one active mod folder
+
+Fresh Windows installations use `%APPDATA%\.howlingwhispers\minecraft\mods`.
+Existing profiles with the historic `.howlingshispers` typo continue using
+their original root until an explicit data-root migration is available,
+preventing silent loss of access to worlds, profiles, or settings.
+Each channel scans exactly one mods folder: Stable under its game profile
+and Nightly under its separate nightly/minecraft profile. Legacy
+`loader/run/mods` JARs migrate without overwriting conflicts, then the
+entire old folder is preserved in a named backup. Install/update code no
+longer creates the duplicate path. The Mod Drawer opens the active folder
+directly through OPEN MODS FOLDER. Real Snapshot 3 play must still be tested.
+
+**Windows builds and installer smoke tests passed**, including preservation
+of player data. Linux/macOS stable builds and launcher unit tests passed.
+
 ## CodaLauncher 0.7.5: opt-in Nightly (Windows)
 
 A new **Stable / Nightly** selector appears under Settings. Stable remains the

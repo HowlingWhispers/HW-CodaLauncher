@@ -1,0 +1,7 @@
+bin/
+obj/
+dist/
+artifacts/
+__pycache__/
+*.user
+news-cache.json

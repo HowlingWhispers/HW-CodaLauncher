@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">Coda</title>
+<desc id="desc">Icy white and cyan malamute-like Coda portrait.</desc>
+<defs>
+  <radialGradient id="bg" cx="50%" cy="42%" r="62%">
+    <stop offset="0" stop-color="#153b49"/>
+    <stop offset="1" stop-color="#08171d"/>
+  </radialGradient>
+  <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f7fdff"/>
+    <stop offset="1" stop-color="#d9f5fb"/>
+  </linearGradient>
+  <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#bff7ff"/>
+    <stop offset="1" stop-color="#65d7f4"/>
+  </linearGradient>
+  <filter id="glow">
+    <feGaussianBlur stdDeviation="7" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<circle cx="256" cy="256" r="238" fill="url(#bg)" stroke="#3e849b" stroke-width="6"/>
+<circle cx="256" cy="255" r="188" fill="none" stroke="#72dfff" stroke-opacity=".2" stroke-width="3"/>
+
+<!-- ears -->
+<path d="M126 190 C112 119 126 65 167 43 C200 92 207 139 201 185 Z" fill="url(#fur)" stroke="#4b91a8" stroke-width="8" stroke-linejoin="round"/>
+<path d="M386 190 C400 119 386 65 345 43 C312 92 305 139 311 185 Z" fill="url(#fur)" stroke="#4b91a8" stroke-width="8" stroke-linejoin="round"/>
+<path d="M145 156 C139 112 146 83 166 69 C182 102 187 130 184 159 Z" fill="url(#cyan)" opacity=".92"/>
+<path d="M367 156 C373 112 366 83 346 69 C330 102 325 130 328 159 Z" fill="url(#cyan)" opacity=".92"/>
+
+<!-- head -->
+<path d="M160 170
+ C177 119 215 100 256 100
+ C297 100 335 119 352 170
+ C377 246 366 343 322 402
+ C303 427 280 442 256 442
+ C232 442 209 427 190 402
+ C146 343 135 246 160 170 Z"
+ fill="url(#fur)" stroke="#4b91a8" stroke-width="9" stroke-linejoin="round"/>
+
+<!-- cyan side markings -->
+<path d="M162 190 C178 149 198 132 221 122 C204 171 205 214 216 251 C191 238 174 217 162 190 Z" fill="url(#cyan)" opacity=".9"/>
+<path d="M350 190 C334 149 314 132 291 122 C308 171 307 214 296 251 C321 238 338 217 350 190 Z" fill="url(#cyan)" opacity=".9"/>
+<path d="M172 298 C194 326 211 344 228 352 C213 365 200 381 191 401 C172 374 162 339 172 298 Z" fill="#8be7fb" opacity=".68"/>
+<path d="M340 298 C318 326 301 344 284 352 C299 365 312 381 321 401 C340 374 350 339 340 298 Z" fill="#8be7fb" opacity=".68"/>
+
+<!-- brow/forehead white blaze -->
+<path d="M215 119 C229 103 243 96 256 96 C269 96 283 103 297 119
+ C284 155 275 185 256 213
+ C237 185 228 155 215 119 Z" fill="#ffffff" opacity=".98"/>
+
+<!-- eyes -->
+<path d="M189 240 C207 222 232 222 244 241 C229 257 205 260 189 240 Z" fill="#dffaff" stroke="#4b91a8" stroke-width="6"/>
+<path d="M323 240 C305 222 280 222 268 241 C283 257 307 260 323 240 Z" fill="#dffaff" stroke="#4b91a8" stroke-width="6"/>
+<ellipse cx="219" cy="241" rx="10" ry="15" fill="#39c9ff" filter="url(#glow)"/>
+<ellipse cx="293" cy="241" rx="10" ry="15" fill="#39c9ff" filter="url(#glow)"/>
+<ellipse cx="219" cy="243" rx="4" ry="8" fill="#173f52"/>
+<ellipse cx="293" cy="243" rx="4" ry="8" fill="#173f52"/>
+<circle cx="216" cy="237" r="3" fill="#fff"/>
+<circle cx="290" cy="237" r="3" fill="#fff"/>
+
+<!-- muzzle -->
+<path d="M194 281 C206 259 230 251 256 256 C282 251 306 259 318 281
+ C329 302 319 340 296 360
+ C284 371 270 377 256 377
+ C242 377 228 371 216 360
+ C193 340 183 302 194 281 Z"
+ fill="#faffff" stroke="#70b8ca" stroke-width="5"/>
+<path d="M232 285 C239 274 248 269 256 269 C264 269 273 274 280 285
+ C275 298 267 304 256 304 C245 304 237 298 232 285 Z"
+ fill="#547f8d"/>
+<path d="M256 304 L256 322" stroke="#547f8d" stroke-width="5" stroke-linecap="round"/>
+<path d="M222 329 C235 343 247 348 256 348 C265 348 277 343 290 329" fill="none" stroke="#547f8d" stroke-width="5" stroke-linecap="round"/>
+
+<!-- cheek fluff -->
+<path d="M160 292 L130 318 L168 321 L143 352 L184 345" fill="url(#fur)" stroke="#4b91a8" stroke-width="7" stroke-linejoin="round"/>
+<path d="M352 292 L382 318 L344 321 L369 352 L328 345" fill="url(#fur)" stroke="#4b91a8" stroke-width="7" stroke-linejoin="round"/>
+
+<!-- neck ruff -->
+<path d="M191 394 L165 446 L221 432 L256 468 L291 432 L347 446 L321 394
+ C301 424 280 440 256 440 C232 440 211 424 191 394 Z"
+ fill="url(#fur)" stroke="#4b91a8" stroke-width="8" stroke-linejoin="round"/>
+<path d="M232 433 L256 458 L280 433" fill="#6ddcf5" opacity=".9"/>
+</svg>

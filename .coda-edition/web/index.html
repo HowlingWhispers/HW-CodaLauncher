@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="assets/coda-face.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CodaLauncher · Coda Edition</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="coda-edition.css">
+</head>
+<body>
+<div class="shell">
+<aside>
+  <div class="brand"><img src="assets/coda-headshot.png" alt=""><b>CODA<span class="brand-paw">✦</span></b><small>Howling Whispers</small><span class="edition-label">THE CODA EDITION</span></div>
+  <nav aria-label="Main navigation">
+    <button class="nav active" data-view="home" aria-label="Home"><span class="nav-icon" aria-hidden="true">⌂</span><span>Home</span></button>
+    <button class="nav" data-view="mods" aria-label="My Game"><span class="nav-icon" aria-hidden="true">◇</span><span>My Game</span></button>
+    <button class="nav" data-view="settings" aria-label="Settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>Settings</span></button>
+    <button class="nav" data-view="logs" aria-label="Help"><span class="nav-icon" aria-hidden="true">?</span><span>Help</span></button>
+  </nav>
+  <div class="desk-note"><span class="tape"></span>You bring the adventure.<br>I bring the clipboard.<span class="note-paw">♡</span></div>
+  <div class="foot"><span id="channel-badge" class="pill online">● Stable</span><span id="feed-pill" class="pill online">NEWS INCLUDED</span><small id="version">Coda Edition</small></div>
+</aside>
+
+<main>
+<div class="topbar"><span class="tiny-brand">YOUR LITTLE ADVENTURE DESK</span><div><span id="demo-badge" hidden>INTERACTIVE DESIGN DEMO</span><button class="profile-button" id="profile-link">◉ &nbsp; Your profile <span>→</span></button></div></div>
+<div id="launcher-update-notice" class="launcher-update-notice" role="status" aria-live="polite" hidden>
+  <div><b>UPDATE AVAILABLE</b><p id="launcher-update-copy"></p></div>
+  <button id="update-launcher" class="save">UPDATE LAUNCHER</button>
+</div>
+<section class="view active" id="home">
+  <header class="welcome"><div><em>A LITTLE HOWL. A LOT OF HEART.</em><h1 id="home-heading">Welcome back.<br><span>Adventure?</span></h1><p>Good to see you. Let’s get you out there.</p></div><button id="refresh" class="quiet">↻ Check for updates</button></header>
+  <div class="hero">
+    <div class="hero-copy">
+      <span class="hero-eyebrow">H.O.W.L. &nbsp; / &nbsp; MINECRAFT JAVA</span>
+      <h2 id="hero-heading">All packed.<br>Ready to play.</h2>
+      <p id="loader-summary">Coda is checking your game files.</p>
+      <div class="actions"><button id="play" class="play">▶ &nbsp; Play</button></div>
+      <p class="launch-explainer" id="launch-explainer">Opens the official Minecraft Launcher</p>
+      <div id="launch-message" role="status" aria-live="polite"></div>
+      <details class="game-details"><summary>Game details <span>→</span></summary><div class="chips"><span id="loader-chip">HOWL checking…</span><span id="pack-chip">BASE PACK checking…</span><span>Minecraft 26.4 Snapshot 3</span><span id="mod-chip">0 mods</span></div><div id="loader-versions"></div><small id="loader-update-result">Update check has not completed yet.</small><div class="detail-actions"><button id="open-loader" class="quiet">Open game files</button><button id="repair-game" class="quiet">Install / repair</button></div></details>
+    </div>
+    <div class="coda">
+      <div class="scene-stars" aria-hidden="true">✧ &nbsp; · &nbsp; ✦</div><div class="scene-hills" aria-hidden="true"></div>
+      <div class="speech" id="coda-speech" aria-live="polite">Supplies checked.<br>Paperwork mostly<br>under control. <span>♡</span></div>
+      <button id="coda-boop" class="coda-boop" aria-label="Say hello to Coda" title="Say hello to Coda"><img class="coda-face" src="assets/coda-headshot.png" alt="Coda, your friendly wolf with a clipboard"></button>
+      <div class="coda-caption"><span class="tiny-paw">✦</span> <span id="coda-status">Keeper of the clipboard</span></div>
+    </div>
+  </div>
+  <div class="section-title"><div><em>FROM CODA'S DESK</em><h3>Good things, freshly filed.</h3></div><small id="feed-note"></small></div>
+  <div id="news" class="news"></div>
+</section>
+
+<section class="view" id="mods"><div class="shelf-tabs" role="group" aria-label="Game shelves"><button data-shelf="mods">Mods</button><button data-shelf="packs">Packs</button><button data-shelf="resourcepacks">Art &amp; music</button></div>
+  <header><div><em>CODA'S MOD DRAWER</em><h1>My Game</h1><small class="header-note">Filed, checked, and ready to cause entirely responsible adventures.</small></div></header>
+  <div class="panel"><div class="panel-head"><div><b>HOWL mod shelf</b><small>Coda reads the active Minecraft profile's single mods folder.</small></div><div class="actions"><button id="refresh-mods" class="quiet" type="button">↻ REFRESH MODS</button><button id="open-mods-folder" class="quiet" type="button">OPEN MODS FOLDER</button><span id="mods-count" class="pill"></span></div></div><div id="mods-list"></div><small class="header-note">Recognized means the JAR metadata is readable, not that Minecraft confirmed loading it.</small></div>
+</section>
+
+<section class="view" id="packs"><div class="shelf-tabs" role="group" aria-label="Game shelves"><button data-shelf="mods">Mods</button><button data-shelf="packs">Packs</button><button data-shelf="resourcepacks">Art &amp; music</button></div>
+  <header><div><em>CODA'S PACK SHELF</em><h1>Packs</h1></div></header>
+  <div class="packs-intro">
+    <div><b>Complete Howling Whispers experiences</b><small>Coda keeps their mods, resources, music, configs and world content together.</small></div>
+    <span class="pill">1 PACK</span>
+  </div>
+  <div id="packs-list" class="pack-grid"></div>
+  <article id="nightly-quiet-card" class="pack-card" hidden>
+    <div class="pack-top"><div><em>NIGHTLY WORLD GENERATION</em><h3>HW Quiet Underground</h3></div><span id="nightly-quiet-status" class="pill">Checking…</span></div>
+    <p>Much rarer giant caves and ravines. Only affects brand-new Nightly worlds, never existing saves.</p>
+    <div class="managed-label">A verified datapack is staged for Minecraft's Create World screen. Installed does not mean Minecraft has successfully activated it yet.</div>
+  </article>
+</section>
+
+<section class="view" id="resourcepacks"><div class="shelf-tabs" role="group" aria-label="Game shelves"><button data-shelf="mods">Mods</button><button data-shelf="packs">Packs</button><button data-shelf="resourcepacks">Art &amp; music</button></div>
+  <header><div><em>CODA'S ART CABINET</em><h1>Art &amp; music</h1></div></header>
+  <div class="packs-intro">
+    <div><b>Visuals, music, menus, and presentation</b><small>Required resources follow their Packs automatically. Coda handles the paperwork.</small></div>
+    <span class="pill">1 RESOURCEPACK</span>
+  </div>
+  <div id="resourcepacks-list" class="pack-grid"></div>
+</section>
+
+<section class="view" id="profile">
+  <header><div><em>HOWL IDENTITY</em><h1>Your profile</h1><small class="header-note">One Howling Whispers identity, wherever HOWL takes you.</small></div></header>
+  <div class="panel account-panel">
+    <h3>Minecraft account</h3>
+    <p id="account-status" role="status">Coda is checking your account paperwork.</p>
+    <p><b id="account-name">Not signed in</b> <small id="account-verified"></small></p>
+    <p id="account-storage"></p>
+    <div class="actions"><button id="account-signin" class="save">Sign in with Microsoft</button><button id="account-verify" class="quiet">Verify again</button><button id="account-signout" class="quiet">Sign out</button><button id="account-cancel" class="quiet" hidden>Cancel sign-in</button></div>
+    <p id="account-code" class="signin-code" hidden></p>
+    <p id="account-message" role="status" aria-live="polite"></p>
+    <label class="toggle"><div><b>Previously verified offline mode</b><small>Reserved for when direct Microsoft authentication returns. Use Settings → Local Test Mode for unverified testing instead.</small></div><input id="account-offline" type="checkbox"></label>
+    <small>Microsoft account tools in CodaLauncher are paused. Normally, the official Minecraft Launcher signs you in. For offline testing, enable Local Test Mode in Settings.</small>
+  </div>
+  <div class="cards">
+    <article><img class="profile-face" src="assets/coda-headshot.png" alt="Coda"><b>HOWL Avatar</b><small>Your HOWL face across supported Howling Whispers experiences.</small></article>
+    <article><label>HOWL Account</label><b id="p-cml">Not configured</b><small>Howling Whispers identity</small></article>
+    <article><label>Minecraft ownership</label><b id="p-mc">Not verified</b><small>Official ownership proof only</small></article>
+    <article><label>Discord</label><b id="p-discord">Not linked</b><small>Future /link discord home</small></article>
+  </div>
+</section>
+
+<section class="view" id="settings">
+  <header><div><em>CODA'S CLIPBOARD</em><h1>The useful little knobs.</h1><small class="header-note">The useful knobs. Coda keeps the dangerous-looking ones out of your way.</small></div></header>
+  <div class="panel settings"><label class="toggle"><div><b>A quieter desk</b><small>Reduce animations and Coda’s spontaneous remarks.</small></div><input id="quiet-coda" type="checkbox"></label>
+    <label><span>H.O.W.L. folder override</span><input id="loader-path" type="text" placeholder="Leave blank for managed install"><small>Default: Coda Edition’s separate game folder</small></label>
+    <label><span>Launcher feed URL</span><input id="feed-url" type="text" placeholder="https://thehowlingwhispers.com/launcher"><small>Defaults to https://thehowlingwhispers.com/launcher. CodaLauncher appends /api/feed automatically.</small></label>
+    <label><span>H.O.W.L. update channel</span><select id="update-channel"><option value="stable">Stable (recommended)</option><option value="nightly">Nightly (experimental)</option></select><small>Nightly automatically checks public BuildCraft test builds, installs them into a SEPARATE profile, and only supports local single-player. Your stable worlds and loader are untouched. Expect bugs.</small></label>
+    <div id="nightly-warning" class="coming" hidden><b>🐺 Coda's experimental workshop</b><small>Nightly uses its own world saves under .howlingshispers/nightly/minecraft. Use NEW test worlds. No shared play or Microsoft sign-in.</small></div>
+    <label class="toggle"><div><span>Local Test Mode</span><small>For developing menus without Microsoft sign-in. Uses the existing CodaPlayer local save identity; no authenticated multiplayer, friends, or shared services. Turn off to launch through the official Minecraft Launcher.</small></div><input id="local-test-mode" type="checkbox"></label>
+    <label class="toggle"><div><span>Close after PLAY</span><small>Only applies to direct Local Test Mode. Official Minecraft Launcher remains a separate window.</small></div><input id="close-after" type="checkbox"></label>
+    <div class="coming"><b>Managed install</b><small>Coda keeps Minecraft, H.O.W.L., required Packs, and Resourcepacks current before the world opens.</small></div>
+    <div class="settings-save-row"><button id="save" class="save" type="button">Save settings</button><span id="settings-save-result" class="settings-save-result" role="status" aria-live="polite" aria-atomic="true"></span></div>
+  </div>
+</section>
+
+<section class="view" id="logs">
+  <header><div><em>CODA'S PAPER TRAIL</em><h1>A paw with that?</h1><small class="header-note">Something acting strange? This is where Coda leaves the paperwork.</small></div></header>
+  <div class="help-card"><h3>Something went sideways?</h3><p>Coda has kept the paperwork. Copy the logs when reporting a problem so we can find what happened.</p><button id="help-repair" class="quiet">Install / repair game</button><button id="help-home" class="quiet">Back to Home</button></div><div style="display:flex;align-items:center;gap:12px;margin:0 0 12px"><button id="copy-all-logs" class="save" type="button">COPY ALL LOGS</button><span id="copy-logs-status" role="status" aria-live="polite"></span></div>
+  <div class="terminal"><pre id="log-output">Nothing interesting has happened yet.</pre></div>
+</section>
+</main>
+</div>
+<script src="demo-bridge.js"></script>
+<script src="app.js"></script>
+<script src="coda-edition.js"></script>
+</body>
+</html>

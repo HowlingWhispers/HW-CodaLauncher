@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>CodaLauncher.CodaEdition</AssemblyName>
+    <Version>0.7.15</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+    <PackageReference Include="Avalonia" Version="11.3.21" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.21" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.21" />
+    <Compile Include="../MinecraftAccount.cs" Link="Shared/MinecraftAccount.cs" />
+    <Compile Include="../LocalSingleplayer.cs" Link="Shared/LocalSingleplayer.cs" />
+    <Compile Include="../OfficialMinecraftLauncher.cs" Link="Shared/OfficialMinecraftLauncher.cs" />
+    <Content Include="../auth/microsoft.json" Link="auth/microsoft.json" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../LauncherCore.cs" Link="Shared/LauncherCore.cs" />
+    <Compile Include="../FeedService.cs" Link="Shared/FeedService.cs" />
+    <Compile Include="../BundledNews.cs" Link="Shared/BundledNews.cs" />
+    <Compile Include="../GitHubNewsService.cs" Link="Shared/GitHubNewsService.cs" />
+    <Content Include="../web/news.json" Link="news.json" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../LauncherModels.cs" Link="Shared/LauncherModels.cs" />
+    <Compile Include="../NightlyModIdentity.cs" Link="Shared/NightlyModIdentity.cs" />
+    <Compile Include="../ManagedMods.cs" Link="Shared/ManagedMods.cs" />
+    <Content Include="../web/assets/coda-headshot.png" Link="assets/coda-headshot.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

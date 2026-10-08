@@ -1,0 +1,97 @@
+name: Build Coda Edition Preview
+
+on:
+  push:
+    branches: [feat/coda-edition-preview]
+    paths:
+      - '.coda-edition/**'
+      - '.github/workflows/coda-edition-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: .coda-edition
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Verify preservation of the original launcher profile
+        run: dotnet run --project tests/official/OfficialLauncherTests.csproj -c Release
+      - name: Verify managed mod installation
+        run: dotnet run --project tests/ManagedModsTests.csproj -c Release
+      - name: Publish the separate Windows executable
+        run: dotnet publish CodaLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/windows
+      - name: Package Windows launcher
+        shell: pwsh
+        run: |
+          Copy-Item README-CODA-EDITION.md dist/windows/
+          Compress-Archive -Path dist/windows/* -DestinationPath dist/CodaLauncher-CodaEdition-windows.zip
+          $hash = (Get-FileHash dist/CodaLauncher-CodaEdition-windows.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  CodaLauncher-CodaEdition-windows.zip" | Set-Content dist/CodaLauncher-CodaEdition-windows.zip.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CodaLauncher-CodaEdition-windows
+          path: |
+            .coda-edition/dist/CodaLauncher-CodaEdition-windows.zip
+            .coda-edition/dist/CodaLauncher-CodaEdition-windows.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: .coda-edition
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install UI test prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libx11-6 libice6 libsm6 libfontconfig1
+          python -m pip install playwright==1.62.0
+          python -m playwright install --with-deps chromium
+      - name: Check browser behavior
+        run: python tests/browser-demo.py
+      - name: Verify preservation of the original launcher profile
+        run: dotnet run --project tests/official/OfficialLauncherTests.csproj -c Release
+      - name: Verify managed mod installation
+        run: dotnet run --project tests/ManagedModsTests.csproj -c Release
+      - name: Publish the native launcher
+        run: dotnet publish Desktop/CodaLauncher.Desktop.csproj -c Release -r linux-x64 --self-contained true -o dist/linux
+      - name: Test the published launcher
+        run: |
+          ./dist/linux/CodaLauncher.CodaEdition --smoke-test
+          xvfb-run -a ./dist/linux/CodaLauncher.CodaEdition --smoke-ui
+      - name: Package Linux launcher
+        run: |
+          cp Desktop/start.sh dist/linux/start.sh
+          chmod +x dist/linux/start.sh
+          cp README-CODA-EDITION.md dist/linux/
+          tar -czf dist/CodaLauncher-CodaEdition-linux-x64.tar.gz -C dist/linux .
+          cd dist
+          sha256sum CodaLauncher-CodaEdition-linux-x64.tar.gz > CodaLauncher-CodaEdition-linux-x64.tar.gz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CodaLauncher-CodaEdition-linux-x64
+          path: |
+            .coda-edition/dist/CodaLauncher-CodaEdition-linux-x64.tar.gz
+            .coda-edition/dist/CodaLauncher-CodaEdition-linux-x64.tar.gz.sha256
+            .coda-edition/artifacts/home.png
+            .coda-edition/artifacts/mobile.png
+          if-no-files-found: error
+          retention-days: 30

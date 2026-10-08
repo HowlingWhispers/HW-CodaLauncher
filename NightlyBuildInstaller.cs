@@ -40,8 +40,7 @@ internal sealed class NightlyBuildInstaller
                 string quiet = Path.Combine(worldgen, ActiveQuietPack);
                 string quietMarker = quiet + ".sha256";
                 return File.Exists(quiet) && File.Exists(quietMarker)
-                    && HashFile(quiet).Equals(File.ReadAllText(quietMarker).Trim()
-                        .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)[0],
+                    && HashFile(quiet).Equals(File.ReadAllText(quietMarker).Trim(),
                         StringComparison.OrdinalIgnoreCase)
                     && File.Exists(Path.Combine(LoaderRoot, "CodaLoader.jar"))
                     && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag"))

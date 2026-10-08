@@ -85,6 +85,8 @@ jobs:
         run: dotnet run --project tests/ManagedModsTests.csproj -c Release
       - name: Test Nightly newest-release selection
         run: dotnet run --project tests/nightly/NightlyReleaseTests.csproj -c Release
+      - name: Test automatic Coda Wolf mod discovery and safe installation
+        run: dotnet run --project tests/codawolf/CodaWolfReleaseTests.csproj -c Release
       - name: Publish Windows
         if: matrix.rid == 'win-x64'
         shell: pwsh

@@ -1010,7 +1010,7 @@ internal sealed class LauncherService
             process.Dispose();
         };
 
-        if (!process.Start()) throw new InvalidOperationException("Windows did not start CodaLoader.");
+        if (!process.Start()) throw new InvalidOperationException("Could not start CodaLoader. Minecraft requires Java 25 or newer on PATH.");
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 

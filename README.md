@@ -1,61 +1,68 @@
 # CodaLauncher
 
-CodaLauncher is the desktop control center for CodaLoader and the Howling Whispers Minecraft ecosystem.
+Desktop launcher for Howling Whispers Minecraft, pinned to **Minecraft Java 26.4 Snapshot 3**.
 
-## 0.5.5 Approved Coda Portrait
+## Downloads
 
-- Uses the approved Coda portrait supplied by the project owner, preserved without regenerating or editing the image.
-- Transparent artwork displays in full, with her ears and clipboard intact.
-- While open, checks for launcher updates every five minutes, when returning to the window, and on Refresh.
-- An UPDATE AVAILABLE banner opens Coda's update terminal on request; game sessions and installs can finish first.
-- Runtime and package versions are aligned so an updated launcher recognizes its installed version.
-- Local portrait asset shared by Home and the current Profile placeholder.
-- Startup update terminal stages verified files and waits for **REBOOT CODALAUNCHER**.
-- Release tags and downloadable assets are immutable; each version points to its build commit.
+Choose the package for your computer from [GitHub Releases](https://github.com/HowlingWhispers/HW-CodaLauncher/releases).
 
-## Launcher
+| Computer | Package |
+| --- | --- |
+| Windows x64 | `win64.zip` |
+| Linux x64 | `linux-x64.tar.gz` |
+| Linux ARM64 | `linux-arm64.tar.gz` |
+| Intel Mac | `macos-x64.zip` |
+| Apple Silicon Mac | `macos-arm64.zip` |
 
-- WPF native shell with a local HTML/CSS/JavaScript interface rendered through WebView2.
-- Home screen with CodaLoader readiness, Minecraft target, mod count and PLAY.
-- News cards from the Howling Whispers launcher feed with offline fallback.
-- CodaLoader is sourced from HW-CodaLoader Releases. CML Base is modeled as a Pack with dependency resolution.
-- Packs tab begins with **CML Base**, the required foundation pack. Future project packs can expand into full modpack-style bundles.
-- INSTALL/REPAIR is single-flight in both the WebView and native backend.
-- REPAIR does not re-download CodaLoader when only CML Base is missing.
-- Failed automatic launcher updates generate a local News card with a manual release link, independent of the server news feed.
-- CML mod discovery from run/mods/*.jar and coda.mod.json.
-- Placeholder Profile area for future CML account, Minecraft ownership, Discord linking and avatar work.
-- Settings stored under %LOCALAPPDATA%\HowlingWhispers\CodaLauncher.
-- Local launcher/CodaLoader logs captured inside the UI.
-- PLAY starts the existing Launch-CodaLoader.bat without opening an extra command window.
+Windows: extract the whole ZIP and open CodaLauncher.exe.
+Linux: extract the archive and run `./start.sh`.
+macOS: extract the ZIP, move CodaLauncher.app to Applications and open it.
+
+Keep package contents together. The .NET runtime is bundled; the Linux/macOS editions do not need WebView2. Minecraft still needs Java 25 or newer available as `java` on PATH, with the correct CPU architecture. GUI-launched macOS apps may have a different PATH from Terminal; install Java so `/usr/bin/java` resolves the intended JVM.
+
+Linux requires a desktop with X11 or XWayland, fontconfig, libX11, libICE and libSM. Debian/Ubuntu package names: `libx11-6 libice6 libsm6 libfontconfig1`. A headless Debian server cannot show the launcher.
+
+macOS builds are ad-hoc signed and are not Apple-notarized. macOS may require approval through its normal Open Anyway flow. Do not globally disable Gatekeeper.
+
+## Play and mods
+
+PLAY checks the current CodaLoader release, prepares CML Base Resources and installs/updates HW Essentials in the active Minecraft profile before starting the game. Mod versions are read from `coda.mod.json` in the active profile's `mods` folder.
+
+Known official mod files share CodaLoader's ownership marker. Manually modified conflicting files are preserved and reported. Player worlds, homes, settings and custom music are stored outside the launcher application folder.
+
+The current loader release ZIP is labeled win64 because it also includes a Windows BAT file. Its Java loader and bundled mods are architecture-independent; Linux/macOS launch CodaLoader.jar directly through Java and do not execute that BAT file. Minecraft libraries and native files are selected by CodaLoader for the running OS.
+
+## Interface and updates
+
+Windows keeps the WPF/WebView2 interface and verified staged self-updater.
+
+Linux/macOS use Avalonia with Home, Mods, Settings and Logs. All editions reuse the feed client, managed installer, mod scanner and Java launch service. The approved Coda portrait is bundled unchanged.
+
+Linux/macOS check for launcher updates while open, every five minutes, on activation and on Refresh. The update button opens the matching platform download. Replace the launcher manually for this first desktop edition. This differs from Windows' automatic staged replacement.
+
+## Data and settings
+
+Data is stored below the OS ApplicationData directory in `.howlingshispers`: Windows normally uses %APPDATA%, Linux normally ~/.config, macOS normally ~/Library/Application Support. Settings live in `launcher/settings.json`; Minecraft lives in `minecraft/`.
+
+Default feed: https://thehowlingwhispers.com/launcher. The client appends `api/feed` and offers offline news fallback. CML Base Resources downloads remain SHA-256 checked.
 
 ## Build
 
-Requires the .NET 8 SDK on Windows:
+Requires .NET 8 SDK.
 
-    dotnet restore
-    dotnet build -c Release
-    dotnet run
+Windows:
 
-CI produces a self-contained Windows x64 ZIP.
+```sh
+dotnet build CodaLauncher.csproj -c Release
+```
 
-## Configure
+Linux/macOS:
 
-Normal installs are managed automatically. The launcher downloads the latest HW-CodaLoader Windows release, resolves CML Base dependencies, then downloads `CML-Base-Resources-v1.zip` from HW-CodaLoader Releases or the launcher-feed fallback.
+```sh
+dotnet run --project Desktop/CodaLauncher.Desktop.csproj
+dotnet publish Desktop/CodaLauncher.Desktop.csproj -c Release -r linux-x64 --self-contained true
+```
 
-Optionally set Launcher feed URL to the HW-Landing launcher feed server, for example http://SERVER_IP:3220. The prototype appends /api/feed automatically.
+Other runtime targets: `linux-arm64`, `osx-x64`, `osx-arm64`.
 
-## Architecture
-
-    CodaLauncher.exe
-      -> local WebView2 UI
-      -> launcher feed client
-      -> CML mod scanner
-      -> settings and logs
-      -> CodaLoader
-          -> Minecraft
-          -> CML mods
-
-The web UI has no direct filesystem access. File and process work stays in the native launcher backend.
-
-Whispering Currents remains parked until the CML API foundation is ready.
+CI compiles Windows/Linux/macOS, runs managed mod installation tests on all build hosts, packages all five platforms and opens the Linux x64 UI under Xvfb. Cross-compiled ARM packages and live Minecraft gameplay on Linux/macOS still need real-device testing. Release assets and tags are immutable.

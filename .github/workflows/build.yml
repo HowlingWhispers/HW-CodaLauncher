@@ -40,3 +40,18 @@ jobs:
           name: CodaLauncher-build
           path: dist/CodaLauncher-win64.zip
           retention-days: 30
+
+  portable:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Test managed mod installation
+        run: dotnet run --project tests/ManagedModsTests.csproj -c Release
+      - name: Compile and smoke-test native desktop edition
+        run: dotnet run --project Desktop/CodaLauncher.Desktop.csproj -c Release -- --smoke-test

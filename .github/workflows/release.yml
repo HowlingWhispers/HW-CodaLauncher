@@ -6,82 +6,154 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: codalauncher-release
   cancel-in-progress: false
 
+env:
+  CODA_VERSION: 0.6.0-desktop
+  CODA_TAG: v0.6.0-desktop
+
 jobs:
-  publish:
-    runs-on: windows-latest
-    env:
-      CODA_VERSION: 0.5.6-managed-mods
-      CODA_TAG: v0.5.6-managed-mods
-      CODA_ZIP: CodaLauncher-v0.5.6-managed-mods-win64.zip
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.release.outputs.publish }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Check immutable release
         id: release
-        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $existing = git rev-parse --verify "refs/tags/$env:CODA_TAG" 2>$null
-          if ($existing -and $existing -ne $env:GITHUB_SHA) {
-            throw "Version $env:CODA_TAG already belongs to another commit. Bump the release version instead of replacing it."
-          }
-          gh release view $env:CODA_TAG *> $null
-          if ($LASTEXITCODE -eq 0) {
-            "publish=false" >> $env:GITHUB_OUTPUT
-          } else {
-            "publish=true" >> $env:GITHUB_OUTPUT
-          }
-          $global:LASTEXITCODE = 0
+          existing="$(git rev-parse --verify "refs/tags/$CODA_TAG" 2>/dev/null || true)"
+          if [ -n "$existing" ] && [ "$existing" != "$GITHUB_SHA" ]; then
+            echo "Bump the version; this release belongs to another commit." >&2
+            exit 1
+          fi
+          if gh release view "$CODA_TAG" >/dev/null 2>&1; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: gate
+    if: needs.gate.outputs.publish == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            platform: win64
+          - os: ubuntu-24.04
+            rid: linux-x64
+            platform: linux-x64
+          - os: ubuntu-24.04
+            rid: linux-arm64
+            platform: linux-arm64
+          - os: macos-14
+            rid: osx-x64
+            platform: macos-x64
+          - os: macos-14
+            rid: osx-arm64
+            platform: macos-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
-        if: steps.release.outputs.publish == 'true'
         with:
           dotnet-version: "8.0.x"
       - name: Test managed mod installation
-        if: steps.release.outputs.publish == 'true'
         run: dotnet run --project tests/ManagedModsTests.csproj -c Release
-      - name: Publish
-        if: steps.release.outputs.publish == 'true'
+      - name: Publish Windows
+        if: matrix.rid == 'win-x64'
         shell: pwsh
         run: |
-          dotnet restore
-          if ($LASTEXITCODE -ne 0) { throw "Restore failed" }
-          dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
+          dotnet publish CodaLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/payload
           if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
-          if (!(Test-Path dist/CodaLauncher/CodaLauncher.exe)) { throw "CodaLauncher.exe missing" }
-          if (!(Test-Path dist/CodaLauncher/web/assets/coda-headshot.png)) { throw "Coda headshot missing" }
-          Compress-Archive -Path dist/CodaLauncher/* -DestinationPath "dist/$env:CODA_ZIP"
-          $sha = (Get-FileHash "dist/$env:CODA_ZIP" -Algorithm SHA256).Hash.ToLowerInvariant()
-          @{
-            schema = 1
-            version = $env:CODA_VERSION
-            bundle = $env:CODA_ZIP
-            sha256 = $sha
-          } | ConvertTo-Json | Set-Content -Encoding UTF8 dist/launcher-update.json
-      - name: Publish prerelease
-        if: steps.release.outputs.publish == 'true'
-        shell: pwsh
+          if (!(Test-Path dist/payload/web/assets/coda-headshot.png)) { throw "Coda portrait missing" }
+          New-Item -ItemType Directory -Force dist/release | Out-Null
+          $bundle = "CodaLauncher-v$env:CODA_VERSION-win64.zip"
+          Compress-Archive -Path dist/payload/* -DestinationPath "dist/release/$bundle"
+          $sha = (Get-FileHash "dist/release/$bundle" -Algorithm SHA256).Hash.ToLowerInvariant()
+          @{ schema = 1; version = $env:CODA_VERSION; bundle = $bundle; sha256 = $sha } | ConvertTo-Json | Set-Content -Encoding UTF8 dist/release/launcher-update.json
+      - name: Publish Linux or macOS
+        if: matrix.rid != 'win-x64'
+        shell: bash
+        run: |
+          dotnet run --project Desktop/CodaLauncher.Desktop.csproj -c Release -- --smoke-test
+          dotnet publish Desktop/CodaLauncher.Desktop.csproj -c Release -r "${{ matrix.rid }}" --self-contained true -p:PublishSingleFile=false -o dist/payload
+          mkdir -p dist/release
+          chmod +x dist/payload/CodaLauncher
+          if [[ "${{ matrix.platform }}" == linux-* ]]; then
+            cp Desktop/start.sh dist/payload/start.sh
+            chmod +x dist/payload/start.sh
+            cp Desktop/README-LINUX.txt dist/payload/README-FIRST.txt
+            tar -czf "dist/release/CodaLauncher-v$CODA_VERSION-${{ matrix.platform }}.tar.gz" -C dist/payload .
+          else
+            mkdir -p dist/CodaLauncher.app/Contents/MacOS dist/CodaLauncher.app/Contents/Resources
+            cp -R dist/payload/. dist/CodaLauncher.app/Contents/MacOS/
+            cp Desktop/Info.plist dist/CodaLauncher.app/Contents/Info.plist
+            codesign --force --deep --sign - dist/CodaLauncher.app
+            codesign --verify --deep --strict dist/CodaLauncher.app
+            ditto -c -k --sequesterRsrc --keepParent dist/CodaLauncher.app "dist/release/CodaLauncher-v$CODA_VERSION-${{ matrix.platform }}.zip"
+          fi
+          python3 - <<'PY'
+          import glob, hashlib, json, os
+          path = next(p for p in glob.glob("dist/release/*") if p.endswith((".zip", ".tar.gz")))
+          bundle = os.path.basename(path)
+          sha = hashlib.sha256(open(path, "rb").read()).hexdigest()
+          with open(path + ".sha256", "w") as f: f.write(sha + "  " + bundle + "\n")
+          PY
+      - name: Smoke-test Linux UI
+        if: matrix.rid == 'linux-x64'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libice6 libsm6 libfontconfig1
+          timeout 30s xvfb-run -a dist/payload/CodaLauncher --smoke-ui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: dist/release/*
+          if-no-files-found: error
+
+  publish:
+    needs: [gate, build]
+    if: needs.gate.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist/release
+      - name: Publish all platforms together
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          @"
-          # CodaLauncher v0.5.6 Managed Mods
+          cat > release-notes.md <<'EOF'
+          # CodaLauncher 0.6.0 Desktop Editions
 
-          PLAY checks and installs HW Essentials in the active Minecraft profile before starting the game.
+          CodaLauncher now ships for Linux x64/ARM64 and Intel/Apple Silicon Macs alongside Windows x64.
 
-          - Missing and outdated official mod JARs are detected even when the loader version is unchanged.
-          - Known official mod updates share CodaLoader's ownership marker.
-          - Manually modified mod JARs are preserved and reported.
-          - Player homes and settings are preserved.
-          - Existing approved Coda artwork and launcher update notifications remain available.
-          "@ | Set-Content release-notes.md
-
-          gh release create $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.5.6 Managed Mods" --notes-file release-notes.md
-          if ($LASTEXITCODE -ne 0) { throw "Release publication failed" }
+          - Linux and macOS use an Avalonia desktop interface with Home, Mods, Settings and Logs.
+          - All editions share the installer, mod scanner, profile preparation and CodaLoader launch code.
+          - PLAY installs or updates HW Essentials before starting Minecraft.
+          - Approved Coda artwork is bundled unchanged.
+          - Linux/macOS notify about platform-specific launcher updates while open; the download button opens the appropriate release asset. Replace the launcher manually in this first edition.
+          - Linux packages include a start.sh launcher; macOS packages contain CodaLauncher.app.
+          - The .NET runtime is included. Minecraft still requires Java 25+ on PATH.
+          - macOS builds are ad-hoc signed, not Apple-notarized.
+          - CI checks shared mod installation on all build hosts and opens the Linux UI under Xvfb. Live Minecraft on Linux/macOS and ARM GUI execution remain unverified.
+          EOF
+          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.6.0 Desktop Editions" --notes-file release-notes.md

@@ -983,8 +983,8 @@ internal sealed class LauncherService
     public int Launch(string loaderDirectory, GameIdentity identity)
     {
         if (string.IsNullOrWhiteSpace(identity.Uuid) || string.IsNullOrWhiteSpace(identity.PlayerName) ||
-            (!identity.Offline && (string.IsNullOrWhiteSpace(identity.AccessToken) || identity.AccessToken == "0")))
-            || (identity.LocalOnly && (!identity.Offline || identity.AccessToken != "0" || identity.ClientId != ""))
+            (!identity.Offline && (string.IsNullOrWhiteSpace(identity.AccessToken) || identity.AccessToken == "0"))
+            || (identity.LocalOnly && (!identity.Offline || identity.AccessToken != "0" || identity.ClientId != "")))
             throw new InvalidOperationException("A verified Minecraft identity is required.");
         var jar = Path.Combine(loaderDirectory, "CodaLoader.jar");
         if (!File.Exists(jar)) throw new FileNotFoundException("CodaLoader.jar was not found.", jar);

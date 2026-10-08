@@ -88,6 +88,24 @@ internal sealed class NightlyBuildInstaller
         IsManagedBuildCraft() && File.Exists(OwnedBuildCraftTag)
         && File.ReadAllText(OwnedBuildCraftTag).Trim() == tag;
 
+    /// <summary>Remove only the optional owned new-world preset; never world saves.</summary>
+    public static void UninstallQuiet(Action<string> report)
+    {
+        string file = Path.Combine(GameRoot, "config", "codaloader", "worldgen", ActiveQuietPack);
+        string marker = file + ".sha256";
+        if (!File.Exists(file))
+        {
+            report("Quiet Underground is already absent.");
+            return;
+        }
+        if (!File.Exists(marker) ||
+            !HashFile(file).Equals(File.ReadAllText(marker).Trim(), StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Quiet Underground was modified or is unmanaged. Your copy is preserved.");
+        File.Delete(file);
+        File.Delete(marker);
+        report("Quiet Underground preset uninstalled. Existing worlds were not touched.");
+    }
+
     /// <summary>
     /// Removes ONLY the managed optional BuildCraft mod, not its loader, world
     /// saves, resources, Quiet Underground settings or any user-edited JAR.

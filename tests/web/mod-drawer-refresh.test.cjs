@@ -64,6 +64,9 @@ const source = {
 };
 listeners.message({ data: source });
 assert.equal(el('mods-count').textContent, '1 jar', 'initial drawer matches cached state');
+assert.equal(el('nightly-quiet-card').hidden, false, 'Nightly Quiet Underground appears under Packs');
+assert.equal(el('nightly-quiet-status').textContent, 'Installed for new worlds',
+  'Quiet Underground card reports staged pack status, not creative items');
 modsNav.click();
 assert.equal(calls.at(-1).action, 'refreshMods', 'opening Mods requests immediate rescan');
 el('refresh-mods').onclick();

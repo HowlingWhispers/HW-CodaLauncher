@@ -102,8 +102,15 @@ internal static class OfficialMinecraftLauncher
         var entries = profiles["profiles"] as JsonObject
             ?? throw new InvalidDataException("The official launcher profiles file is missing its profiles object.");
         var existing = entries[ProfileId] as JsonObject;
-        if (entries.ContainsKey(ProfileId) && (existing is null ||
-            existing["codaloaderManaged"]?.GetValue<bool>() != true))
+        // Minecraft Launcher may discard unknown profile fields when it saves.
+        // Accept our original profile signature even if that custom marker is
+        // removed, while still refusing an unrelated profile collision.
+        bool recognizable = existing is not null && (
+            existing["codaloaderManaged"]?.ToString() == "true" ||
+            (existing["name"]?.ToString() == "Howling Whispers | CodaLoader" &&
+             existing["lastVersionId"]?.ToString() == VersionId &&
+             existing["gameDir"]?.ToString() == gameDirectory));
+        if (entries.ContainsKey(ProfileId) && !recognizable)
             throw new InvalidOperationException("An existing Minecraft installation has the reserved Howling Whispers profile ID. It was not overwritten.");
 
         var now = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");

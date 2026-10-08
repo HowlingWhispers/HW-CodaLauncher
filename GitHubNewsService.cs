@@ -34,7 +34,9 @@ internal sealed class GitHubNewsService
     {
         _http = http;
         _bundledRoot = bundledRoot;
-        var folder = cacheRoot ?? Path.Combine(AppPaths.InstallRoot, "launcher");
+        var folder = cacheRoot ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            ".howlingshispers", "launcher");
         _cacheFile = Path.Combine(folder, "news-cache.json");
         _cached = LoadSaved(_cacheFile);
     }

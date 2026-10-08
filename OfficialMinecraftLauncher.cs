@@ -125,10 +125,10 @@ internal static class OfficialMinecraftLauncher
         }
         Directory.CreateDirectory(Path.GetDirectoryName(versionPath)!);
         Directory.CreateDirectory(gameDirectory);
-        await AtomicWriteAsync(versionPath, version.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), ct);
+        await AtomicWriteAsync(versionPath, version.ToJsonString(), ct);
         // Backups intentionally persist next to the original launcher profile.
         File.Copy(profilesPath, profilesPath + ".codaloader-backup", overwrite: true);
-        await AtomicWriteAsync(profilesPath, profiles.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), ct);
+        await AtomicWriteAsync(profilesPath, profiles.ToJsonString(), ct);
         return profilesPath;
     }
 

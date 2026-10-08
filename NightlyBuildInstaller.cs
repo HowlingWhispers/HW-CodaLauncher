@@ -26,10 +26,23 @@ internal sealed class NightlyBuildInstaller
     public static string LoaderRoot => Path.Combine(AppPaths.InstallRoot, "nightly", "loader");
     public static string GameRoot => Path.Combine(AppPaths.InstallRoot, "nightly", "minecraft");
 
-    public static bool Installed =>
-        File.Exists(Path.Combine(LoaderRoot, "CodaLoader.jar"))
-        && File.Exists(Path.Combine(GameRoot, "mods", ModJar))
-        && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag"));
+    public static bool Installed
+    {
+        get
+        {
+            try
+            {
+                string modFile = Path.Combine(GameRoot, "mods", ModJar);
+                string marker = Path.Combine(GameRoot, "mods", ".howl-buildcraft-managed.sha256");
+                return File.Exists(Path.Combine(LoaderRoot, "CodaLoader.jar"))
+                    && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag"))
+                    && File.Exists(modFile) && File.Exists(marker)
+                    && HashFile(modFile).Equals(File.ReadAllText(marker).Trim(), StringComparison.OrdinalIgnoreCase);
+            }
+            catch (IOException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+        }
+    }
 
     public async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation)
     {
@@ -41,7 +54,10 @@ internal sealed class NightlyBuildInstaller
             return LoaderRoot;
         }
 
-        string working = Path.Combine(Path.GetTempPath(), "HOWL-Nightly", Guid.NewGuid().ToString("N"));
+        // Stage code on the same filesystem as its destination so atomic
+        // directory rename works on Windows and does not touch Stable.
+        string working = Path.Combine(AppPaths.InstallRoot, "nightly", ".staging",
+            Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(working);
         string staging = Path.Combine(working, "loader");
         string backup = Path.Combine(working, "backup");

@@ -231,8 +231,10 @@ public partial class MainWindow : Window
 
     private async Task SendState()
     {
-        var loader = LoaderLocator.Resolve(_settings.LoaderPath);
-        var mods = _mods.Scan(AppPaths.MinecraftRoot);
+        var loader = _settings.UpdateChannel == "nightly" && NightlyBuildInstaller.Installed
+            ? NightlyBuildInstaller.LoaderRoot : LoaderLocator.Resolve(_settings.LoaderPath);
+        var mods = _mods.Scan(_settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot);
         var feedUrl = string.IsNullOrWhiteSpace(_settings.FeedUrl)
                 ? "https://thehowlingwhispers.com/launcher"
                 : _settings.FeedUrl;
@@ -784,7 +786,8 @@ public partial class MainWindow : Window
 
     private void OpenLoaderFolder()
     {
-        var loader = LoaderLocator.Resolve(_settings.LoaderPath);
+        var loader = _settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.LoaderRoot : LoaderLocator.Resolve(_settings.LoaderPath);
         if (string.IsNullOrWhiteSpace(loader) || !Directory.Exists(loader)) return;
         Process.Start(new ProcessStartInfo("explorer.exe", loader) { UseShellExecute = true });
     }

@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - name: Test release version consistency
+        run: node tests/release-version.test.cjs
       - name: Test Settings save feedback
         run: |
           node --check web/app.js
@@ -34,6 +36,13 @@ jobs:
         run: dotnet build -c Release --no-restore
       - name: Publish win-x64
         run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/CodaLauncher
+      - name: Verify compiled launcher version
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content CodaLauncher.csproj
+          $expected = [string]$project.Project.PropertyGroup.Version
+          $actual = ([System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path dist/CodaLauncher/CodaLauncher.exe).Path).ProductVersion -split '\+', 2)[0]
+          if ($actual -ne $expected) { throw "Launcher compiled version $actual does not match project version $expected" }
       - name: Verify web payload
         shell: pwsh
         run: |
@@ -49,8 +58,8 @@ jobs:
         run: |
           choco install innosetup --no-progress -y
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup installation failed" }
-          ./packaging/windows/build-installer.ps1 -Version 0.7.3 -PayloadDir dist/CodaLauncher -OutputDir dist/setup
-          ./packaging/windows/test-installer.ps1 -Installer dist/setup/CodaLauncher-v0.7.3-win64-Setup.exe
+          ./packaging/windows/build-installer.ps1 -Version 0.7.4 -PayloadDir dist/CodaLauncher -OutputDir dist/setup
+          ./packaging/windows/test-installer.ps1 -Installer dist/setup/CodaLauncher-v0.7.4-win64-Setup.exe
       - uses: actions/upload-artifact@v4
         with:
           name: CodaLauncher-build
@@ -69,6 +78,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - name: Test release version consistency
+        run: node tests/release-version.test.cjs
       - name: Test Settings save feedback
         run: |
           node --check web/app.js

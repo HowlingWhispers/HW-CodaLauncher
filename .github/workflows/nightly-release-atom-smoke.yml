@@ -1,0 +1,35 @@
+name: Verify Nightly GitHub rate-limit fallback
+on:
+  push:
+    branches: [fix/nightly-rate-limit-release-discovery]
+    paths:
+      - 'NightlyAtomReleaseReader.cs'
+      - 'CodaWolfNightlyInstaller.cs'
+      - 'NightlyBuildInstaller.cs'
+      - 'tests/codawolf/**'
+      - 'tests/nightly/**'
+      - '.github/workflows/nightly-release-atom-smoke.yml'
+  pull_request:
+    paths:
+      - 'NightlyAtomReleaseReader.cs'
+      - 'CodaWolfNightlyInstaller.cs'
+      - 'NightlyBuildInstaller.cs'
+      - 'tests/codawolf/**'
+      - 'tests/nightly/**'
+      - '.github/workflows/nightly-release-atom-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  atom-fallback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Verify simulated GitHub 403 and safe JAR upgrade
+        run: dotnet run --project tests/codawolf/CodaWolfReleaseTests.csproj -c Release
+      - name: Verify real public GitHub release Atom includes a Coda Wolf prerelease
+        run: dotnet run --project tests/codawolf/CodaWolfReleaseTests.csproj -c Release -- --live-atom

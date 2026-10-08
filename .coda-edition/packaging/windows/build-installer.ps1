@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($Version -notmatch '^\d+\.\d+\.\d+(-[A-Za-z0-9.-]+)?$') { throw 'Invalid release version' }
 $payload = (Resolve-Path $PayloadDir).Path
-foreach ($file in @('CodaLauncher.exe', 'web/index.html', 'web/assets/coda-headshot.png')) {
+foreach ($file in @('CodaLauncher.CodaEdition.exe', 'web/index.html', 'web/assets/coda-headshot.png')) {
     if (!(Test-Path (Join-Path $payload $file))) { throw "Payload missing: $file" }
 }
 New-Item -ItemType Directory -Force $OutputDir | Out-Null
@@ -21,6 +21,6 @@ $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6/ISCC.exe'
 if (!(Test-Path $iscc)) { throw 'Install Inno Setup 6 first' }
 & $iscc "/DAppVersion=$Version" "/DPayloadDir=$payload" "/DOutputDir=$output" "/DBootstrapper=$bootstrapper" "$PSScriptRoot/CodaLauncher.iss"
 if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
-$installer = Join-Path $output "CodaLauncher-v$Version-win64-Setup.exe"
+$installer = Join-Path $output "CodaLauncher-CodaEdition-v$Version-win64-Setup.exe"
 $sha = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
 Set-Content -Encoding ascii "$installer.sha256" "$sha  $([IO.Path]::GetFileName($installer))"

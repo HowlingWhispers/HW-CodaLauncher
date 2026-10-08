@@ -12,22 +12,22 @@
 #endif
 
 [Setup]
-AppId={{60308D26-7772-43DD-95DC-E08776AD50B4}
-AppName=CodaLauncher
+AppId={{A972DF50-1A6B-4AEC-BDB9-CA5D9AAB7F44}
+AppName=CodaLauncher Coda Edition
 AppVersion={#AppVersion}
 AppPublisher=Howling Whispers
 AppPublisherURL=https://thehowlingwhispers.com
 AppSupportURL=https://github.com/HowlingWhispers/HW-CodaLauncher/issues
-DefaultDirName={localappdata}\Programs\CodaLauncher
+DefaultDirName={localappdata}\Programs\CodaLauncher.CodaEdition
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 OutputDir={#OutputDir}
-OutputBaseFilename=CodaLauncher-v{#AppVersion}-win64-Setup
+OutputBaseFilename=CodaLauncher-CodaEdition-v{#AppVersion}-win64-Setup
 SetupIconFile=CodaLauncher.ico
-UninstallDisplayIcon={app}\CodaLauncher.exe
+UninstallDisplayIcon={app}\CodaLauncher.CodaEdition.exe
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -40,22 +40,22 @@ SetupLogging=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-WelcomeLabel2=Coda has your installation paperwork ready.%n%nThis will install CodaLauncher on your computer, with desktop and Start Menu shortcuts.%n%nYour worlds and settings stay separate from the launcher. If needed, Setup installs Microsoft WebView2 using your internet connection.
-FinishedLabel=CodaLauncher is installed. Coda has filed your shortcuts.%n%nYour adventures are waiting.
+WelcomeLabel2=Coda has your installation paperwork ready.%n%nThis will install CodaLauncher Coda Edition beside your original launcher, with desktop and Start Menu shortcuts.%n%nYour worlds and settings stay separate from the launcher. If needed, Setup installs Microsoft WebView2 using your internet connection.
+FinishedLabel=CodaLauncher Coda Edition is installed. Coda has filed your shortcuts.%n%nYour adventures are waiting.
 
 [Tasks]
-Name: "desktopicon"; Description: "Put CodaLauncher on my &desktop"; GroupDescription: "Shortcuts:"; Flags: checkedonce
+Name: "desktopicon"; Description: "Put CodaLauncher Coda Edition on my &desktop"; GroupDescription: "Shortcuts:"; Flags: checkedonce
 
 [Files]
 Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Bootstrapper}"; Flags: dontcopy
 
 [Icons]
-Name: "{userprograms}\CodaLauncher"; Filename: "{app}\CodaLauncher.exe"; WorkingDir: "{app}"
-Name: "{userdesktop}\CodaLauncher"; Filename: "{app}\CodaLauncher.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{userprograms}\CodaLauncher Coda Edition"; Filename: "{app}\CodaLauncher.CodaEdition.exe"; WorkingDir: "{app}"
+Name: "{userdesktop}\CodaLauncher Coda Edition"; Filename: "{app}\CodaLauncher.CodaEdition.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\CodaLauncher.exe"; Description: "&Launch CodaLauncher"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\CodaLauncher.CodaEdition.exe"; Description: "&Launch CodaLauncher Coda Edition"; Flags: nowait postinstall skipifsilent
 
 [Code]
 function HasWebView2: Boolean;
@@ -86,4 +86,4 @@ begin
 end;
 
 // Never add an UninstallDelete rule for player data or a wildcard under {app}.
-// Inno removes only its installed files; the self-updater continues using the ZIP.
+// Inno removes only this edition’s installed files. Launcher self-updates are disabled.

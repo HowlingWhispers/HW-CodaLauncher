@@ -10,7 +10,13 @@ The **Build Coda Edition Preview** workflow creates Windows and Linux packages o
 
 The browser design demo is already committed under `downloads/` and can be downloaded immediately. It uses sample data and cannot install or launch Minecraft.
 
-## Open it
+## Windows installer
+
+On the successful **Build Coda Edition Preview** run, sign into GitHub and download **CodaEdition-Windows-Installer** under Artifacts. Extract that ZIP and run `CodaLauncher-CodaEdition-v0.7.15-win64-Setup.exe`. It installs to `%LOCALAPPDATA%/Programs/CodaLauncher.CodaEdition` and creates **CodaLauncher Coda Edition** shortcuts.
+
+The installer has its own application identity and Installed Apps entry. It does not replace or uninstall the original CodaLauncher. Setup installs Microsoft WebView2 if it is missing; the downloaded Microsoft bootstrapper’s Authenticode signature is verified before packaging. The Coda Edition installer itself is unsigned.
+
+## Portable alternatives
 
 - Windows: extract `CodaLauncher-CodaEdition-windows.zip` into a new folder and run `CodaLauncher.CodaEdition.exe`. Keep the package files together. WebView2 is required, as with the original Windows launcher.
 - Linux x64: extract `CodaLauncher-CodaEdition-linux-x64.tar.gz` and run `./start.sh` on an X11/XWayland desktop. The .NET runtime is included. Native dependencies are `libx11-6 libice6 libsm6 libfontconfig1`.

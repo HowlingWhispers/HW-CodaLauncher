@@ -36,6 +36,24 @@ jobs:
           Compress-Archive -Path dist/windows/* -DestinationPath dist/CodaLauncher-CodaEdition-windows.zip
           $hash = (Get-FileHash dist/CodaLauncher-CodaEdition-windows.zip -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  CodaLauncher-CodaEdition-windows.zip" | Set-Content dist/CodaLauncher-CodaEdition-windows.zip.sha256
+      - name: Build a separate Windows installer
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+          ./packaging/windows/build-installer.ps1 -Version 0.7.15 -PayloadDir dist/windows -OutputDir dist/setup
+      - name: Test install, reinstall, UI, uninstall and original-launcher preservation
+        shell: pwsh
+        run: ./packaging/windows/test-installer.ps1 -Installer dist/setup/CodaLauncher-CodaEdition-v0.7.15-win64-Setup.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CodaEdition-Windows-Installer
+          path: |
+            .coda-edition/dist/setup/CodaLauncher-CodaEdition-v0.7.15-win64-Setup.exe
+            .coda-edition/dist/setup/CodaLauncher-CodaEdition-v0.7.15-win64-Setup.exe.sha256
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
           name: CodaLauncher-CodaEdition-windows

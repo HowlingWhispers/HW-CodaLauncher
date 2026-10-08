@@ -49,6 +49,7 @@ const source = {
     launcherVersion: '0.7.7',
     activeChannel: 'nightly',
     nightlyInstalled: true,
+    nightlyQuietInstalled: true,
     gameRunning: false,
     accountBusy: false,
     modCount: 1,

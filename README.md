@@ -2,7 +2,15 @@
 
 Desktop launcher for **H.O.W.L. (Howling Open Works Loader)** and Howling Whispers Minecraft, pinned to **Minecraft Java 26.4 Snapshot 3**.
 
-## H.O.W.L. 0.7.3 branding release
+## H.O.W.L. 0.7.4 updater hotfix
+
+Fixes the Windows reboot/update loop in 0.7.3: the Windows app was still
+reporting itself as 0.7.2 after a successful update. The displayed and checked
+version now comes from the executable's assembly metadata. This release keeps
+the H.O.W.L. branding introduced in 0.7.3 and requires no reset of Minecraft
+data, mod profiles, or user settings.
+
+### Included features
 
 CodaLauncher keeps its name. The loader and player-facing mod platform now use
 H.O.W.L.; the official Minecraft installation is renamed in place. Legacy
@@ -26,7 +34,7 @@ Choose the package for your computer from [GitHub Releases](https://github.com/H
 | Intel Mac | `macos-x64.zip` |
 | Apple Silicon Mac | `macos-arm64.zip` |
 
-Windows: download and run `CodaLauncher-v0.7.3-win64-Setup.exe`. Setup installs to `%LOCALAPPDATA%\Programs\CodaLauncher`, adds a Start Menu shortcut and offers a desktop shortcut (selected by default). Open CodaLauncher when Setup finishes. Administrator access is not required. If WebView2 is missing, Setup installs it from Microsoft; this step needs internet access.
+Windows: download and run `CodaLauncher-v0.7.4-win64-Setup.exe`. Setup installs to `%LOCALAPPDATA%\Programs\CodaLauncher`, adds a Start Menu shortcut and offers a desktop shortcut (selected by default). Open CodaLauncher when Setup finishes. Administrator access is not required. If WebView2 is missing, Setup installs it from Microsoft; this step needs internet access.
 
 For portable Windows use, extract the whole ZIP and open CodaLauncher.exe. Keep the ZIP available for the existing self-updater; Setup is the player-facing download.
 
@@ -125,7 +133,7 @@ On Windows with Inno Setup 6 and .NET 8 installed:
 
 ```powershell
 dotnet publish CodaLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/payload
-./packaging/windows/build-installer.ps1 -Version 0.7.3
+./packaging/windows/build-installer.ps1 -Version 0.7.4
 ```
 
 The build script downloads Microsoft's WebView2 bootstrapper and verifies its Authenticode signature before embedding it. Setup and shortcut icons use the approved bundled Coda portrait. CI runs `test-installer.ps1` on a clean Windows runner to check install/reinstall, shortcut targets, Installed Apps registration, actual WebView2 UI startup, uninstall and saved-world preservation. Run that test only on a disposable Windows environment. The installer itself is currently unsigned.
@@ -134,4 +142,4 @@ Landing-page Windows download buttons should link directly to the release's `win
 
 ## Account verification in development
 
-The source now extends **Profile** with Microsoft sign-in, Minecraft Java ownership verification, sign-out, and explicit offline selection. This is not in the published 0.7.3 installer yet. Live sign-in awaits CodaLauncher's own registered Microsoft application ID and API access. See [authentication setup](docs/microsoft-authentication.md) for configuration, storage behavior and release prerequisites.
+The source now extends **Profile** with Microsoft sign-in, Minecraft Java ownership verification, sign-out, and explicit offline selection. This is not in the published 0.7.4 installer yet. Live sign-in awaits CodaLauncher's own registered Microsoft application ID and API access. See [authentication setup](docs/microsoft-authentication.md) for configuration, storage behavior and release prerequisites.

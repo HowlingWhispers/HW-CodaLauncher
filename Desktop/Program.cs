@@ -1,3 +1,4 @@
+using System.Reflection;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
@@ -8,7 +9,10 @@ namespace HowlingWhispers.CodaLauncher;
 
 internal static class Program
 {
-    internal const string Version = "0.7.3";
+    internal static readonly string Version =
+        typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion.Split('+', 2)[0]
+        ?? throw new InvalidOperationException("CodaLauncher is missing release version metadata.");
     internal static bool SmokeUi;
 
     [STAThread]

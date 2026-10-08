@@ -1,10 +1,15 @@
+using System.Reflection;
 using System.Windows;
 
 namespace HowlingWhispers.CodaLauncher;
 
 public partial class App : Application
 {
-    internal const string LauncherVersion = "0.7.2";
+    // Keep updater checks aligned with the actual compiled release.
+    internal static readonly string LauncherVersion =
+        typeof(App).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion.Split('+', 2)[0]
+        ?? throw new InvalidOperationException("CodaLauncher is missing release version metadata.");
 
     internal static bool IsSmokeTest { get; private set; }
 

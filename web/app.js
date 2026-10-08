@@ -271,7 +271,7 @@ function render(){
     const mod=modCatalog.find(m=>m.id===btn.dataset.mod);
     if(!mod) return;
     if(btn.dataset.action==='uninstallMod'&&!window.confirm(
-        'Uninstall '+mod.name+'? This removes only the managed JAR. Your worlds and mod data will be preserved.')) return;
+        'Uninstall '+mod.name+'? The managed JAR will be removed; saves and config files remain. BACK UP your worlds before reopening them without this mod: blocks and items may disappear.')) return;
     setInstallBusy(true,(btn.dataset.action==='uninstallMod'?'Uninstalling ':'Checking / installing ')+mod.name+'…');
     post(btn.dataset.action,{id:mod.id});
     render();

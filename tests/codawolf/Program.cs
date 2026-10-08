@@ -6,6 +6,18 @@ using System.Text;
 using System.Text.Json;
 using HowlingWhispers.CodaLauncher;
 
+if (args.Contains("--live-atom", StringComparer.Ordinal))
+{
+    using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("CodaLauncher-Atom-Smoke/0.1");
+    string xml = await client.GetStringAsync(NightlyAtomReleaseReader.FeedUrl);
+    var found = NightlyAtomReleaseReader.SelectNewest(xml, CodaWolfNightlyInstaller.TagPrefix,
+        CodaWolfNightlyInstaller.ModJar, CodaWolfNightlyInstaller.ChecksumFile);
+    if (found is null) throw new Exception("Public GitHub Atom feed did not list a Coda Wolf prerelease.");
+    Console.WriteLine("PASS: actual public GitHub releases.atom contains Coda Wolf Nightly: " + found.Tag);
+    return;
+}
+
 if (args.Contains("--live-release", StringComparer.Ordinal))
 {
     string scratch = Path.Combine(Path.GetTempPath(), "codawolf-live-smoke-" + Guid.NewGuid().ToString("N"));

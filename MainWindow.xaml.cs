@@ -88,6 +88,11 @@ public partial class MainWindow : Window
 
     private async Task RunAccountAsync(bool verifyOnly)
     {
+        if (LocalSingleplayer.Enabled)
+        {
+            Send(new { type = "accountMessage", message = "Microsoft sign-in is paused. Local singleplayer is available without Azure." });
+            return;
+        }
         if (_accountBusy || _gameRunning || _installGate.CurrentCount == 0) return;
         _accountBusy = true;
         _accountSignIn = CancellationTokenSource.CreateLinkedTokenSource(_windowLifetime.Token);
@@ -158,12 +163,14 @@ public partial class MainWindow : Window
                     _accountSignIn?.Cancel();
                     break;
                 case "signOutAccount":
+                    if (LocalSingleplayer.Enabled) throw new InvalidOperationException("Microsoft account controls are paused.");
                     if (_gameRunning || _installGate.CurrentCount == 0) throw new InvalidOperationException("Close Minecraft and finish preparation before signing out.");
                     _accountSignIn?.Cancel();
                     await _account.SignOutAsync(_windowLifetime.Token);
                     SendAccount();
                     break;
                 case "setPlayMode":
+                    if (LocalSingleplayer.Enabled) throw new InvalidOperationException("Local singleplayer is the only active play mode until Microsoft sign-in is enabled.");
                     if (_gameRunning || _accountBusy || _installGate.CurrentCount == 0) throw new InvalidOperationException("Finish the current session before changing play mode.");
                     _settings.OfflineMode = root.GetProperty("offline").GetBoolean();
                     _settingsStore.Save(_settings);
@@ -238,6 +245,7 @@ public partial class MainWindow : Window
             data = new
             {
                 launcherVersion = App.LauncherVersion,
+                localSingleplayer = LocalSingleplayer.Enabled,
                 launcherUpdateVersion = _availableLauncherUpdate?.Version,
                 loaderPath = loader ?? "",
                 loaderReady,
@@ -517,8 +525,9 @@ public partial class MainWindow : Window
         try
         {
             if (_accountBusy) throw new InvalidOperationException("Finish account verification before launching Minecraft.");
-            var identity = await _account.PrepareLaunchAsync(_settings.OfflineMode, _windowLifetime.Token);
-            if (_settings.OfflineMode)
+            var identity = LocalSingleplayer.Enabled ? LocalSingleplayer.Identity()
+                : await _account.PrepareLaunchAsync(_settings.OfflineMode, _windowLifetime.Token);
+            if (!LocalSingleplayer.Enabled && _settings.OfflineMode)
             {
                 var installed = LoaderLocator.Resolve(_settings.LoaderPath);
                 if (!LoaderLocator.IsReady(installed)) throw new InvalidOperationException("Install Minecraft and CodaLoader while online before using offline play.");

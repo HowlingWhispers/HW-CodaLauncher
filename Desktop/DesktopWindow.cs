@@ -19,7 +19,7 @@ internal sealed class DesktopWindow : Window
     private readonly Button _verifyButton = new() { Content = "VERIFY AGAIN" };
     private readonly Button _signOutButton = new() { Content = "SIGN OUT" };
     private readonly Button _cancelButton = new() { Content = "CANCEL SIGN-IN", IsVisible = false };
-    private readonly CheckBox _offline = new() { Content = "Play offline (local worlds only)" };
+    private readonly CheckBox _offline = new() { Content = "Verified offline (Microsoft paused)" };
     private readonly InstallService _installer = new();
     private readonly FeedService _feeds = new();
     private readonly SettingsStore _settingsStore = new();
@@ -83,6 +83,7 @@ internal sealed class DesktopWindow : Window
             catch (Exception ex) { _accountStatus.Text = ex.Message; }
         };
         _offline.IsChecked = _settings.OfflineMode;
+        if (LocalSingleplayer.Enabled) _offline.IsEnabled = false;
         _offline.IsCheckedChanged += (_, _) => {
             if (_running || _accountBusy) return;
             _settings.OfflineMode = _offline.IsChecked == true;
@@ -90,7 +91,7 @@ internal sealed class DesktopWindow : Window
         };
         tabs.Items.Add(Tab("PROFILE", Stack(Text("Minecraft account", 22), _accountStatus, _accountCode,
             _signInButton, _verifyButton, _signOutButton, _cancelButton, _offline,
-            Text("Microsoft handles your password. Verify ownership first; offline access lasts 30 days. Install Minecraft while online. Signing out keeps saved worlds.", 14))));
+            Text("Microsoft sign-in is paused for this development build. Local singleplayer does not verify ownership or enable online services.", 14))));
         SetControls();
         var save = new Button { Content = "SAVE SETTINGS" };
         save.Click += async (_, _) => {
@@ -128,7 +129,7 @@ internal sealed class DesktopWindow : Window
 
     private async Task AccountActionAsync(bool verifyOnly)
     {
-        if (_accountBusy || _running || _busy) return;
+        if (LocalSingleplayer.Enabled || _accountBusy || _running || _busy) return;
         _accountBusy = true; _signIn = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token); SetControls();
         string? result = null;
         try
@@ -174,8 +175,9 @@ internal sealed class DesktopWindow : Window
         _busy = true; SetControls();
         try
         {
-            var identity = launch ? await _account.PrepareLaunchAsync(_settings.OfflineMode, _lifetime.Token) : null;
-            if (launch && _settings.OfflineMode)
+            var identity = launch ? (LocalSingleplayer.Enabled ? LocalSingleplayer.Identity()
+                : await _account.PrepareLaunchAsync(_settings.OfflineMode, _lifetime.Token)) : null;
+            if (launch && _settings.OfflineMode && !LocalSingleplayer.Enabled)
             {
                 _launcher.Launch(AppPaths.LoaderRoot, identity!);
                 return;
@@ -221,15 +223,15 @@ internal sealed class DesktopWindow : Window
     {
         var account = _account.View;
         _accountStatus.Text = account.Status + "\n" + account.PlayerName + "\n" + account.Storage;
-        _signInButton.IsEnabled = !_accountBusy && !_running && !_busy && account.Configured;
+        _signInButton.IsEnabled = !_accountBusy && !_running && !_busy && account.Configured && !LocalSingleplayer.Enabled;
         _verifyButton.IsEnabled = _signInButton.IsEnabled && account.SignedIn;
-        _signOutButton.IsEnabled = !_running && !_busy && account.SignedIn;
+        _signOutButton.IsEnabled = !_running && !_busy && account.SignedIn && !LocalSingleplayer.Enabled;
         _cancelButton.IsVisible = _accountBusy;
-        _offline.IsEnabled = !_accountBusy && !_running && !_busy && (account.OfflineAvailable || _settings.OfflineMode);
+        _offline.IsEnabled = !LocalSingleplayer.Enabled && !_accountBusy && !_running && !_busy && (account.OfflineAvailable || _settings.OfflineMode);
         _repair.IsEnabled = !_busy && !_running && !_refreshing && !_accountBusy;
-        _play.IsEnabled = _repair.IsEnabled && account.SignedIn && (!_settings.OfflineMode || account.OfflineAvailable);
+        _play.IsEnabled = _repair.IsEnabled && (LocalSingleplayer.Enabled || (account.SignedIn && (!_settings.OfflineMode || account.OfflineAvailable)));
         _refresh.IsEnabled = !_busy && !_refreshing; _update.IsEnabled = !_busy && !_running;
-        _play.Content = _running ? "MINECRAFT IS RUNNING" : _busy ? "CODA IS PREPARING..." : _settings.OfflineMode ? "PLAY OFFLINE" : "PLAY";
+        _play.Content = _running ? "MINECRAFT IS RUNNING" : _busy ? "CODA IS PREPARING..." : LocalSingleplayer.Enabled ? "PLAY LOCAL" : _settings.OfflineMode ? "PLAY OFFLINE" : "PLAY";
     }
     private void OpenFolder(string path) { Directory.CreateDirectory(path); Open(path); }
     private void Open(string target)

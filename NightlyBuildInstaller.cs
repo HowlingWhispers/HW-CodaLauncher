@@ -7,9 +7,9 @@ using System.Text.Json;
 namespace HowlingWhispers.CodaLauncher;
 
 /// <summary>
-/// Explicit opt-in BuildCraft nightly. Downloads a verified public prerelease
-/// from HW-Mods and installs it OUTSIDE both the stable loader and world folder.
-/// A separate test profile is compulsory: no stable-world migration.
+/// Separate Nightly H.O.W.L. runtime that never mutates Stable.
+/// Optional BuildCraft and Quiet Underground are independently installed ONLY
+/// by explicit user actions, not automatically on PLAY or Install/Repair.
 /// </summary>
 internal sealed class NightlyBuildInstaller
 {
@@ -144,7 +144,7 @@ internal sealed class NightlyBuildInstaller
                     + "Check your connection, then retry Play. Your worlds and mods were not deleted.", error);
             var installedTag = File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim();
             report("GitHub update check unavailable (" + error.GetType().Name + "). " +
-                "Using previously installed BuildCraft " + installedTag +
+                "Using checksum-verified H.O.W.L. Nightly runtime " + installedTag +
                 " (optional mods were not changed). New updates are pending.");
             return LoaderRoot;
         }

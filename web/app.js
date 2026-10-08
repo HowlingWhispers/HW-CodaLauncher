@@ -169,7 +169,7 @@ function render(){
   $('mod-chip').textContent=state.modCount+' mod'+(state.modCount===1?'':'s');
   $('play').disabled=installBusy||state.gameRunning||state.accountBusy;
   if(state.gameRunning) $('play').textContent='RUNNING';
-  else if(!installBusy) $('play').textContent=state.localSingleplayer?'PLAY LOCAL (TEST) ▶':'OPEN MINECRAFT LAUNCHER ▶';
+  else if(!installBusy) $('play').textContent=nightly?'PLAY NIGHTLY ▶':state.localSingleplayer?'PLAY LOCAL (TEST) ▶':'OPEN MINECRAFT LAUNCHER ▶';
   $('loader-summary').textContent=state.gameRunning
     ? 'Minecraft is running. Coda is keeping the clipboard warm.'
     : state.managedCurrent

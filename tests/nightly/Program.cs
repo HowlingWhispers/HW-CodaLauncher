@@ -61,9 +61,9 @@ var atom = $"""
 var atomBuild = NightlyAtomReleaseReader.SelectNewest(atom, prefix, package, sha);
 Assert(atomBuild?.Tag == "nightly-buildcraft-20261008-latest",
     "BuildCraft Atom fallback selects newest matching public release");
-Assert(atomBuild?.PackageUrl.AbsolutePath.EndsWith("/nightly-buildcraft-20261008-latest/" + package),
+Assert(atomBuild?.PackageUrl.AbsolutePath.EndsWith("/nightly-buildcraft-20261008-latest/" + package) == true,
     "BuildCraft Atom fallback constructs the exact expected official release asset URL");
-Assert(atomBuild?.ChecksumUrl.AbsolutePath.EndsWith(".sha256"),
+Assert(atomBuild?.ChecksumUrl.AbsolutePath.EndsWith(".sha256") == true,
     "BuildCraft fallback includes official SHA-256 filename");
 
 Console.WriteLine("PASS: newest published Nightly selection, old-first release order, URLs, checksum, draft and host restrictions.");

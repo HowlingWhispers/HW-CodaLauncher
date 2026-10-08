@@ -58,7 +58,7 @@ jobs:
         run: |
           choco install innosetup --no-progress -y
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup installation failed" }
-          ./packaging/windows/build-installer.ps1 -Version 0.7.5 -PayloadDir dist/CodaLauncher -OutputDir dist/setup
+          ./packaging/windows/build-installer.ps1 -Version 0.7.6 -PayloadDir dist/CodaLauncher -OutputDir dist/setup
           ./packaging/windows/test-installer.ps1 -Installer dist/setup/CodaLauncher-v0.7.5-win64-Setup.exe
       - uses: actions/upload-artifact@v4
         with:

@@ -76,6 +76,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            if (App.IsSmokeTest) { Application.Current.Shutdown(1); return; }
             MessageBox.Show("CodaLauncher could not start its interface.\n\n" + ex.Message, "CodaLauncher", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -91,6 +92,7 @@ public partial class MainWindow : Window
             switch (action)
             {
                 case "ready":
+                    if (App.IsSmokeTest) { Application.Current.Shutdown(0); return; }
                     _uiReady = true;
                     _updateTimer.Start();
                     _ = CheckLauncherUpdateAsync(force: true);

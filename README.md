@@ -8,13 +8,17 @@ Choose the package for your computer from [GitHub Releases](https://github.com/H
 
 | Computer | Package |
 | --- | --- |
-| Windows x64 | `win64.zip` |
+| Windows x64 | `win64-Setup.exe` (recommended), `win64.zip` (portable) |
 | Linux x64 | `linux-x64.tar.gz` |
 | Linux ARM64 | `linux-arm64.tar.gz` |
 | Intel Mac | `macos-x64.zip` |
 | Apple Silicon Mac | `macos-arm64.zip` |
 
-Windows: extract the whole ZIP and open CodaLauncher.exe.
+Windows: download and run `CodaLauncher-v0.7.0-win64-Setup.exe`. Setup installs to `%LOCALAPPDATA%\Programs\CodaLauncher`, adds a Start Menu shortcut and offers a desktop shortcut (selected by default). Open CodaLauncher when Setup finishes. Administrator access is not required. If WebView2 is missing, Setup installs it from Microsoft; this step needs internet access.
+
+For portable Windows use, extract the whole ZIP and open CodaLauncher.exe. Keep the ZIP available for the existing self-updater; Setup is the player-facing download.
+
+Uninstall through Windows Settings → Installed Apps. Worlds, Minecraft files, settings and WebView2 are preserved. Installing a later Setup over the existing installation uses the same application identity and location.
 Linux: extract the archive and run `./start.sh`.
 macOS: extract the ZIP, move CodaLauncher.app to Applications and open it.
 
@@ -66,3 +70,16 @@ dotnet publish Desktop/CodaLauncher.Desktop.csproj -c Release -r linux-x64 --sel
 Other runtime targets: `linux-arm64`, `osx-x64`, `osx-arm64`.
 
 CI compiles Windows/Linux/macOS, runs managed mod installation tests on all build hosts, packages all five platforms and opens the Linux x64 UI under Xvfb. Cross-compiled ARM packages and live Minecraft gameplay on Linux/macOS still need real-device testing. Release assets and tags are immutable.
+
+## Windows installer development
+
+On Windows with Inno Setup 6 and .NET 8 installed:
+
+```powershell
+dotnet publish CodaLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o dist/payload
+./packaging/windows/build-installer.ps1 -Version 0.7.0
+```
+
+The build script downloads Microsoft's WebView2 bootstrapper and verifies its Authenticode signature before embedding it. Setup and shortcut icons use the approved bundled Coda portrait. CI runs `test-installer.ps1` on a clean Windows runner to check install/reinstall, shortcut targets, Installed Apps registration, actual WebView2 UI startup, uninstall and saved-world preservation. Run that test only on a disposable Windows environment. The installer itself is currently unsigned.
+
+Landing-page Windows download buttons should link directly to the release's `win64-Setup.exe`; the update manifest continues pointing to `win64.zip`. Do not advertise automatic Java installation: Java management is not included in this release.

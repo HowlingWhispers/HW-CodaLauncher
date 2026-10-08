@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.6.0-desktop
-  CODA_TAG: v0.6.0-desktop
+  CODA_VERSION: 0.7.0
+  CODA_TAG: v0.7.0
 
 jobs:
   gate:
@@ -42,6 +42,7 @@ jobs:
           fi
 
   build:
+    timeout-minutes: 25
     needs: gate
     if: needs.gate.outputs.publish == 'true'
     strategy:
@@ -83,6 +84,14 @@ jobs:
           Compress-Archive -Path dist/payload/* -DestinationPath "dist/release/$bundle"
           $sha = (Get-FileHash "dist/release/$bundle" -Algorithm SHA256).Hash.ToLowerInvariant()
           @{ schema = 1; version = $env:CODA_VERSION; bundle = $bundle; sha256 = $sha } | ConvertTo-Json | Set-Content -Encoding UTF8 dist/release/launcher-update.json
+      - name: Build Windows installer
+        if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup installation failed" }
+          ./packaging/windows/build-installer.ps1 -Version $env:CODA_VERSION
+          ./packaging/windows/test-installer.ps1 -Installer "dist/release/CodaLauncher-v$env:CODA_VERSION-win64-Setup.exe"
       - name: Publish Linux or macOS
         if: matrix.rid != 'win-x64'
         shell: bash
@@ -142,18 +151,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.6.0 Desktop Editions
+          # CodaLauncher 0.7.0
 
-          CodaLauncher now ships for Linux x64/ARM64 and Intel/Apple Silicon Macs alongside Windows x64.
+          Windows players can now download one Setup.exe, install and open CodaLauncher from the desktop or Start Menu.
 
-          - Linux and macOS use an Avalonia desktop interface with Home, Mods, Settings and Logs.
-          - All editions share the installer, mod scanner, profile preparation and CodaLoader launch code.
-          - PLAY installs or updates HW Essentials before starting Minecraft.
-          - Approved Coda artwork is bundled unchanged.
-          - Linux/macOS notify about platform-specific launcher updates while open; the download button opens the appropriate release asset. Replace the launcher manually in this first edition.
-          - Linux packages include a start.sh launcher; macOS packages contain CodaLauncher.app.
+          - Windows Setup installs for the current user without requesting administrator access.
+          - Desktop shortcut is selected by default; Start Menu shortcut is always installed.
+          - Coda's portrait is the application and setup icon.
+          - Setup installs Microsoft WebView2 when missing (internet required).
+          - Windows Settings includes an uninstall entry. Uninstall keeps worlds and settings.
+          - The existing Windows ZIP remains available for portable use and the verified self-updater.
+          - Linux x64/ARM64 and Intel/Apple Silicon Mac packages remain available.
           - The .NET runtime is included. Minecraft still requires Java 25+ on PATH.
           - macOS builds are ad-hoc signed, not Apple-notarized.
-          - CI checks shared mod installation on all build hosts and opens the Linux UI under Xvfb. Live Minecraft on Linux/macOS and ARM GUI execution remain unverified.
+          - CI installs, opens the Windows WebView2 interface, reinstalls and uninstalls Setup, checking shortcuts and world preservation.
+          - Live Minecraft and ARM GUI execution still require real-device testing.
           EOF
-          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.6.0 Desktop Editions" --notes-file release-notes.md
+          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.7.0" --notes-file release-notes.md

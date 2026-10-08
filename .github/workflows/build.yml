@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   windows:
+    timeout-minutes: 20
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,10 +36,19 @@ jobs:
       - name: Package
         shell: pwsh
         run: Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-win64.zip -Force
+      - name: Build and test Windows installer
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup installation failed" }
+          ./packaging/windows/build-installer.ps1 -Version 0.7.0 -PayloadDir dist/CodaLauncher -OutputDir dist/setup
+          ./packaging/windows/test-installer.ps1 -Installer dist/setup/CodaLauncher-v0.7.0-win64-Setup.exe
       - uses: actions/upload-artifact@v4
         with:
           name: CodaLauncher-build
-          path: dist/CodaLauncher-win64.zip
+          path: |
+            dist/CodaLauncher-win64.zip
+            dist/setup/*
           retention-days: 30
 
   portable:

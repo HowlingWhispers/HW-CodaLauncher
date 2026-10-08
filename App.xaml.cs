@@ -4,7 +4,9 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class App : Application
 {
-    internal const string LauncherVersion = "0.6.0-desktop";
+    internal const string LauncherVersion = "0.7.0";
+
+    internal static bool IsSmokeTest { get; private set; }
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -14,6 +16,18 @@ public partial class App : Application
         if (SelfUpdater.TryRunApplyMode(e.Args))
         {
             Shutdown();
+            return;
+        }
+
+        IsSmokeTest = e.Args.Contains("--smoke-ui");
+        if (IsSmokeTest)
+        {
+            var timeout = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            timeout.Tick += (_, _) => { timeout.Stop(); Shutdown(1); };
+            timeout.Start();
+            var smokeWindow = new MainWindow();
+            MainWindow = smokeWindow;
+            smokeWindow.Show();
             return;
         }
 

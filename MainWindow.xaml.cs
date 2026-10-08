@@ -134,7 +134,7 @@ public partial class MainWindow : Window
                     {
                         var lines = _logs.Snapshot();
                         Clipboard.SetText(string.Join(Environment.NewLine, lines));
-                        Send(new { type = "copyLogsResult", ok = true, count = lines.Count });
+                        Send(new { type = "copyLogsResult", ok = true, count = lines.Length });
                     }
                     catch (Exception copyError)
                     {

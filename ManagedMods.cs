@@ -81,6 +81,25 @@ internal static class ManagedMods
         progress("Legacy loader/run/mods was not deleted. You may review it after confirming the new profile works.");
     }
 
+    /// <summary>
+    /// Archive the entire legacy folder after a successful active-profile
+    /// install. No contents are deleted, even non-JAR user files and conflicts.
+    /// This removes the misleading loader/run/mods location from active view.
+    /// </summary>
+    public static void ArchiveLegacy(string loaderRoot, Action<string> progress)
+    {
+        string legacy = Path.Combine(loaderRoot, "run", "mods");
+        if (!Directory.Exists(legacy)) return;
+        string backup = Path.Combine(Path.GetDirectoryName(loaderRoot)
+            ?? throw new IOException("Unknown loader parent directory"),
+            "legacy-loader-mods-backup",
+            DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff") + "-"
+                + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.GetDirectoryName(backup)!);
+        Directory.Move(legacy, backup);
+        progress("Old loader/run/mods archived without deleting user files: " + backup);
+    }
+
     public static void Install(string loaderRoot, string gameRoot, Action<string> progress)
     {
         MigrateLegacy(loaderRoot, gameRoot, progress);

@@ -278,10 +278,8 @@ internal sealed class InstallService
         var latestLoader = await GetLatestLoaderReleaseAsync(ct);
         var installedLoaderVersion = ReadInstalledLoaderVersion();
 
-        // Historical release ZIPs installed starter mods under loader/run/mods.
-        // This folder was NOT scanned by the Minecraft agent when launched by
-        // CodaLauncher. Copy user JARs to the actual game folder first.
-        ManagedMods.MigrateLegacy(AppPaths.LoaderRoot, AppPaths.MinecraftRoot, progress);
+        // Player mods are optional. Updating H.O.W.L. must never silently
+        // install, move or reactivate user-owned mods from a legacy folder.
 
         if (!LoaderReady
             || !string.Equals(
@@ -326,12 +324,8 @@ internal sealed class InstallService
         File.WriteAllText(AppPaths.CmlBasePackFingerprint, PackFingerprint(packVersion, resource));
         progress("HOWL Base is current.");
 
-        // The example Hello Coda is no longer installed by default.
-        // User-supplied copies are handled by no-clobber legacy migration.
-        ManagedMods.Install(AppPaths.LoaderRoot, AppPaths.MinecraftRoot, progress);
-        // Do not remove any legacy content. Once every active mod is in place,
-        // move the old duplicate folder into a named preserved backup.
-        ManagedMods.ArchiveLegacy(AppPaths.LoaderRoot, progress);
+        // HW Essentials and all other add-ons are optional. The user installs
+        // them explicitly from Mods; never bring back a removed mod on PLAY.
         progress("Install ready.");
     }
 

@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.9
-  CODA_TAG: v0.7.9
+  CODA_VERSION: 0.7.10
+  CODA_TAG: v0.7.10
 
 jobs:
   gate:
@@ -85,6 +85,8 @@ jobs:
         run: dotnet run --project tests/ManagedModsTests.csproj -c Release
       - name: Test Nightly newest-release selection
         run: dotnet run --project tests/nightly/NightlyReleaseTests.csproj -c Release
+      - name: Test automatic Coda Wolf mod discovery and safe installation
+        run: dotnet run --project tests/codawolf/CodaWolfReleaseTests.csproj -c Release
       - name: Publish Windows
         if: matrix.rid == 'win-x64'
         shell: pwsh
@@ -166,7 +168,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.6 (prerelease)
+          # CodaLauncher 0.7.10 (prerelease)
+
+          - **Coda Wolf Companion Nightly:** automatically discovers the latest checksum-verified `nightly-codawolf-*` GitHub prerelease and installs it in the isolated Nightly Minecraft mods profile during Play or Install/Repair.
+          - Never overwrites hand-edited wolf JARs or installs a duplicate `coda_wolf` mod. Stable profiles and existing BuildCraft updater remain unchanged.
+          - Coda Wolf gameplay remains experimental and needs a live Minecraft 26.4 Snapshot 3 playtest; use a disposable world.
 
           This release consolidates all playable mods under each active game's
           minecraft/mods folder. Legacy loader/run/mods content is copied

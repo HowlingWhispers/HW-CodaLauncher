@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private readonly LauncherService _launcher;
     private readonly InstallService _installer = new();
     private readonly NightlyBuildInstaller _nightly = new();
+    private readonly CodaWolfNightlyInstaller _codaWolf = new();
     private LauncherSettings _settings = new();
     private LauncherFeed _lastFeed = new();
     private readonly List<NewsItem> _systemNews = [];
@@ -396,8 +397,14 @@ public partial class MainWindow : Window
                     _logs.Add(message);
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
                 }, CancellationToken.None);
+                await _codaWolf.InstallLatestAsync(message =>
+                {
+                    _logs.Add(message);
+                    Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
+                }, CancellationToken.None);
+                SendMods();
                 Send(new { type = "installStatus", busy = false, ok = true,
-                    message = "Nightly installed in its own separate Minecraft test profile." });
+                    message = "Nightly BuildCraft and Coda Wolf downloaded and installed in the test profile." });
                 await SendState();
                 return;
             }
@@ -599,6 +606,12 @@ public partial class MainWindow : Window
                     _logs.Add(message);
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
                 }, CancellationToken.None);
+                await _codaWolf.InstallLatestAsync(message =>
+                {
+                    _logs.Add(message);
+                    Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
+                }, CancellationToken.None);
+                SendMods();
                 _logs.Add("Nightly world directory: " + NightlyBuildInstaller.GameRoot);
                 _launcher.Launch(nightRoot, identity!, NightlyBuildInstaller.GameRoot);
                 if (_settings.CloseAfterLaunch) Close();

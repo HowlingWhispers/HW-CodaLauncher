@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.6
-  CODA_TAG: v0.7.6
+  CODA_VERSION: 0.7.7
+  CODA_TAG: v0.7.7
 
 jobs:
   gate:

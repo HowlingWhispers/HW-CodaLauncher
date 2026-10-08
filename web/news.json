@@ -1,0 +1,20 @@
+[
+  {
+    "id": "welcome-to-howl",
+    "date": "2026-10-08",
+    "title": "Welcome to Coda's workshop",
+    "text": "H.O.W.L. is our home for community-made Minecraft mods. Stable keeps things familiar; Nightly is where new experiments take their first steps."
+  },
+  {
+    "id": "coda-companion-playtest",
+    "date": "2026-10-08",
+    "title": "Coda Wolf is in testing",
+    "text": "Coda's wolf companion is being tested in Nightly. She is still experimental. If she does not appear, use /codawolf diagnose and send us your launcher logs."
+  },
+  {
+    "id": "quiet-underground",
+    "date": "2026-10-08",
+    "title": "A quieter underground",
+    "text": "New Nightly worlds can use Quiet Underground to make enormous caves and ravines less common. Existing worlds stay as they are."
+  }
+]

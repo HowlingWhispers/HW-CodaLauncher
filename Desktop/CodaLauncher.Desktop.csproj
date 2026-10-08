@@ -17,6 +17,9 @@
     <Compile Include="../OfficialMinecraftLauncher.cs" Link="Shared/OfficialMinecraftLauncher.cs" />
     <Content Include="../auth/microsoft.json" Link="auth/microsoft.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../LauncherCore.cs" Link="Shared/LauncherCore.cs" />
+    <Compile Include="../FeedService.cs" Link="Shared/FeedService.cs" />
+    <Compile Include="../BundledNews.cs" Link="Shared/BundledNews.cs" />
+    <Content Include="../web/news.json" Link="news.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../LauncherModels.cs" Link="Shared/LauncherModels.cs" />
     <Compile Include="../ManagedMods.cs" Link="Shared/ManagedMods.cs" />
     <Content Include="../web/assets/coda-headshot.png" Link="assets/coda-headshot.png" CopyToOutputDirectory="PreserveNewest" />

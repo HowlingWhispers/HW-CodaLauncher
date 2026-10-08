@@ -194,9 +194,9 @@ function render(){
         ? 'Coda found a few things that need freshening up. PLAY will handle them automatically.'
         : 'Coda will install H.O.W.L., HOWL Base and the required Resourcepacks for you.';
   const feed=state.feed;
-  $('feed-pill').textContent=feed.online?'NEWS ONLINE':'NEWS OFFLINE';
-  $('feed-pill').className='pill '+(feed.online?'online':'offline');
-  $('feed-note').textContent=feed.online?'Fresh notes from Howling Whispers.':"Coda can't reach the bulletin board right now.";
+  $('feed-pill').textContent='NEWS INCLUDED';
+  $('feed-pill').className='pill online';
+  $('feed-note').textContent='From this CodaLauncher release. New notes arrive with the next update.';
   $('news').innerHTML=(feed.news||[]).map(n=>'<article><time>'+esc(n.date||'')+'</time><b>'+esc(n.title||'Untitled')+'</b><p>'+esc(n.text||'')+'</p>'+(n.link?'<button class="news-link" data-link="'+escAttr(n.link)+'">Open</button>':'')+'</article>').join('');
   document.querySelectorAll('.news-link').forEach(btn=>btn.onclick=()=>post('openExternal',{url:btn.dataset.link}));
   $('packs-list').innerHTML=(state.packs||[]).map(p=>'<article class="pack-card"><div class="pack-top"><div><em>'+(p.required?'REQUIRED':'OPTIONAL')+'</em><h3>'+esc(p.name)+'</h3></div><span class="pill '+(p.current?'online':(p.installed?'update':'offline'))+'">'+esc(p.status)+'</span></div><p>'+esc(p.description)+'</p><div class="dependency-note">Requires: '+esc((p.dependencies||[]).join(', ')||'None')+'</div><div class="pack-meta"><span>Available v'+esc(p.availableVersion||'?')+'</span><span>'+esc(p.source||'')+'</span></div>'+(p.required?'<div class="managed-label">Managed automatically when you press PLAY</div>':'<button class="pack-action save" data-pack="'+escAttr(p.id)+'">INSTALL</button>')+'</article>').join('');

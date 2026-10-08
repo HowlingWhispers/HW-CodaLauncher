@@ -176,6 +176,15 @@ internal static class OfficialMinecraftLauncher
                     : new ProcessStartInfo(candidate) { UseShellExecute = true };
                 if (Process.Start(info) is not null) return true;
             }
+            // Windows Store builds do not expose a normal MinecraftLauncher.exe path.
+            // Ask the shell to activate the official package. If it isn't installed,
+            // the caller still explains how to open the launcher manually.
+            if (OperatingSystem.IsWindows())
+            {
+                var info = new ProcessStartInfo("explorer.exe") { UseShellExecute = false };
+                info.ArgumentList.Add(@"shell:AppsFolder\Microsoft.4297127D64EC6_8wekyb3d8bbwe!Minecraft");
+                if (Process.Start(info) is not null) return true;
+            }
         }
         catch { /* caller prints the manual-launch instructions */ }
         return false;

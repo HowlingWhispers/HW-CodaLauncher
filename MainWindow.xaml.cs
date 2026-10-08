@@ -119,11 +119,12 @@ public partial class MainWindow : Window
 
     private async void OnWebMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
+        string? action = null;
         try
         {
             using var doc = JsonDocument.Parse(e.WebMessageAsJson);
             var root = doc.RootElement;
-            var action = root.TryGetProperty("action", out var a) ? a.GetString() : null;
+            action = root.TryGetProperty("action", out var a) ? a.GetString() : null;
 
             switch (action)
             {
@@ -178,16 +179,21 @@ public partial class MainWindow : Window
                     break;
                 case "saveSettings":
                     if (_gameRunning || _installGate.CurrentCount == 0) throw new InvalidOperationException("Close Minecraft and finish installation before changing Settings.");
-                    if (root.TryGetProperty("settings", out var s))
+                    if (!root.TryGetProperty("settings", out var s))
+                        throw new InvalidOperationException("No settings were sent to save.");
+                    var updated = s.Deserialize<LauncherSettings>(_json)
+                        ?? throw new InvalidOperationException("Invalid settings payload.");
+                    updated.OfflineMode = _settings.OfflineMode;
+                    if (string.IsNullOrWhiteSpace(updated.FeedUrl))
+                        updated.FeedUrl = "https://thehowlingwhispers.com/launcher";
+                    _settingsStore.Save(updated);
+                    _settings = updated;
+                    _logs.Add("Launcher settings saved.");
+                    Send(new { type = "settingsSaveResult", ok = true, message = "Settings saved." });
+                    try { await SendState(); }
+                    catch (Exception refreshError)
                     {
-                        var updated = s.Deserialize<LauncherSettings>(_json) ?? new();
-                        updated.OfflineMode = _settings.OfflineMode;
-                        _settings = updated;
-                        if (string.IsNullOrWhiteSpace(_settings.FeedUrl))
-                            _settings.FeedUrl = "https://thehowlingwhispers.com/launcher";
-                        _settingsStore.Save(_settings);
-                        _logs.Add("Launcher settings saved.");
-                        await SendState();
+                        _logs.Add("Settings saved, but refreshing the launcher view failed: " + refreshError.Message);
                     }
                     break;
                 case "install":
@@ -211,7 +217,10 @@ public partial class MainWindow : Window
         {
             var line = _logs.Add("UI request failed: " + ex.Message);
             Send(new { type = "log", line });
-            Send(new { type = "error", message = ex.Message });
+            if (action == "saveSettings")
+                Send(new { type = "settingsSaveResult", ok = false, message = ex.Message });
+            else
+                Send(new { type = "error", message = ex.Message });
         }
     }
 

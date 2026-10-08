@@ -16,9 +16,9 @@ jobs:
   publish:
     runs-on: windows-latest
     env:
-      CODA_VERSION: 0.5.5-coda-portrait
-      CODA_TAG: v0.5.5-coda-portrait
-      CODA_ZIP: CodaLauncher-v0.5.5-coda-portrait-win64.zip
+      CODA_VERSION: 0.5.6-managed-mods
+      CODA_TAG: v0.5.6-managed-mods
+      CODA_ZIP: CodaLauncher-v0.5.6-managed-mods-win64.zip
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,6 +44,9 @@ jobs:
         if: steps.release.outputs.publish == 'true'
         with:
           dotnet-version: "8.0.x"
+      - name: Test managed mod installation
+        if: steps.release.outputs.publish == 'true'
+        run: dotnet run --project tests/ManagedModsTests.csproj -c Release
       - name: Publish
         if: steps.release.outputs.publish == 'true'
         shell: pwsh
@@ -69,19 +72,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           @"
-          # CodaLauncher v0.5.5 Approved Coda Portrait
+          # CodaLauncher v0.5.6 Managed Mods
 
-          Uses the existing approved Coda portrait on Home and the current Profile placeholder, replacing the incorrect portrait in 0.5.4.
+          PLAY checks and installs HW Essentials in the active Minecraft profile before starting the game.
 
-          - Original uploaded artwork preserved byte-for-byte.
-          - Transparent portrait shown in full, including ears and clipboard.
-          - Background update checks while the launcher is open, with an UPDATE AVAILABLE banner and UPDATE LAUNCHER button.
-          - Updates use Coda's existing terminal and wait for REBOOT CODALAUNCHER.
-          - Runtime version aligned with the package to prevent repeated update prompts.
-          - Portrait bundled locally, so it works offline.
-          - Existing update terminal downloads, verifies and stages this release, then waits for REBOOT CODALAUNCHER.
-          - Release tags and assets are immutable and point to the commit used for the build.
+          - Missing and outdated official mod JARs are detected even when the loader version is unchanged.
+          - Known official mod updates share CodaLoader's ownership marker.
+          - Manually modified mod JARs are preserved and reported.
+          - Player homes and settings are preserved.
+          - Existing approved Coda artwork and launcher update notifications remain available.
           "@ | Set-Content release-notes.md
 
-          gh release create $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.5.5 Approved Coda Portrait" --notes-file release-notes.md
+          gh release create $env:CODA_TAG "dist/$env:CODA_ZIP" dist/launcher-update.json --target $env:GITHUB_SHA --prerelease --title "CodaLauncher v0.5.6 Managed Mods" --notes-file release-notes.md
           if ($LASTEXITCODE -ne 0) { throw "Release publication failed" }

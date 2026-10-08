@@ -4,7 +4,7 @@ namespace HowlingWhispers.CodaLauncher;
 
 public partial class App : Application
 {
-    internal const string LauncherVersion = "0.5.5-coda-portrait";
+    internal const string LauncherVersion = "0.5.6-managed-mods";
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -53,3 +53,4 @@ public partial class App : Application
         window.Show();
     }
 }
+

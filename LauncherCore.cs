@@ -259,7 +259,8 @@ internal sealed class InstallService
             && string.Equals(
                 installedLoaderVersion,
                 latestLoader.Version,
-                StringComparison.OrdinalIgnoreCase);
+                StringComparison.OrdinalIgnoreCase)
+            && ManagedMods.IsCurrent(AppPaths.LoaderRoot, AppPaths.MinecraftRoot);
 
         var resource = ResolveCmlBaseResources(feed);
         var resourceInstalled = File.Exists(AppPaths.CmlBaseResourcesMarker);
@@ -299,6 +300,7 @@ internal sealed class InstallService
         var installedLoaderVersion = ReadInstalledLoaderVersion();
 
         if (!LoaderReady
+            || !File.Exists(Path.Combine(AppPaths.LoaderRoot, "run", "mods", "hw-essentials.jar"))
             || !string.Equals(
                 installedLoaderVersion,
                 latestLoader.Version,
@@ -344,6 +346,7 @@ internal sealed class InstallService
         if (File.Exists(bundledHello) && !File.Exists(helloTarget))
             File.Copy(bundledHello, helloTarget);
 
+        ManagedMods.Install(AppPaths.LoaderRoot, AppPaths.MinecraftRoot, progress);
         progress("Install ready.");
     }
 
@@ -1023,3 +1026,4 @@ internal sealed class LauncherService
         _sendLine(line);
     }
 }
+

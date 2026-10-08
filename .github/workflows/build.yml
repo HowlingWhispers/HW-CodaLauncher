@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - name: Test managed mod installation
+        run: dotnet run --project tests/ManagedModsTests.csproj -c Release
       - name: Restore
         run: dotnet restore
       - name: Build

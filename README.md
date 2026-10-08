@@ -28,6 +28,42 @@ Linux requires a desktop with X11 or XWayland, fontconfig, libX11, libICE and li
 
 macOS builds are ad-hoc signed and are not Apple-notarized. macOS may require approval through its normal Open Anyway flow. Do not globally disable Gatekeeper.
 
+## Official Minecraft Launcher and Local Test Mode (in development)
+
+The upcoming launcher update uses the **official Minecraft Launcher** for
+Microsoft authentication and Minecraft Java ownership. Players do not enter a
+Microsoft password or OAuth token into CodaLauncher.
+
+1. Install and sign in to the official Minecraft Launcher once.
+2. **Close it** before clicking Play in CodaLauncher; otherwise Minecraft
+   Launcher may overwrite the installation-profile file on exit.
+3. CodaLauncher checks the published CodaLoader and mods, registers its own
+   `Howling Whispers | CodaLoader` installation in the official launcher,
+   and asks the official launcher to open.
+4. Select the **Howling Whispers | CodaLoader** installation (enable modded
+   installations if necessary), then click Play in Minecraft Launcher.
+5. The official launcher supplies your Minecraft credentials. CodaLoader's
+   Java agent supplies the HW menus, game hooks, and managed mods.
+
+The custom version manifest is based on an official Mojang version JSON
+verified by its published SHA-1. CodaLauncher writes only its own profile under
+the existing `.minecraft` launcher-profile file, saves a backup and preserves
+all other installations, accounts, and worlds. The HW game directory remains
+the isolated `.howlingshispers/minecraft` folder.
+
+**Settings → Local Test Mode:** opt in to directly launch local singleplayer
+using the original `CodaPlayer` identity without Microsoft sign-in. This is
+an **unverified development identity** and cannot authorize friends, shared
+worlds, remote bank/storage, or online Howling Whispers services. It preserves
+the old `CodaPlayer` UUID so local saves don't appear to change owners. The
+initial game/loader download requires internet access; previously downloaded
+assets can be reused. Turn the switch off to return to the official launcher.
+
+The old Microsoft account implementation remains in source code but its
+CodaLauncher controls are paused. Azure app registration can be completed in a
+future version without affecting this launch path. The official-profile
+integration is still awaiting a live game test on Minecraft 26.4 Snapshot 3.
+
 ## Play and mods
 
 PLAY checks the current CodaLoader release, prepares CML Base Resources and installs/updates HW Essentials in the active Minecraft profile before starting the game. Mod versions are read from `coda.mod.json` in the active profile's `mods` folder.

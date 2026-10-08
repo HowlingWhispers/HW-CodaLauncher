@@ -166,7 +166,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.10 (prerelease)\n\n          - **Coda Wolf Companion Nightly:** automatically discovers the latest checksum-verified `nightly-codawolf-*` GitHub prerelease and installs it in the isolated Nightly Minecraft mods profile during Play or Install/Repair.\n          - Never overwrites hand-edited wolf JARs or installs a duplicate `coda_wolf` mod. Stable profiles and existing BuildCraft updater remain unchanged.\n          - Coda Wolf gameplay remains experimental and needs a live Minecraft 26.4 Snapshot 3 playtest; use a disposable world.
+          # CodaLauncher 0.7.10 (prerelease)
+
+          - **Coda Wolf Companion Nightly:** automatically discovers the latest checksum-verified `nightly-codawolf-*` GitHub prerelease and installs it in the isolated Nightly Minecraft mods profile during Play or Install/Repair.
+          - Never overwrites hand-edited wolf JARs or installs a duplicate `coda_wolf` mod. Stable profiles and existing BuildCraft updater remain unchanged.
+          - Coda Wolf gameplay remains experimental and needs a live Minecraft 26.4 Snapshot 3 playtest; use a disposable world.
 
           This release consolidates all playable mods under each active game's
           minecraft/mods folder. Legacy loader/run/mods content is copied

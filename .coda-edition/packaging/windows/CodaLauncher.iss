@@ -15,8 +15,6 @@
 AppId={{A972DF50-1A6B-4AEC-BDB9-CA5D9AAB7F44}
 AppName=CodaLauncher Coda Edition
 AppVersion={#AppVersion}
-VersionInfoVersion=0.7.15.0
-VersionInfoProductVersion={#AppVersion}
 AppPublisher=Howling Whispers
 AppPublisherURL=https://thehowlingwhispers.com
 AppSupportURL=https://github.com/HowlingWhispers/HW-CodaLauncher/issues

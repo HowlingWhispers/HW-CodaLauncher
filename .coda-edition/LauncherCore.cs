@@ -435,7 +435,7 @@ internal sealed class InstallService
             ZipFile.ExtractToDirectory(zip, staging, true);
 
             progress($"Installing H.O.W.L. {release.Version}...");
-            ReplaceDirectory(staging, AppPaths.LoaderRoot);
+            ReplaceLoaderFiles(staging, AppPaths.LoaderRoot);
         }
         finally
         {
@@ -557,7 +557,7 @@ internal sealed class InstallService
                     "HOWL Base Resources is missing required branding or default music.");
 
             progress($"Installing resource pack to: {AppPaths.CmlBaseResourcesRoot}");
-            ReplaceDirectory(staging, AppPaths.CmlBaseResourcesRoot);
+            ResourcePackInstaller.Install(staging, AppPaths.CmlBaseResourcesRoot);
             File.WriteAllText(AppPaths.CmlBaseResourcesMarker, version);
             File.WriteAllText(AppPaths.CmlBaseResourcesSha256, expectedSha);
             progress($"Installed resource state: version {version}, SHA-256 {expectedSha}");
@@ -631,7 +631,7 @@ internal sealed class InstallService
         return Convert.ToHexString(sha.ComputeHash(stream)).ToLowerInvariant();
     }
 
-    private static void ReplaceDirectory(string source, string target)
+    private static void ReplaceLoaderFiles(string source, string target)
     {
         // Distribution updates own precisely two files. Replacing the whole
         // loader directory previously DELETED loader/run/mods, which may hold

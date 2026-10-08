@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="install/**/*.cs" />
     <Compile Remove="accounts/**/*.cs" />
     <Compile Remove="official/**/*.cs" />
     <Compile Remove="nightly/**/*.cs" />

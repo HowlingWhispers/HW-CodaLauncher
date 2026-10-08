@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>CodaLauncher.CodaEdition</AssemblyName>
-    <Version>0.7.15</Version>
+    <Version>0.7.15-coda.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
@@ -16,6 +16,7 @@
     <Compile Include="../LocalSingleplayer.cs" Link="Shared/LocalSingleplayer.cs" />
     <Compile Include="../OfficialMinecraftLauncher.cs" Link="Shared/OfficialMinecraftLauncher.cs" />
     <Content Include="../auth/microsoft.json" Link="auth/microsoft.json" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../ResourcePackInstaller.cs" Link="Shared/ResourcePackInstaller.cs" />
     <Compile Include="../LauncherCore.cs" Link="Shared/LauncherCore.cs" />
     <Compile Include="../FeedService.cs" Link="Shared/FeedService.cs" />
     <Compile Include="../BundledNews.cs" Link="Shared/BundledNews.cs" />

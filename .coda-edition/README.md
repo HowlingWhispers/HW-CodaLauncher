@@ -12,7 +12,7 @@ The browser design demo is already committed under `downloads/` and can be downl
 
 ## Windows installer
 
-On the successful **Build Coda Edition Preview** run, sign into GitHub and download **CodaEdition-Windows-Installer** under Artifacts. Extract that ZIP and run `CodaLauncher-CodaEdition-v0.7.15-win64-Setup.exe`. It installs to `%LOCALAPPDATA%/Programs/CodaLauncher.CodaEdition` and creates **CodaLauncher Coda Edition** shortcuts.
+On the successful **Build Coda Edition Preview** run, sign into GitHub and download **CodaEdition-Windows-Installer** under Artifacts. Extract that ZIP and run `CodaLauncher-CodaEdition-v0.7.15-coda.1-win64-Setup.exe`. It installs to `%LOCALAPPDATA%/Programs/CodaLauncher.CodaEdition` and creates **CodaLauncher Coda Edition** shortcuts.
 
 The installer has its own application identity and Installed Apps entry. It does not replace or uninstall the original CodaLauncher. Setup installs Microsoft WebView2 if it is missing; the downloaded Microsoft bootstrapper’s Authenticode signature is verified before packaging. The Coda Edition installer itself is unsigned.
 
@@ -23,6 +23,12 @@ The installer has its own application identity and Installed Apps entry. It does
 - Browser design demo: extract `downloads/CodaLauncher-CodaEdition-browser-demo.zip` and open `index.html`. Or open `web/index.html` from this source folder. This mode uses clearly labelled illustrative data; it cannot install or start Minecraft. Play explains that boundary.
 
 The desktop editions preserve the existing game preparation, verified content installation, mod scanning, official-launcher handoff, local test mode and logs. Minecraft still requires Java 25 or newer and its normal account/asset prerequisites. No game download or live Minecraft playtest was performed while building this edition.
+
+## Resource-pack repair fix (0.7.15-coda.1)
+
+This preview fixes the reported `Loader bundle is missing managed file CodaLoader.jar` error after the HOWL Base resource download. Resource archives now use a dedicated installer instead of the loader-only copy routine. The pinned archive checksum remains enforced; existing player-added files stay in place and replaced resource files are backed up.
+
+Install this build over the previous Coda Edition installation, then retry Play or Install / repair. Existing Coda Edition game data is preserved. No changes were made to the original launcher.
 
 ## Explore the design
 
@@ -62,4 +68,4 @@ In the prepared cloud workspace, first run `source /workspace/.cloud-setup/activ
 
 The native Linux build and UI startup were tested under Xvfb. Browser checks exercise navigation, all game shelves, Coda’s responses, quiet mode, settings feedback, the browser launch boundary, profile navigation and mobile layout. The official-profile fixture verifies preservation of the original launcher’s installation, repeat registration and collision protection. Managed-mod fixtures verify no-clobber installation and migration behavior.
 
-Windows is cross-compiled; its WebView2 UI still needs a Windows runtime smoke test. Live Minecraft gameplay is untested.
+The installer workflow validates install, reinstall, the installed WebView2 UI, uninstall and preservation of a simulated original launcher plus world files on a disposable Windows runner. Live Minecraft gameplay remains untested.

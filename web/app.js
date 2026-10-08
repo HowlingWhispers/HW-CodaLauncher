@@ -162,7 +162,7 @@ function render(){
     ? 'Nightly BuildCraft: '+(state.nightlyInstalled?'Installed in isolated profile':'Not installed yet')+' | Stable remains untouched'
     : 'Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
   $('loader-update-result').textContent=loaderUpdateMessage;
-  $('loader-chip').textContent=state.loaderCurrent?'HOWL CURRENT':(state.loaderReady?'HOWL UPDATE READY':'HOWL INSTALL');
+  $('loader-chip').textContent=nightly?'HOWL NIGHTLY':state.loaderCurrent?'HOWL CURRENT':(state.loaderReady?'HOWL UPDATE READY':'HOWL INSTALL');
   $('loader-chip').className=state.loaderCurrent?'good':(state.loaderReady?'warn':'bad');
   $('pack-chip').textContent=state.basePackReady?'HOWL BASE CURRENT':(state.managedInstalled?'HOWL BASE UPDATE READY':'HOWL BASE INSTALL');
   $('pack-chip').className=state.basePackReady?'good':(state.managedInstalled?'warn':'bad');

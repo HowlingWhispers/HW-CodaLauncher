@@ -30,15 +30,21 @@ const webview = {
   postMessage: message => calls.push(message),
   addEventListener(name, callback) { listeners[name] = callback; }
 };
+const modButtons = [
+  { dataset: { action: 'installMod', mod: 'coda_wolf' }, disabled: false, onclick: null },
+  { dataset: { action: 'uninstallMod', mod: 'buildcraft_cml' }, disabled: false, onclick: null }
+];
+let confirmResult = false;
 const sandbox = {
   document: {
     getElementById: el,
     querySelectorAll(selector) {
       if (selector === '.nav') return [homeNav, modsNav];
+      if (selector === '.mod-action') return modButtons;
       return [];
     }
   },
-  window: { chrome: { webview } }
+  window: { chrome: { webview }, confirm: () => confirmResult }
 };
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../web/app.js'), 'utf8'), sandbox);
 assert.equal(calls[0].action, 'ready', 'app should request initial state');
@@ -74,6 +80,18 @@ assert.match(el('optional-mods').innerHTML, /RECOMMENDED/, 'Recommendation is di
 assert.match(el('optional-mods').innerHTML, /INSTALL/, 'Optional installation requires explicit button');
 assert.match(el('optional-mods').innerHTML, /UNINSTALL/, 'Optional installed mod supports removal');
 assert.doesNotMatch(el('optional-mods').innerHTML, /REQUIRED/, 'No add-on labeled required');
+
+modButtons[0].onclick();
+assert.equal(calls.at(-1).action, 'installMod', 'Coda Wolf install requires a deliberate Mods button');
+assert.equal(calls.at(-1).id, 'coda_wolf', 'Install requests exactly the selected optional mod');
+listeners.message({ data: { type: 'modActionStatus', busy: false, ok: true, message: 'Installed' } });
+modButtons[1].onclick();
+assert.notEqual(calls.at(-1).action, 'uninstallMod', 'Uninstall requires confirmation before request');
+confirmResult = true;
+modButtons[1].onclick();
+assert.equal(calls.at(-1).action, 'uninstallMod', 'Confirmed uninstall posts explicit removal');
+assert.equal(calls.at(-1).id, 'buildcraft_cml', 'Uninstall targets only selected mod');
+listeners.message({ data: { type: 'modActionStatus', busy: false, ok: true, message: 'Uninstalled' } });
 assert.equal(el('nightly-quiet-card').hidden, false, 'Nightly Quiet Underground appears under Packs');
 assert.equal(el('nightly-quiet-status').textContent, 'Optional · Installed',
   'Quiet Underground is explicitly optional, not a required mod');

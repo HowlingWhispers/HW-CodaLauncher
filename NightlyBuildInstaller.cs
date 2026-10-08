@@ -47,55 +47,80 @@ internal sealed class NightlyBuildInstaller
         }
     }
 
-    public static bool Installed
+    /// <summary>Required Nightly runtime only. Optional mods and worldgen are independent.</summary>
+    public static bool Installed => File.Exists(Path.Combine(LoaderRoot, "CodaLoader.jar"))
+        && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag"));
+
+    public static bool BuildCraftInstalled => IsManagedBuildCraft();
+    private static string ModFolder => Path.Combine(GameRoot, "mods");
+    private static string OwnedBuildCraftHash => Path.Combine(ModFolder, ".howl-buildcraft-managed.sha256");
+    private static string OwnedBuildCraftTag => Path.Combine(ModFolder, ".howl-buildcraft-tag");
+    private static string BuildCraftJar => Path.Combine(ModFolder, ModJar);
+
+    private static bool IsManagedBuildCraft()
     {
-        get
+        try
         {
-            try
-            {
-                string modFile = Path.Combine(GameRoot, "mods", ModJar);
-                string marker = Path.Combine(GameRoot, "mods", ".howl-buildcraft-managed.sha256");
-                string worldgen = Path.Combine(GameRoot, "config", "codaloader", "worldgen");
-                string quiet = Path.Combine(worldgen, ActiveQuietPack);
-                string quietMarker = quiet + ".sha256";
-                return File.Exists(quiet) && File.Exists(quietMarker)
-                    && HashFile(quiet).Equals(File.ReadAllText(quietMarker).Trim(),
-                        StringComparison.OrdinalIgnoreCase)
-                    && File.Exists(Path.Combine(LoaderRoot, "CodaLoader.jar"))
-                    && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag"))
-                    && File.Exists(modFile) && File.Exists(marker)
-                    && HashFile(modFile).Equals(File.ReadAllText(marker).Trim(), StringComparison.OrdinalIgnoreCase);
-            }
-            catch (IOException) { return false; }
-            catch (UnauthorizedAccessException) { return false; }
+            return File.Exists(BuildCraftJar) && File.Exists(OwnedBuildCraftHash)
+                && HashFile(BuildCraftJar).Equals(File.ReadAllText(OwnedBuildCraftHash).Trim(),
+                    StringComparison.OrdinalIgnoreCase);
         }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
     }
 
-    public async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation)
+    private static bool HasCurrentBuildCraft(string tag) =>
+        IsManagedBuildCraft() && File.Exists(OwnedBuildCraftTag)
+        && File.ReadAllText(OwnedBuildCraftTag).Trim() == tag;
+
+    /// <summary>
+    /// Removes ONLY the managed optional BuildCraft mod, not its loader, world
+    /// saves, resources, Quiet Underground settings or any user-edited JAR.
+    /// </summary>
+    public static void UninstallBuildCraft(Action<string> report)
+    {
+        if (!File.Exists(BuildCraftJar))
+        {
+            report("BuildCraft is already absent. No files changed.");
+            return;
+        }
+        if (!IsManagedBuildCraft())
+            throw new IOException("BuildCraft has no matching managed SHA-256; preserving the user-owned JAR.");
+        File.Delete(BuildCraftJar);
+        if (File.Exists(OwnedBuildCraftHash)) File.Delete(OwnedBuildCraftHash);
+        if (File.Exists(OwnedBuildCraftTag)) File.Delete(OwnedBuildCraftTag);
+        report("Optional BuildCraft uninstalled. H.O.W.L., saves and resource packs untouched.");
+    }
+
+    public async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation,
+        bool installBuildCraft = false, bool installQuiet = false)
     {
         ArgumentNullException.ThrowIfNull(report);
         try
         {
-            return await InstallOnlineAsync(report, cancellation);
+            return await InstallOnlineAsync(report, cancellation, installBuildCraft, installQuiet);
         }
         catch (Exception error) when (error is HttpRequestException
                 || (error is OperationCanceledException && !cancellation.IsCancellationRequested))
         {
             if (!Installed)
-                throw new IOException("GitHub is unreachable and no checksum-verified BuildCraft Nightly is installed. " +
+                throw new IOException("GitHub is unreachable and no installed H.O.W.L. Nightly runtime is available. " +
                     "Check your internet connection, then retry Play. Your worlds and mods were not deleted.", error);
             var installedTag = File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim();
             report("GitHub update check unavailable (" + error.GetType().Name + "). " +
                 "Using previously installed BuildCraft " + installedTag +
-                " with locally verified BuildCraft and Quiet Underground checksums. New updates are pending.");
+                " (optional mods were not changed). New updates are pending.");
             return LoaderRoot;
         }
     }
 
-    private async Task<string> InstallOnlineAsync(Action<string> report, CancellationToken cancellation)
+    private async Task<string> InstallOnlineAsync(Action<string> report, CancellationToken cancellation,
+        bool installBuildCraft, bool installQuiet)
     {
         var release = await GetReleaseAsync(cancellation);
-        if (Installed && File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim() == release.Tag)
+        if (Installed && File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim() == release.Tag
+            && (!installBuildCraft || HasCurrentBuildCraft(release.Tag))
+            && (!installQuiet || QuietInstalled))
         {
             report($"Nightly {release.Tag} is already installed in its isolated test profile.");
             return LoaderRoot;
@@ -133,67 +158,81 @@ internal sealed class NightlyBuildInstaller
             string bundledMod = Path.Combine(staging, "payload", ModJar);
             if (!File.Exists(bundledMod))
                 bundledMod = Path.Combine(staging, "run", "mods", ModJar);
-            if (!File.Exists(loaderJar) || !File.Exists(bundledMod))
-                throw new InvalidDataException("Nightly package does not contain the loader and BuildCraft test mod.");
-            using (var jar = ZipFile.OpenRead(bundledMod))
+            if (!File.Exists(loaderJar))
+                throw new InvalidDataException("Nightly bundle does not contain the required H.O.W.L. runtime.");
+            if (installBuildCraft)
+            {
+                if (!File.Exists(bundledMod))
+                    throw new InvalidDataException("BuildCraft add-on is missing from this Nightly release.");
+                using var jar = ZipFile.OpenRead(bundledMod);
                 if (jar.GetEntry("coda.mod.json") is null
                     || jar.GetEntry("dev/howlingwhispers/buildcraft/BuildCraftGlassPipeDemo.class") is null)
-                    throw new InvalidDataException("Downloaded BuildCraft nightly has no playable-test entrypoint.");
+                    throw new InvalidDataException("BuildCraft add-on is missing its mod entrypoint.");
+            }
 
             // Quiet Underground is a world datapack, NOT a mod JAR. Nightly
             // supplies it as a verified new-world creation preset.
             string bundledQuiet = Path.Combine(staging, "payload", QuietPack);
             string bundledQuietHash = bundledQuiet + ".sha256";
-            if (!File.Exists(bundledQuiet) || !File.Exists(bundledQuietHash))
-                throw new InvalidDataException("This Nightly predates Quiet Underground world creation support.");
-            string quietHashText = File.ReadAllText(bundledQuietHash);
-            string quietHash = quietHashText.Split((char[]?)null,
-                StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
-            if (quietHash.Length != 64 || !quietHash.All(Uri.IsHexDigit)
-                || !HashFile(bundledQuiet).Equals(quietHash, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException("Quiet Underground datapack checksum failed.");
-
-            // First migrate any older nightly installation. Validate
-            // ownership only AFTER migration, so a user-modified legacy
-            // BuildCraft JAR cannot be silently replaced by the new nightly.
-            ManagedMods.MigrateLegacy(LoaderRoot, GameRoot, report);
-            // Only manage the explicitly owned nightly game mod; do not touch
-            // stable mods, installed Minecraft or a user-modified nightly mod.
-            string modFolder = Path.Combine(GameRoot, "mods");
-            string targetMod = Path.Combine(modFolder, ModJar);
-            string ownerMarker = Path.Combine(modFolder, ".howl-buildcraft-managed.sha256");
-            string newHash = HashFile(bundledMod);
-            if (File.Exists(targetMod))
+            string quietHash = "";
+            if (installQuiet)
             {
-                string existingHash = HashFile(targetMod);
-                if (existingHash != newHash &&
-                    (!File.Exists(ownerMarker) || !File.ReadAllText(ownerMarker).Trim()
-                        .Equals(existingHash, StringComparison.OrdinalIgnoreCase)))
-                    throw new IOException("Nightly BuildCraft JAR was modified manually. Your file was preserved; move it aside before updating.");
+                if (!File.Exists(bundledQuiet) || !File.Exists(bundledQuietHash))
+                    throw new InvalidDataException("This Nightly does not include the optional Quiet Underground pack.");
+                string quietHashText = File.ReadAllText(bundledQuietHash);
+                quietHash = quietHashText.Split((char[]?)null,
+                    StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+                if (quietHash.Length != 64 || !quietHash.All(Uri.IsHexDigit)
+                    || !HashFile(bundledQuiet).Equals(quietHash, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Quiet Underground datapack checksum failed.");
             }
 
-            // Refuse overwriting a user-edited Quiet Underground preset.
+            // Required runtime updates never touch installed optional mods.
+            // Manual INSTALL/UPDATE validates ownership before replacing a JAR.
+            string modFolder = ModFolder;
+            string targetMod = BuildCraftJar;
+            string ownerMarker = OwnedBuildCraftHash;
+            string newHash = "";
+            if (installBuildCraft)
+            {
+                newHash = HashFile(bundledMod);
+                if (File.Exists(targetMod))
+                {
+                    string existingHash = HashFile(targetMod);
+                    if (existingHash != newHash &&
+                        (!File.Exists(ownerMarker) || !File.ReadAllText(ownerMarker).Trim()
+                            .Equals(existingHash, StringComparison.OrdinalIgnoreCase)))
+                        throw new IOException("BuildCraft JAR was edited. Your copy is preserved.");
+                }
+            }
+
             string worldgen = Path.Combine(GameRoot, "config", "codaloader", "worldgen");
             string targetQuiet = Path.Combine(worldgen, ActiveQuietPack);
             string quietOwner = targetQuiet + ".sha256";
-            if (File.Exists(targetQuiet))
+            if (installQuiet && File.Exists(targetQuiet))
             {
                 string currentHash = HashFile(targetQuiet);
                 if (!currentHash.Equals(quietHash, StringComparison.OrdinalIgnoreCase)
                     && (!File.Exists(quietOwner)
                         || !File.ReadAllText(quietOwner).Trim().Equals(currentHash,
                             StringComparison.OrdinalIgnoreCase)))
-                    throw new IOException("Quiet Underground pack was edited. Your original was preserved.");
+                    throw new IOException("Quiet Underground was edited; your copy was preserved.");
             }
 
             Directory.CreateDirectory(LoaderRoot);
             Directory.CreateDirectory(modFolder);
             Directory.CreateDirectory(worldgen);
 
-            // Nightly is a distinct game profile, NOT a second mod scanner
-            // under its loader. Preserve and migrate older nightly run/mods.
-            // Stage the two owned files without deleting the loader folder.
-            // Older loader/run/mods, configuration and user files are retained.
+            // Preserve legacy ownership identity before advancing the loader
+            // tag. Older BuildCraft releases stored only the loader tag.
+            if (File.Exists(BuildCraftJar) && IsManagedBuildCraft()
+                && !File.Exists(OwnedBuildCraftTag)
+                && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag")))
+            {
+                File.WriteAllText(OwnedBuildCraftTag,
+                    File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim());
+            }
+
             string jarTemp = Path.Combine(LoaderRoot, "." + Guid.NewGuid().ToString("N") + ".tmp");
             string modTemp = Path.Combine(modFolder, "." + Guid.NewGuid().ToString("N") + ".tmp");
             string quietTemp = Path.Combine(worldgen, "." + Guid.NewGuid().ToString("N") + ".tmp");
@@ -202,15 +241,20 @@ internal sealed class NightlyBuildInstaller
                 File.Copy(loaderJar, jarTemp);
                 if (HashFile(jarTemp) != HashFile(loaderJar))
                     throw new IOException("Nightly loader verification failed.");
-                File.Copy(bundledMod, modTemp);
-                if (HashFile(modTemp) != newHash)
-                    throw new IOException("Nightly BuildCraft mod verification failed.");
-                File.Copy(bundledQuiet, quietTemp);
-                if (!HashFile(quietTemp).Equals(quietHash, StringComparison.OrdinalIgnoreCase))
-                    throw new IOException("Nightly Quiet Underground staging verification failed.");
+                if (installBuildCraft)
+                {
+                    File.Copy(bundledMod, modTemp);
+                    if (HashFile(modTemp) != newHash)
+                        throw new IOException("BuildCraft staging verification failed.");
+                }
+                if (installQuiet)
+                {
+                    File.Copy(bundledQuiet, quietTemp);
+                    if (!HashFile(quietTemp).Equals(quietHash, StringComparison.OrdinalIgnoreCase))
+                        throw new IOException("Quiet Underground staging verification failed.");
+                }
 
-                // Keep a copy of the old owned loader binary rather than
-                // destroying unknown files on each nightly update.
+                // Back up the previous owned runtime, never player worlds.
                 string oldLoader = Path.Combine(LoaderRoot, "CodaLoader.jar");
                 if (File.Exists(oldLoader))
                 {
@@ -218,16 +262,24 @@ internal sealed class NightlyBuildInstaller
                     Directory.CreateDirectory(backups);
                     File.Copy(oldLoader, Path.Combine(backups,
                         DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + "-"
-                            + Guid.NewGuid().ToString("N") + ".jar"));
+                        + Guid.NewGuid().ToString("N") + ".jar"));
                 }
                 File.Move(jarTemp, oldLoader, overwrite: true);
-                File.Move(modTemp, targetMod, overwrite: true);
-                File.Move(quietTemp, targetQuiet, overwrite: true);
-                File.WriteAllText(quietOwner, quietHash);
-                File.WriteAllText(ownerMarker, newHash);
+                if (installBuildCraft)
+                {
+                    File.Move(modTemp, targetMod, overwrite: true);
+                    File.WriteAllText(ownerMarker, newHash);
+                    File.WriteAllText(OwnedBuildCraftTag, release.Tag);
+                }
+                if (installQuiet)
+                {
+                    File.Move(quietTemp, targetQuiet, overwrite: true);
+                    File.WriteAllText(quietOwner, quietHash);
+                }
                 File.WriteAllText(Path.Combine(LoaderRoot, ".nightly-tag"), release.Tag);
-                ManagedMods.ArchiveLegacy(LoaderRoot, report);
-                report($"Nightly {release.Tag} installed into one active game mods folder. Stable untouched.");
+                report("Required H.O.W.L. Nightly " + release.Tag +
+                    " installed. Optional mods " + (installBuildCraft ? "BuildCraft installed." : "unchanged.") +
+                    (installQuiet ? " Quiet Underground installed." : ""));
             }
             finally
             {

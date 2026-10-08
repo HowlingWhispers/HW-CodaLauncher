@@ -22,6 +22,7 @@
     <Compile Include="../GitHubNewsService.cs" Link="Shared/GitHubNewsService.cs" />
     <Content Include="../web/news.json" Link="news.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../LauncherModels.cs" Link="Shared/LauncherModels.cs" />
+    <Compile Include="../NightlyModIdentity.cs" Link="Shared/NightlyModIdentity.cs" />
     <Compile Include="../ManagedMods.cs" Link="Shared/ManagedMods.cs" />
     <Content Include="../web/assets/coda-headshot.png" Link="assets/coda-headshot.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

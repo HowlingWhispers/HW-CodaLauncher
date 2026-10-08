@@ -83,6 +83,8 @@ jobs:
         run: dotnet run --project tests/official/OfficialLauncherTests.csproj -c Release
       - name: Test managed mod installation
         run: dotnet run --project tests/ManagedModsTests.csproj -c Release
+      - name: Test verified Nightly release identification
+        run: dotnet run --project tests/modshelf/ModShelfTests.csproj -c Release
       - name: Test Nightly newest-release selection
         run: dotnet run --project tests/nightly/NightlyReleaseTests.csproj -c Release
       - name: Test automatic Coda Wolf mod discovery and safe installation

@@ -242,7 +242,12 @@ internal sealed class DesktopWindow : Window
     {
         var mods = new ModScanner().Scan(AppPaths.MinecraftRoot);
         _mods.Text = mods.Count == 0 ? "No HOWL mods installed yet. PLAY installs HW Essentials automatically."
-            : string.Join("\n\n", mods.Select(m => $"{m.Name} {m.Version} • {m.Id}\n{m.FileName} • {(m.Valid ? "Ready" : m.Error)}"));
+            : string.Join("\n\n", mods.Select(m =>
+                $"{m.Name} • {m.Id}\nManifest v{m.Version} • {m.FileName}" +
+                (m.ReleaseStatus == "Verified" ? $"\nRelease: {m.ReleaseTag} • SHA-256 verified locally" :
+                 m.ReleaseStatus == "Modified" ? "\nManaged JAR was modified: release identity not verified" :
+                 m.ReleaseStatus == "Untracked" ? "\nNo verified Nightly release marker" : "") +
+                $"\n{(m.Valid ? "Recognized (not gameplay verified)" : m.Error)}"));
     }
     private void Report(string message) { _status.Text = message; _logs.Add(message); UpdateLog(); }
     private void UpdateLog() { _log.Text = string.Join("\n", _logs.Snapshot()); _log.CaretIndex = _log.Text.Length; }

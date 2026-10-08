@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.0
-  CODA_TAG: v0.7.0
+  CODA_VERSION: 0.7.1
+  CODA_TAG: v0.7.1
 
 jobs:
   gate:
@@ -156,20 +156,29 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.0
+          # CodaLauncher 0.7.1 (prerelease)
 
-          Windows players can now download one Setup.exe, install and open CodaLauncher from the desktop or Start Menu.
+          Official Minecraft Launcher integration and optional Local Test Mode.
 
-          - Windows Setup installs for the current user without requesting administrator access.
-          - Desktop shortcut is selected by default; Start Menu shortcut is always installed.
-          - Coda's portrait is the application and setup icon.
-          - Setup installs Microsoft WebView2 when missing (internet required).
-          - Windows Settings includes an uninstall entry. Uninstall keeps worlds and settings.
-          - The existing Windows ZIP remains available for portable use and the verified self-updater.
-          - Linux x64/ARM64 and Intel/Apple Silicon Mac packages remain available.
-          - The .NET runtime is included. Minecraft still requires Java 25+ on PATH.
-          - macOS builds are ad-hoc signed, not Apple-notarized.
-          - CI installs, opens the Windows WebView2 interface, reinstalls and uninstalls Setup, checking shortcuts and world preservation.
-          - Live Minecraft and ARM GUI execution still require real-device testing.
+          - Default PLAY prepares an isolated Howling Whispers installation for
+            the official Minecraft Launcher instead of requiring Azure app
+            registration or reading Minecraft account tokens.
+          - The official launcher handles Microsoft account sign-in and game
+            ownership. Players select the CodaLoader installation and press Play.
+          - Settings has a Local Test Mode switch for direct singleplayer
+            development with the original local CodaPlayer identity. This mode
+            does not authorize online Howling Whispers services.
+          - Minecraft installations and worlds are kept separate; existing
+            launcher profiles are preserved and backed up before registration.
+          - Mojang version metadata is verified before the CodaLoader Java
+            agent is added. The JVM receives the CML Base resource location.
+          - Legacy local-only handoff with published CodaLoader 0.0.24 is
+            supported while the separate loader update is prepared.
+          - Windows Setup.exe, desktop/Start Menu shortcuts, Linux and macOS
+            packages remain available.
+          - Cross-platform tests cover profile isolation, Java-agent arguments,
+            repeat updates and preservation of other Minecraft installations.
+          - Real-device verification with Minecraft 26.4 Snapshot 3 remains
+            required. This is an early-access prerelease.
           EOF
-          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.7.0" --notes-file release-notes.md
+          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher 0.7.1" --notes-file release-notes.md

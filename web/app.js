@@ -93,6 +93,7 @@ $('save').onclick=()=>{
     loaderPath:$('loader-path').value.trim(),
     feedUrl:$('feed-url').value.trim(),
     localTestMode:$('local-test-mode').checked,
+    updateChannel:$('update-channel').value,
     closeAfterLaunch:$('close-after').checked
   }});
 };

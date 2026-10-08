@@ -129,6 +129,18 @@ public partial class MainWindow : Window
                     _ = CheckLauncherUpdateAsync(force: true);
                     await SendState();
                     break;
+                case "copyAllLogs":
+                    try
+                    {
+                        var lines = _logs.Snapshot();
+                        Clipboard.SetText(string.Join(Environment.NewLine, lines));
+                        Send(new { type = "copyLogsResult", ok = true, count = lines.Count });
+                    }
+                    catch (Exception copyError)
+                    {
+                        Send(new { type = "copyLogsResult", ok = false, message = copyError.Message });
+                    }
+                    break;
                 case "refresh":
                     _ = CheckLauncherUpdateAsync(force: true);
                     await SendState();

@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.12
-  CODA_TAG: v0.7.12
+  CODA_VERSION: 0.7.13
+  CODA_TAG: v0.7.13
 
 jobs:
   gate:
@@ -168,7 +168,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.12 (prerelease)
+          # CodaLauncher 0.7.13 (prerelease)
+
+          - **GitHub News:** Coda's launcher bulletin reads public GitHub Raw `web/news.json` directly. Owners can publish a news item by editing the repo file, without redeploying a server or rebuilding the executable.
+          - News refreshes at most hourly, remains available offline through cached and bundled copies, and never uses GitHub REST API or unauthenticated release quotas.
+          - Launcher pack/resource metadata stays on its existing server API, cached for thirty minutes online to reduce redundant requests; installation and stable/nightly game channels are unchanged.
 
           - **GitHub API rate-limit resilience:** Nightly BuildCraft and Coda Wolf automatically fall back to the public GitHub Releases Atom feed when unauthenticated REST APIs return HTTP 403/429.
           - Releases remain restricted to the official HW-Mods project; assets remain SHA-256 verified and installed atomically with local-file protections unchanged.

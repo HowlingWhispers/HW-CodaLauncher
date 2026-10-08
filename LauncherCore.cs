@@ -154,35 +154,6 @@ internal sealed class LogBuffer
     }
 }
 
-internal sealed class FeedService
-{
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(4) };
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
-
-    public async Task<LauncherFeed> FetchAsync(string raw, CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(raw)) return Offline("Launcher feed URL is not configured yet.");
-        try
-        {
-            var endpoint = new Uri(new Uri(raw.TrimEnd('/') + "/"), "api/feed");
-            using var response = await Http.GetAsync(endpoint, ct);
-            response.EnsureSuccessStatusCode();
-            await using var stream = await response.Content.ReadAsStreamAsync(ct);
-            var feed = await JsonSerializer.DeserializeAsync<LauncherFeed>(stream, Json, ct) ?? throw new InvalidDataException("Empty launcher feed.");
-            feed.Online = true;
-            return feed;
-        }
-        catch (Exception ex) { return Offline(ex.Message); }
-    }
-
-    private static LauncherFeed Offline(string reason) => new()
-    {
-        Online = false,
-        Error = reason,
-        News = [new NewsItem { Id = "offline", Date = DateTime.Now.ToString("yyyy-MM-dd"), Title = "CodaLauncher is running locally", Text = "Online news is unavailable, but PLAY, Mods, Settings and Logs still work." }]
-    };
-}
-
 internal sealed record CodaLoaderReleaseInfo(
     string Version,
     string BundleUrl,

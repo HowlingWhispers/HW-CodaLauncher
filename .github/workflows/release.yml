@@ -106,6 +106,10 @@ jobs:
           Compress-Archive -Path dist/payload/* -DestinationPath "dist/release/$bundle"
           $sha = (Get-FileHash "dist/release/$bundle" -Algorithm SHA256).Hash.ToLowerInvariant()
           @{ schema = 1; version = $env:CODA_VERSION; bundle = $bundle; sha256 = $sha } | ConvertTo-Json | Set-Content -Encoding UTF8 dist/release/launcher-update.json
+      - name: Verify Windows staged update and reboot before packaging
+        if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: ./tests/self-update-smoke.ps1 -PayloadDirectory dist/payload
       - name: Build Windows installer
         if: matrix.rid == 'win-x64'
         shell: pwsh

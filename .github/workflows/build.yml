@@ -60,6 +60,9 @@ jobs:
           if (!(Test-Path dist/CodaLauncher/web/index.html)) { throw "web/index.html missing" }
           if (!(Test-Path dist/CodaLauncher/web/app.js)) { throw "web/app.js missing" }
           if (!(Test-Path dist/CodaLauncher/web/assets/coda-headshot.png)) { throw "Coda headshot missing" }
+      - name: Verify staged launcher reboot and rollback-safe update
+        shell: pwsh
+        run: ./tests/self-update-smoke.ps1 -PayloadDirectory dist/CodaLauncher
       - name: Package
         shell: pwsh
         run: Compress-Archive -Path dist/CodaLauncher/* -DestinationPath dist/CodaLauncher-win64.zip -Force

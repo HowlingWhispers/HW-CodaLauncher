@@ -40,7 +40,21 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        _launcher = new LauncherService(_logs, line => Dispatcher.Invoke(() => Send(new { type = "log", line })));
+        _logs.LineAdded += line =>
+        {
+            if (!_uiReady) return;
+            if (Dispatcher.CheckAccess()) Send(new { type = "log", line });
+            else Dispatcher.BeginInvoke(() => Send(new { type = "log", line }));
+        };
+        _logs.Cleared += () =>
+        {
+            if (!_uiReady) return;
+            if (Dispatcher.CheckAccess()) Send(new { type = "logsReset" });
+            else Dispatcher.BeginInvoke(() => Send(new { type = "logsReset" }));
+        };
+        // LogBuffer now broadcasts every line. The launch callback must not
+        // duplicate streamed stdout/stderr.
+        _launcher = new LauncherService(_logs, _ => { });
         _launcher.SessionStarted += OnSessionStarted;
         _launcher.SessionExited += OnSessionExited;
         Loaded += OnLoaded;
@@ -278,8 +292,17 @@ public partial class MainWindow : Window
         var resource = feed.ResourcePacks.First(item =>
             item.Id.Equals("cml-base-resources", StringComparison.OrdinalIgnoreCase));
         var managed = await _installer.CheckManagedStateAsync(feed, CancellationToken.None);
+        bool activeNightly = _settings.UpdateChannel == "nightly";
+        string installedRuntimeVersion = activeNightly
+            ? (NightlyRuntimeInstaller.InstalledVersion ?? "Legacy / unknown")
+            : (managed.InstalledLoaderVersion ?? "");
+        bool activeRuntimeReady = activeNightly
+            ? NightlyBuildInstaller.Installed : managed.LoaderInstalled;
+        bool activeRuntimeCurrent = activeNightly
+            ? activeRuntimeReady && installedRuntimeVersion == managed.LatestLoaderVersion
+            : managed.LoaderCurrent;
 
-        var loaderReady = managed.LoaderInstalled;
+        var loaderReady = activeRuntimeReady;
         var resourcePackReady = managed.ResourceCurrent;
         var basePackReady = managed.PackCurrent;
         var readyToPlay = managed.Current;
@@ -300,8 +323,8 @@ public partial class MainWindow : Window
                 launcherUpdateVersion = _availableLauncherUpdate?.Version,
                 loaderPath = loader ?? "",
                 loaderReady,
-                loaderCurrent = managed.LoaderCurrent,
-                installedLoaderVersion = managed.InstalledLoaderVersion ?? "",
+                loaderCurrent = activeRuntimeCurrent,
+                installedLoaderVersion = installedRuntimeVersion,
                 latestLoaderVersion = managed.LatestLoaderVersion,
                 basePackReady,
                 managedInstalled = managed.Installed,
@@ -602,6 +625,10 @@ public partial class MainWindow : Window
 
         try
         {
+            // The logs screen and COPY ALL now represent this launch attempt
+            // and its current Minecraft session, not earlier stacked sessions.
+            _logs.Clear();
+            _logs.Add("Preparing Minecraft launch (" + _settings.UpdateChannel + ")...");
             if (_accountBusy) throw new InvalidOperationException("Finish account verification before launching Minecraft.");
             var identity = _settings.LocalTestMode ? LocalSingleplayer.Identity() : null;
             if (_settings.UpdateChannel == "nightly")
@@ -616,6 +643,8 @@ public partial class MainWindow : Window
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
                 }, CancellationToken.None);
                 SendMods();
+                _logs.Add("Active H.O.W.L. Nightly runtime: v" +
+                    (NightlyRuntimeInstaller.InstalledVersion ?? "legacy/unknown"));
                 _logs.Add("Nightly world directory: " + NightlyBuildInstaller.GameRoot);
                 _launcher.Launch(nightRoot, identity!, NightlyBuildInstaller.GameRoot);
                 if (_settings.CloseAfterLaunch) Close();

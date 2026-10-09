@@ -28,5 +28,7 @@ assert.ok(win.includes('_resumePlayOnReady = false;'));
 assert.ok(dialog.includes('StartApplyAndRestart(_prepared, _resumePlayAfterUpdate)'));
 assert.ok(core.includes('CodaLauncherRollback'));
 assert.ok(core.includes('changed.AsEnumerable().Reverse()'));
-assert.ok(start.includes('if (!e.Args.Contains("--resume-play"'));
+assert.ok(!start.includes('new UpdateWindow(update)'));
+assert.ok(!start.includes('SelfUpdater.CheckAsync'));
+assert.ok(start.includes('resumePlayOnReady: e.Args.Contains("--resume-play"'));
 console.log('PASS: Add-ons, current session log, Play self-update and rollback wiring');

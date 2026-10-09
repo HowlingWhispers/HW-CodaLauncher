@@ -13,7 +13,7 @@ public partial class App : Application
 
     internal static bool IsSmokeTest { get; private set; }
 
-    protected override async void OnStartup(StartupEventArgs e)
+    protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -36,40 +36,9 @@ public partial class App : Application
             return;
         }
 
-        LauncherUpdateInfo? update = null;
-        // A successful Play update must resume its one-shot launch without
-        // displaying another preflight update prompt.
-        if (!e.Args.Contains("--resume-play", StringComparer.Ordinal))
-        {
-            try
-            {
-                using var checkTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                update = await SelfUpdater.CheckAsync(LauncherVersion, checkTimeout.Token);
-            }
-            catch
-            {
-                // Update checks must never prevent launcher startup.
-            }
-        }
-
-        if (update is not null)
-        {
-            var updateWindow = new UpdateWindow(update);
-            MainWindow = updateWindow;
-            updateWindow.ShowDialog();
-
-            if (updateWindow.RestartRequested)
-            {
-                Shutdown();
-                return;
-            }
-
-            if (!updateWindow.ContinueWithoutUpdate)
-            {
-                Shutdown();
-                return;
-            }
-        }
+        // The MainWindow checks for available updates in the background.
+        // Pressing Play performs a fresh check and handles verified updates.
+        // Never block startup with a modal update window.
 
         var window = new MainWindow(resumePlayOnReady: e.Args.Contains("--resume-play", StringComparer.Ordinal));
         MainWindow = window;

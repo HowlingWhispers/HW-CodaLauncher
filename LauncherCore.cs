@@ -714,6 +714,11 @@ internal static class SelfUpdater
         "https://api.github.com/repos/HowlingWhispers/HW-CodaLauncher/releases?per_page=10";
     private static readonly HttpClient Http = CreateHttp();
     private static string? postUpdateHealthMarker;
+    private static string RunningVersion =>
+        typeof(SelfUpdater).Assembly.GetCustomAttributes(
+            typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+            .First().InformationalVersion.Split('+', 2)[0];
     private static readonly string UpdateLog = Path.Combine(
         Path.GetTempPath(), "CodaLauncher-update.log");
 
@@ -738,7 +743,7 @@ internal static class SelfUpdater
                 "web/app.js", "web/assets/coda-headshot.png" })
                 if (!File.Exists(Path.Combine(root, file)))
                     throw new FileNotFoundException("Staged update missing " + file);
-            File.WriteAllText(args[1], App.LauncherVersion);
+            File.WriteAllText(args[1], RunningVersion);
             return 0;
         }
         catch (Exception ex) { LogUpdate("Staged executable probe failed: " + ex); return 2; }
@@ -1032,7 +1037,7 @@ internal static class SelfUpdater
                 restart.ArgumentList.Add("--update-health");
                 restart.ArgumentList.Add(ready);
             }
-            LogUpdate("Files replaced. Starting v" + App.LauncherVersion +
+            LogUpdate("Files replaced. Starting v" + RunningVersion +
                 " from " + installedExe);
             using var launched = Process.Start(restart)
                 ?? throw new InvalidOperationException("Updated CodaLauncher did not start.");
@@ -1042,7 +1047,7 @@ internal static class SelfUpdater
                 if (File.Exists(ready))
                 {
                     string result = File.ReadAllText(ready).Trim();
-                    confirmed = smoke ? result == App.LauncherVersion : result == "ready";
+                    confirmed = smoke ? result == RunningVersion : result == "ready";
                     if (confirmed) break;
                 }
                 if (launched.HasExited)

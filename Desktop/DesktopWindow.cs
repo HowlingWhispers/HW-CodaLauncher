@@ -131,7 +131,7 @@ internal sealed class DesktopWindow : Window
             Text("Play normally through the official Minecraft Launcher. Enable local testing only for unverified singleplayer development.", 14), _localTest,
             Text("Minecraft requires Java 25 or newer on PATH. Profile handles Microsoft sign-in; H.O.W.L. handles Minecraft downloads.", 15),
             Text("Install folder: " + AppPaths.InstallRoot, 14), openData)));
-        var copyLogs = new Button { Content = "COPY ALL LOGS" };
+        var copyLogs = new Button { Content = "COPY CURRENT LOG" };
         var copyStatus = Text("", 13);
         copyLogs.Click += async (_, _) => {
             try {
@@ -139,7 +139,7 @@ internal sealed class DesktopWindow : Window
                 if (clipboard == null) throw new InvalidOperationException("Clipboard unavailable.");
                 var lines = _logs.Snapshot();
                 await clipboard.SetTextAsync(string.Join(Environment.NewLine, lines));
-                copyStatus.Text = "Copied " + lines.Length + " log lines.";
+                copyStatus.Text = "Copied " + lines.Length + " lines from the current log.";
             }
             catch (Exception ex) { copyStatus.Text = "Copy failed: " + ex.Message; }
         };
@@ -200,6 +200,14 @@ internal sealed class DesktopWindow : Window
     {
         if (_busy || _running || _refreshing) return;
         _busy = true; SetControls();
+        if (launch)
+        {
+            // Each PLAY gets its own diagnostic log. Keep it intact when
+            // Minecraft closes so a crash can be copied afterwards.
+            _logs.Clear();
+            _logs.Add("Preparing Minecraft launch...");
+            UpdateLog();
+        }
         try
         {
             var identity = launch && _settings.LocalTestMode ? LocalSingleplayer.Identity() : null;

@@ -162,12 +162,13 @@ public partial class MainWindow : Window
                         _ = Play();
                     }
                     break;
-                case "copyAllLogs":
+                case "copyCurrentLog":
+                case "copyAllLogs": // Compatibility with previously packaged WebView assets.
                     try
                     {
                         var lines = _logs.Snapshot();
                         Clipboard.SetText(string.Join(Environment.NewLine, lines));
-                        Send(new { type = "copyLogsResult", ok = true, count = lines.Length });
+                        Send(new { type = "copyLogsResult", ok = true, count = lines.Length, scope = "current session" });
                     }
                     catch (Exception copyError)
                     {

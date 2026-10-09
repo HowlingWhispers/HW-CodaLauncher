@@ -92,7 +92,7 @@ $('account-verify').onclick=()=>post('verifyAccount');
 $('account-signout').onclick=()=>post('signOutAccount');
 $('account-cancel').onclick=()=>post('cancelSignIn');
 $('account-offline').onchange=()=>post('setPlayMode',{offline:$('account-offline').checked});
-$('copy-all-logs').onclick=()=>post('copyAllLogs');
+$('copy-current-log').onclick=()=>post('copyCurrentLog');
 $('update-channel').onchange=()=>{
   const nightly=$('update-channel').value==='nightly';
   $('nightly-warning').hidden=!nightly;
@@ -166,7 +166,7 @@ window.chrome.webview.addEventListener('message',e=>{
     result.className='settings-save-result '+(m.ok?'ok':'error');
     result.textContent=m.ok?'✓ Settings saved.':('Could not save: '+(m.message||'Unknown error'));
   }
-  if(m.type==='copyLogsResult') $('copy-logs-status').textContent=m.ok?'Copied '+m.count+' log lines to clipboard.':('Copy failed: '+m.message);
+  if(m.type==='copyLogsResult') $('copy-logs-status').textContent=m.ok?'Copied '+m.count+' lines from the current log.':('Copy failed: '+m.message);
   if(m.type==='logsReset'){
     if(state) state.logs=[];
     const pre=$('log-output');

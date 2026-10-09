@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.22
-  CODA_TAG: v0.7.22
+  CODA_VERSION: 0.7.23
+  CODA_TAG: v0.7.23
 
 jobs:
   gate:
@@ -175,35 +175,24 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.22 (prerelease)
+          # CodaLauncher 0.7.23 (prerelease)
 
-          - Remove the blocking startup-update dialog: the launcher checks
-            in the background, and PLAY upgrades before starting Minecraft.
+          - PLAY now refreshes H.O.W.L. and every **previously opted-in**
+            SHA-256-managed Nightly add-on before launching Minecraft.
+          - BuildCraft and Quiet Underground are updated to the latest
+            available verified Nightly instead of being left on old builds.
+          - Fresh optional mods remain opt-in through Add-ons; PLAY never
+            silently installs an add-on that the player did not choose.
+          - Edited/unmanaged mod files are preserved, with clear log warnings.
+          - Logs explain precisely which components were checked and updated.
+          - Nightly and Stable game roots remain completely isolated.
+          - The required Coda Wolf companion and HW Essentials continue
+            through the verified H.O.W.L. runtime installation pipeline.
+          - Keep Windows automatic launcher self-update and resume Play.
+          - Update all Windows, Linux, macOS and installer version metadata.
 
-          - PLAY checks the launcher first; verified Windows updates restart
-            automatically, then resume the pending Minecraft launch.
-          - Add-ons groups Mods, Data Packs, and Resource Packs in one tab.
-          - COPY CURRENT LOG copies only the latest Play session.
-          - Windows staged replacements now use best-effort rollback backups.
-
-          - Stable now selects only APPROVED non-prerelease H.O.W.L. builds.
-          - Future experimental loader releases stay in Nightly until
-            separately promoted, never auto-upgrade unsuspecting Stable worlds.
-          - Bundle tested Coda Companion with H.O.W.L. for Stable and Nightly.
-          - Treat BOTH Coda Companion and HW Essentials as required foundation.
-          - Show required status in Mods with no manual uninstall buttons.
-          - Keep BuildCraft, Quiet Underground and experimental AI optional.
-          - Fix Nightly updating H.O.W.L. from stale BuildCraft test bundles,
-            which could downgrade runtime 0.0.30 to 0.0.29.
-          - Fetch versioned H.O.W.L. runtime directly from official releases,
-            verify SHA-256 manifest and keep optional BuildCraft separate.
-          - Show actual active Nightly H.O.W.L. version and available version.
-          - Stream all launcher logs live and reset the log view each play
-            session, making COPY ALL match the visible diagnostic stream.
-          - Never silently reinstall optional mods or alter player worlds.
-
-          Tested on Windows, Linux and macOS with mod identity, update selection,
-          rendered mod drawer and installer checks.
+          Automated test coverage includes safe update selection, already
+          current add-ons, user-edited file protection, and other launcher checks.
           EOF
           if ! gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher $CODA_VERSION" --notes-file release-notes.md; then
             echo "::error::Release creation failed. If the workflow token is denied with HTTP 403, configure a repository secret named CODALAUNCHER_RELEASE_TOKEN with scoped Contents: read/write access, then rerun."

@@ -904,7 +904,11 @@ public partial class MainWindow : Window
         {
             Send(new { type = "modActionStatus", busy = true, ok = true,
                 message = (uninstall ? "Uninstalling " : "Installing/updating ") + title + "..." });
-            if ((id is "buildcraft_cml" or "coda_wolf" or "quiet_underground")
+            if (id is "coda_wolf" or "hw_essentials")
+                throw new InvalidOperationException(title + " is a required H.O.W.L. component. "
+                    + "It is automatically installed, repaired and updated with H.O.W.L. "
+                    + "in Stable and Nightly. Manual removal is not supported.");
+            if ((id is "buildcraft_cml" or "quiet_underground")
                 && _settings.UpdateChannel != "nightly")
                 throw new InvalidOperationException(title + " is currently offered only in Nightly.");
             if (uninstall)

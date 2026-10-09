@@ -226,14 +226,14 @@ function render(){
   if(state.gameRunning) $('play').textContent='RUNNING';
   else if(!installBusy) $('play').textContent=nightly?'PLAY NIGHTLY ▶':state.localSingleplayer?'PLAY LOCAL (TEST) ▶':'OPEN MINECRAFT LAUNCHER ▶';
   $('loader-summary').textContent=nightly
-    ? 'H.O.W.L. Nightly uses a separate Minecraft profile. Add-ons are optional; manage them in Mods.'
+    ? 'H.O.W.L. Nightly uses a separate profile. Coda and Essentials are required. Other mods are optional.'
     : state.gameRunning
     ? 'Minecraft is running. Coda is keeping the clipboard warm.'
     : state.managedCurrent
       ? 'Coda checked the essentials. Everything is where it belongs.'
       : state.managedInstalled
         ? 'Coda found a few things that need freshening up. PLAY will handle them automatically.'
-        : 'Coda will install H.O.W.L., HOWL Base and the required Resourcepacks for you.';
+        : 'Coda will install H.O.W.L., Coda Companion, HW Essentials, HOWL Base and required resources automatically.';
   const feed=state.feed;
   const newsSource=['GitHub','Cached','Bundled'].includes(feed.newsSource)?feed.newsSource:'Bundled';
   $('feed-pill').textContent='NEWS '+newsSource.toUpperCase();
@@ -277,13 +277,15 @@ function render(){
       :'Not installed';
     const label=m.installed?'CHECK / UPDATE':'INSTALL';
     return '<article class="optional-mod"><div><b>'+esc(m.name)+'</b>'+
-      '<small>OPTIONAL'+(m.recommended?' · RECOMMENDED':'')+' · '+esc(detail)+'</small>'+
+      '<small>'+(m.required?'REQUIRED · BUNDLED WITH H.O.W.L.':'OPTIONAL'+(m.recommended?' · RECOMMENDED':''))+' · '+esc(detail)+'</small>'+
       (m.installed?'<small>Manifest v'+esc(m.version||'?')+
         (m.releaseTag?' · '+esc(m.releaseTag):'')+'</small>':'')+
-      '</div><div class="mod-actions"><button type="button" class="quiet mod-action" data-action="installMod" data-mod="'+escAttr(m.id)+'"'+
-      (installDisabled?' disabled':'')+'>'+label+'</button>'+
-      '<button type="button" class="quiet mod-action uninstall" data-action="uninstallMod" data-mod="'+escAttr(m.id)+'"'+
-      (uninstallDisabled?' disabled':'')+'>UNINSTALL</button></div></article>';
+      '</div>'+(m.required ?
+        '<div class="managed-label">Bundled, checked and repaired automatically with H.O.W.L. · No uninstall</div>' :
+        '<div class="mod-actions"><button type="button" class="quiet mod-action" data-action="installMod" data-mod="'+escAttr(m.id)+'"'+
+        (installDisabled?' disabled':'')+'>'+label+'</button>'+
+        '<button type="button" class="quiet mod-action uninstall" data-action="uninstallMod" data-mod="'+escAttr(m.id)+'"'+
+        (uninstallDisabled?' disabled':'')+'>UNINSTALL</button></div>')+'</article>';
   }).join('');
   document.querySelectorAll('.mod-action').forEach(btn=>btn.onclick=()=>{
     if(installBusy||state.gameRunning||btn.disabled) return;

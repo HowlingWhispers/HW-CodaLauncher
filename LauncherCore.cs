@@ -126,7 +126,17 @@ internal sealed class ModScanner
             var root = doc.RootElement;
             string S(string name, string fallback) =>
                 root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? fallback : fallback;
-            return new ModInfo(file, S("id", Path.GetFileNameWithoutExtension(jar)), S("name", Path.GetFileNameWithoutExtension(jar)), S("version", "?"), true, null);
+            string id = S("id", Path.GetFileNameWithoutExtension(jar));
+            string description = S("description", id switch
+            {
+                "buildcraft_cml" => "BuildCraft pipes and redstone engines for moving items between chests. Early H.O.W.L. port.",
+                "coda_wolf" => "Coda joins your world as a tamed wolf companion and helps defend you.",
+                "hw_essentials" => "Set homes, teleport back, and manage your saved home locations.",
+                _ => ""
+            });
+            return new ModInfo(file, id, S("name", Path.GetFileNameWithoutExtension(jar)),
+                S("version", "?"), true, null, Description: description,
+                ChangeSummary: S("changeSummary", ""));
         }
         catch (Exception ex)
         {

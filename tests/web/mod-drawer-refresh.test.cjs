@@ -107,7 +107,8 @@ listeners.message({
     modCount: 2,
     mods: [
       { fileName: 'buildcraft-cml-0.1.0-dev.jar', id: 'buildcraft_cml',
-        name: 'BuildCraft CML', version: '0.1.0-dev', valid: true,
+        name: 'BuildCraft CML', version: '0.1.2-dev', valid: true,
+        description: 'Original pipes & engines', changeSummary: 'Fixed placement <crash>',
         releaseStatus: 'Verified', releaseTag: 'nightly-buildcraft-20261008-abc123' },
       { fileName: 'hw-essentials.jar', id: 'hw_essentials',
         name: 'HW Essentials', version: '0.2.0', valid: true }
@@ -120,8 +121,12 @@ assert.match(el('mods-list').innerHTML, /hw-essentials\.jar/, 'HW Essentials app
 assert.match(el('mods-list').innerHTML, /buildcraft-cml/, 'BuildCraft remains listed');
 assert.match(el('mods-list').innerHTML, /Recognized/, 'JAR recognition is not mistaken for in-game load');
 assert.match(el('mods-list').innerHTML, /nightly-buildcraft-20261008-abc123/, 'Mods shelf shows verified installed release tag');
-assert.match(el('mods-list').innerHTML, /Manifest v0\.1\.0-dev/, 'JAR metadata version remains distinguishable from installed release');
+assert.match(el('mods-list').innerHTML, /Manifest v0\.1\.2-dev/, 'JAR metadata version remains distinguishable from installed release');
 assert.match(el('mods-list').innerHTML, /SHA-256 verified locally/, 'Release identity is locally checksum verified');
 assert.doesNotMatch(el('mods-list').innerHTML, /Latest release/, 'Local verification never claims remote freshness');
 assert.doesNotMatch(el('mods-list').innerHTML, /Ready/, 'No unverified gameplay success label');
+assert.match(el('mods-list').innerHTML, /Original pipes &amp; engines/, 'Description displays as escaped text');
+assert.match(el('mods-list').innerHTML, /What changed in v0\.1\.2-dev:/, 'Notes belong to the installed manifest version');
+assert.match(el('mods-list').innerHTML, /Fixed placement &lt;crash&gt;/, 'Release summary displays as escaped text');
+assert.doesNotMatch(el('mods-list').innerHTML, /<crash>/, 'Mod metadata cannot inject markup');
 console.log('PASS: Mod Drawer navigation refreshes installed JARs and corrects displayed labels.');

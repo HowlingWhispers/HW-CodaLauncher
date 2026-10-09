@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.16
-  CODA_TAG: v0.7.16
+  CODA_VERSION: 0.7.17
+  CODA_TAG: v0.7.17
 
 jobs:
   gate:
@@ -77,6 +77,7 @@ jobs:
         run: |
           node --check web/app.js
           node tests/web/settings-save.test.cjs
+          node tests/web/mod-drawer-refresh.test.cjs
       - name: Test account verification
         run: dotnet run --project tests/accounts/AccountsTests.csproj -c Release
       - name: Test official Minecraft profile registration
@@ -170,96 +171,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.16 (prerelease)
+          # CodaLauncher 0.7.17 (prerelease)
 
-          - **Optional but recommended Mods:** Only the required H.O.W.L. runtime and resource pack install automatically. BuildCraft CML, Coda Wolf, and HW Essentials now have explicit Install/Update and Uninstall actions; optional Nightly worldgen is managed separately in Packs.
-          - PLAY no longer downloads or reinstalls optional add-ons. Their JARs are protected by SHA-256 ownership checks, and uninstall does not erase worlds or configs. Back up worlds before reopening without mods whose blocks/items they used.
-          - Required H.O.W.L. Nightly runtime updates independently of BuildCraft. Manually installed BuildCraft keeps its own release tag even while the runtime advances; Stable is unchanged apart from making HW Essentials optional.
+          - Installed mods now show a plain-language description.
+          - Show **What changed** from the installed JAR's own metadata beside its
+            manifest version, so an older installed mod cannot inherit newer notes.
+          - BCCE H.O.W.L. port 0.1.2-dev describes the creative-inventory and pipe-placement
+            fixes and the restoration of original BuildCraft textures.
+          - Older mod JARs remain supported. Existing Nightly/Stable profiles and
+            explicit optional-mod Install/Update actions are retained.
 
-          - **Real mod version support:** Coda Wolf Nightly now accepts safely validated incrementing semantic versions (for example `0.1.1-dev`) instead of rejecting everything except `0.1.0-dev`.
-          - Release tags, SHA-256 checksums, isolated Nightly installs, and protection of user-edited mods remain unchanged.
-          - Compatibility preserved with existing `0.1.0-dev` Coda Wolf downloads, including temporary GitHub outages.
-
-          - **Transparent mod builds:** Mods shelf distinguishes the manifest version (which may remain `0.1.0-dev`) from the exact **installed GitHub Nightly release tag** for BuildCraft and Coda Wolf.
-          - Reads locally stored release markers and independently checks installed JAR bytes against their SHA-256 markers; modified or untracked mods are labeled instead of wrongly claiming verified latest.
-          - No changes to update eligibility, H.O.W.L. gameplay, mod archives, worlds or separate Stable profiles.
-
-          - **GitHub News:** Coda's launcher bulletin reads public GitHub Raw `web/news.json` directly. Owners can publish a news item by editing the repo file, without redeploying a server or rebuilding the executable.
-          - News refreshes at most hourly, remains available offline through cached and bundled copies, and never uses GitHub REST API or unauthenticated release quotas.
-          - Launcher pack/resource metadata stays on its existing server API, cached for thirty minutes online to reduce redundant requests; installation and stable/nightly game channels are unchanged.
-
-          - **GitHub API rate-limit resilience:** Nightly BuildCraft and Coda Wolf automatically fall back to the public GitHub Releases Atom feed when unauthenticated REST APIs return HTTP 403/429.
-          - Releases remain restricted to the official HW-Mods project; assets remain SHA-256 verified and installed atomically with local-file protections unchanged.
-          - Prevent repeated background launcher update checks during a one-hour GitHub rate-limit cooldown. Existing worlds and stable profiles stay untouched.
-
-          - Fix Nightly GitHub API timeouts blocking PLAY when valid BuildCraft and Coda Wolf files are already installed.
-          - Fall back to locally checksum-verified files only for connectivity failures, never for corrupt packages or modified JARs.
-          - A failed GitHub status refresh after game launch no longer produces a false launch-failure notice.
-          - Fresh installations still require GitHub to download and verify required content.
-
-          - **Coda Wolf Companion Nightly:** automatically discovers the latest checksum-verified `nightly-codawolf-*` GitHub prerelease and installs it in the isolated Nightly Minecraft mods profile during Play or Install/Repair.
-          - Never overwrites hand-edited wolf JARs or installs a duplicate `coda_wolf` mod. Stable profiles and existing BuildCraft updater remain unchanged.
-          - Coda Wolf gameplay remains experimental and needs a live Minecraft 26.4 Snapshot 3 playtest; use a disposable world.
-
-          This release consolidates all playable mods under each active game's
-          minecraft/mods folder. Legacy loader/run/mods content is copied
-          without overwriting conflicts, then archived with its files intact
-          after the new game profile is ready. Fresh installations no longer
-          create a second loader-side mods directory.
-
-          - Mod Drawer: Open Mods Folder opens the Stable or Nightly profile.
-          - Nightly: BuildCraft development JARs are delivered directly into
-            the isolated Nightly minecraft/mods directory through the launcher.
-          - Stable and Nightly remain separate profiles. Existing users with
-            the original misspelled roaming folder retain their old path to
-            avoid silently separating them from saves and account settings.
-          - Actual live Minecraft 26.4 Snapshot 3 gameplay still requires
-            user-side validation, beyond CI fixture and installer tests.
-
-
-          Fixes the Windows reboot loop: 0.7.3 reported itself as 0.7.2 after
-          a successful update. Windows and portable launcher versions now come
-          from build metadata. CI checks release and binary version alignment.
-
-          Previous H.O.W.L. branding and player features remain included.
-
-          - H.O.W.L. means Howling Open Works Loader. Home, mod shelf, profile
-            labels and both desktop editions now use the chosen name.
-          - The official Minecraft installation is renamed in place to
-            Howling Whispers | H.O.W.L. Existing profile/version identifiers,
-            game directories, worlds and custom JVM settings are preserved.
-          - Migration recognizes the legacy CodaLoader profile even when the
-            official launcher removes its custom ownership marker.
-          - Existing CML pack/resource IDs, assets, hashes and update filenames
-            remain compatible with older installations and launcher feeds.
-          - Loader update confirmation remains visible beside installed/latest
-            versions. Copy All Logs and the Local Test Mode switch remain available.
-          - Windows Settings save feedback is retained. Linux/macOS now display
-            save success or failure beside the Save button as well.
-          - Tests cover old/new profile names, repeat registration, preserved
-            JVM settings, unrelated-profile protection and Settings feedback.
-
-          Official Minecraft Launcher integration and optional Local Test Mode.
-
-          - Default PLAY prepares an isolated Howling Whispers installation for
-            the official Minecraft Launcher instead of requiring Azure app
-            registration or reading Minecraft account tokens.
-          - The official launcher handles Microsoft account sign-in and game
-            ownership. Players select the H.O.W.L. installation and press Play.
-          - Settings has a Local Test Mode switch for direct singleplayer
-            development with the original local CodaPlayer identity. This mode
-            does not authorize online Howling Whispers services.
-          - Minecraft installations and worlds are kept separate; existing
-            launcher profiles are preserved and backed up before registration.
-          - Mojang version metadata is verified before the CodaLoader Java
-            agent is added. The JVM receives the CML Base resource location.
-          - Legacy local-only handoff with published CodaLoader 0.0.24 is
-            supported while the separate loader update is prepared.
-          - Windows Setup.exe, desktop/Start Menu shortcuts, Linux and macOS
-            packages remain available.
-          - Cross-platform tests cover profile isolation, Java-agent arguments,
-            repeat updates and preservation of other Minecraft installations.
-          - Real-device verification with Minecraft 26.4 Snapshot 3 remains
-            required. This is an early-access prerelease.
+          Tested on Windows, Linux and macOS with mod identity, update selection,
+          rendered mod drawer and installer checks.
           EOF
           gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher $CODA_VERSION" --notes-file release-notes.md

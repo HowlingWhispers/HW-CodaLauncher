@@ -251,6 +251,8 @@ internal sealed class DesktopWindow : Window
         _mods.Text = mods.Count == 0 ? "No optional HOWL mods installed. Use the buttons above to install them."
             : string.Join("\n\n", mods.Select(m =>
                 $"{m.Name} • {m.Id}\nManifest v{m.Version} • {m.FileName}" +
+                (string.IsNullOrWhiteSpace(m.Description) ? "" : $"\n{m.Description}") +
+                (string.IsNullOrWhiteSpace(m.ChangeSummary) ? "" : $"\nWhat changed in v{m.Version}: {m.ChangeSummary}") +
                 (m.ReleaseStatus == "Verified" ? $"\nRelease: {m.ReleaseTag} • SHA-256 verified locally" :
                  m.ReleaseStatus == "Modified" ? "\nManaged JAR was modified: release identity not verified" :
                  m.ReleaseStatus == "Untracked" ? "\nNo verified Nightly release marker" : "") +

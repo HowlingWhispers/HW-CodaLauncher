@@ -26,7 +26,7 @@ internal static class OptionalModCatalog
         }
 
         return [
-            Item("buildcraft_cml", "BuildCraft CML (Unofficial Port)", true, true),
+            Item("buildcraft_cml", "BuildCraft Community Edition (H.O.W.L. Port)", true, true),
             Item("coda_wolf", "Coda Wolf Companion", true, true),
             Item("hw_essentials", "HW Essentials", true, false)
         ];

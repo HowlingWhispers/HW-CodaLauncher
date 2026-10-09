@@ -289,7 +289,7 @@ function render(){
         :m.releaseStatus==='Untracked'
           ?'<small>Nightly release marker unavailable. Build identity unknown.</small>':'';
     const recognized=m.valid?'Recognized':'Invalid';
-    return '<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · Manifest v'+esc(m.version)+' · '+esc(m.fileName)+'</small>'+release+'</div><div class="'+(!m.valid||m.releaseStatus==='Modified'?'bad-text':'')+'">'+recognized+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>';
+    return '<div class="mod"><div><b>'+esc(m.name)+'</b><small>'+esc(m.id)+' · Manifest v'+esc(m.version)+' · '+esc(m.fileName)+'</small>'+(m.description?'<small>'+esc(m.description)+'</small>':'')+(m.changeSummary?'<small><b>What changed in v'+esc(m.version)+':</b> '+esc(m.changeSummary)+'</small>':'')+release+'</div><div class="'+(!m.valid||m.releaseStatus==='Modified'?'bad-text':'')+'">'+recognized+'</div>'+(m.error?'<small class="bad-text">'+esc(m.error)+'</small>':'')+'</div>';
   }).join(''):'<div class="mod"><div><b>No HOWL mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
   $('loader-path').value=state.settings.loaderPath||'';$('feed-url').value=state.settings.feedUrl||'';$('close-after').checked=!!state.settings.closeAfterLaunch;
   $('local-test-mode').checked=!!state.settings.localTestMode;

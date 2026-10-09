@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.21
-  CODA_TAG: v0.7.21
+  CODA_VERSION: 0.7.22
+  CODA_TAG: v0.7.22
 
 jobs:
   gate:
@@ -172,7 +172,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.21 (prerelease)
+          # CodaLauncher 0.7.22 (prerelease)
+
+          - Remove the blocking startup-update dialog: the launcher checks
+            in the background, and PLAY upgrades before starting Minecraft.
 
           - PLAY checks the launcher first; verified Windows updates restart
             automatically, then resume the pending Minecraft launch.

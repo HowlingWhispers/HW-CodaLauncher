@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     private LauncherFeed _lastFeed = new();
     private readonly List<NewsItem> _systemNews = [];
     private readonly SemaphoreSlim _installGate = new(1, 1);
+    private bool _resumePlayOnReady;
     private volatile bool _gameRunning;
     private volatile int _gameProcessId;
     private readonly DispatcherTimer _updateTimer = new() { Interval = TimeSpan.FromMinutes(5) };
@@ -37,8 +38,9 @@ public partial class MainWindow : Window
     private bool _updateWindowOpen;
     private bool _uiReady;
 
-    public MainWindow()
+    public MainWindow(bool resumePlayOnReady = false)
     {
+        _resumePlayOnReady = resumePlayOnReady;
         InitializeComponent();
         _logs.LineAdded += line =>
         {
@@ -150,8 +152,15 @@ public partial class MainWindow : Window
                     if (App.IsSmokeTest) { Application.Current.Shutdown(0); return; }
                     _uiReady = true;
                     _updateTimer.Start();
-                    _ = CheckLauncherUpdateAsync(force: true);
+                    if (!_resumePlayOnReady) _ = CheckLauncherUpdateAsync(force: true);
                     await SendState();
+                    if (_resumePlayOnReady)
+                    {
+                        // A verified update carries Play through the restart once.
+                        _resumePlayOnReady = false;
+                        _logs.Add("Resuming Play after the CodaLauncher update.");
+                        _ = Play();
+                    }
                     break;
                 case "copyAllLogs":
                     try
@@ -630,6 +639,64 @@ public partial class MainWindow : Window
             _logs.Clear();
             _logs.Add("Preparing Minecraft launch (" + _settings.UpdateChannel + ")...");
             if (_accountBusy) throw new InvalidOperationException("Finish account verification before launching Minecraft.");
+            Send(new { type = "installStatus", busy = true, ok = true,
+                message = "Checking CodaLauncher updates..." });
+            LauncherUpdateInfo? playUpdate = null;
+            try
+            {
+                using var checkTimeout = CancellationTokenSource.CreateLinkedTokenSource(_windowLifetime.Token);
+                checkTimeout.CancelAfter(TimeSpan.FromSeconds(8));
+                // Do not trust a stale background check: Play always checks the
+                // published launcher before touching game components.
+                playUpdate = await SelfUpdater.CheckAsync(App.LauncherVersion, checkTimeout.Token);
+                _availableLauncherUpdate = playUpdate;
+                SendLauncherUpdateNotice();
+                _logs.Add(playUpdate is null
+                    ? "CodaLauncher is current. Checking game components..."
+                    : $"CodaLauncher {playUpdate.Version} is available; updating before Play.");
+            }
+            catch (OperationCanceledException) when (!_windowLifetime.IsCancellationRequested)
+            {
+                _logs.Add("Launcher update check timed out; continuing with the installed version.");
+            }
+            catch (HttpRequestException ex)
+            {
+                _logs.Add("Launcher update check unavailable; continuing with the installed version: " + ex.Message);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logs.Add("Launcher update check failed; continuing with the installed version: " + ex.Message);
+            }
+
+            if (_windowLifetime.IsCancellationRequested) return;
+            if (playUpdate is not null)
+            {
+                _updateWindowOpen = true;
+                SendLauncherUpdateNotice();
+                try
+                {
+                    var updater = new UpdateWindow(playUpdate, resumePlayAfterUpdate: true) { Owner = this };
+                    updater.ShowDialog();
+                    if (updater.RestartRequested)
+                    {
+                        Application.Current.Shutdown();
+                        return;
+                    }
+                    if (!updater.ContinueWithoutUpdate)
+                    {
+                        _logs.Add("Launcher update postponed; Minecraft was not started.");
+                        Send(new { type = "installStatus", busy = false, ok = true,
+                            message = "Launcher update postponed. Press Play to try again." });
+                        return;
+                    }
+                    _logs.Add("Player chose to play with the installed launcher.");
+                }
+                finally
+                {
+                    _updateWindowOpen = false;
+                    SendLauncherUpdateNotice();
+                }
+            }
             var identity = _settings.LocalTestMode ? LocalSingleplayer.Identity() : null;
             if (_settings.UpdateChannel == "nightly")
             {

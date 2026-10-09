@@ -846,7 +846,7 @@ internal static class SelfUpdater
         return new PreparedLauncherUpdate(update.Version, staging, installRoot);
     }
 
-    public static void StartApplyAndRestart(PreparedLauncherUpdate update)
+    public static void StartApplyAndRestart(PreparedLauncherUpdate update, bool resumePlayAfterUpdate = false)
     {
         var stagedExe = Path.Combine(update.StagingDirectory, "CodaLauncher.exe");
         if (!File.Exists(stagedExe))
@@ -862,6 +862,7 @@ internal static class SelfUpdater
         info.ArgumentList.Add(Environment.ProcessId.ToString());
         info.ArgumentList.Add(update.StagingDirectory);
         info.ArgumentList.Add(update.InstallRoot);
+        if (resumePlayAfterUpdate) info.ArgumentList.Add("--resume-play");
 
         var updaterProcess = Process.Start(info);
         if (updaterProcess is null)
@@ -906,11 +907,15 @@ internal static class SelfUpdater
             }
 
             var installedExe = Path.Combine(target, "CodaLauncher.exe");
-            Process.Start(new ProcessStartInfo(installedExe)
+            var restart = new ProcessStartInfo(installedExe)
             {
                 WorkingDirectory = target,
                 UseShellExecute = true
-            });
+            };
+            if (args.Skip(4).Contains("--resume-play", StringComparer.Ordinal))
+                restart.ArgumentList.Add("--resume-play");
+            if (Process.Start(restart) is null)
+                throw new InvalidOperationException("Could not restart CodaLauncher.");
         }
         catch (Exception ex)
         {

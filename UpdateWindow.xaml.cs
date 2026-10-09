@@ -6,6 +6,7 @@ namespace HowlingWhispers.CodaLauncher;
 public partial class UpdateWindow : Window
 {
     private readonly LauncherUpdateInfo _update;
+    private readonly bool _resumePlayAfterUpdate;
     private readonly CancellationTokenSource _cts = new();
     private PreparedLauncherUpdate? _prepared;
     private string? _lastStage;
@@ -17,11 +18,14 @@ public partial class UpdateWindow : Window
     public bool RestartRequested { get; private set; }
     public bool ContinueWithoutUpdate { get; private set; }
 
-    internal UpdateWindow(LauncherUpdateInfo update)
+    internal UpdateWindow(LauncherUpdateInfo update, bool resumePlayAfterUpdate = false)
     {
         _update = update;
+        _resumePlayAfterUpdate = resumePlayAfterUpdate;
         InitializeComponent();
         VersionText.Text = $"CodaLauncher {App.LauncherVersion}  ->  {update.Version}";
+        if (_resumePlayAfterUpdate)
+            ContinueButton.Content = "PLAY WITHOUT UPDATE";
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -45,12 +49,19 @@ public partial class UpdateWindow : Window
 
             AppendLine("");
             AppendLine("> Coda: Fresh files, tidy clipboard.");
-            AppendLine("> Coda: Your turn. Hit REBOOT CODALAUNCHER and I'll come back wearing the new version.");
-
-            StatusText.Text = "Update ready. Waiting for your reboot.";
             DownloadProgress.Value = 100;
-            RebootButton.IsEnabled = true;
-            RebootButton.Focus();
+            if (_resumePlayAfterUpdate)
+            {
+                AppendLine("> Coda: Restarting with the fresh version, then loading Minecraft.");
+                RestartLauncher();
+            }
+            else
+            {
+                AppendLine("> Coda: Hit REBOOT CODALAUNCHER to finish installing.");
+                StatusText.Text = "Update ready. Waiting for your reboot.";
+                RebootButton.IsEnabled = true;
+                RebootButton.Focus();
+            }
         }
         catch (OperationCanceledException)
         {
@@ -126,7 +137,9 @@ public partial class UpdateWindow : Window
         }
     }
 
-    private void Reboot_Click(object sender, RoutedEventArgs e)
+    private void Reboot_Click(object sender, RoutedEventArgs e) => RestartLauncher();
+
+    private void RestartLauncher()
     {
         if (_prepared is null) return;
 
@@ -138,7 +151,7 @@ public partial class UpdateWindow : Window
             AppendLine("");
             AppendLine("> Coda: Right. Fresh clipboard. See you on the other side.");
 
-            SelfUpdater.StartApplyAndRestart(_prepared);
+            SelfUpdater.StartApplyAndRestart(_prepared, _resumePlayAfterUpdate);
             RestartRequested = true;
             Close();
         }

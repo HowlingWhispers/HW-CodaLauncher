@@ -66,7 +66,7 @@ public partial class App : Application
             }
         }
 
-        var window = new MainWindow();
+        var window = new MainWindow(resumePlayOnReady: e.Args.Contains("--resume-play", StringComparer.Ordinal));
         MainWindow = window;
         ShutdownMode = ShutdownMode.OnMainWindowClose;
         window.Show();

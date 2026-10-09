@@ -118,6 +118,30 @@ try
         ]}
       ]
       """;
+    // These are REAL categories from old loader releases, but none is a
+    // Minecraft gameplay mod. They must never become a player install button.
+    string loaderReleases = """
+      [{"tag_name":"v0.0.2-bootstrap","draft":false,"assets":[
+        {"name":"CodaLoader-0.0.2-bootstrap.jar",
+         "browser_download_url":"https://github.com/HowlingWhispers/HW-CodaLoader/releases/download/v0.0.2-bootstrap/CodaLoader-0.0.2-bootstrap.jar"},
+        {"name":"unrelated-tool-1.0.0.jar",
+         "browser_download_url":"https://github.com/HowlingWhispers/HW-CodaLoader/releases/download/v0.0.2-bootstrap/unrelated-tool-1.0.0.jar"}
+      ]}]
+      """;
+    Check(GitHubModCatalog.ParseReleases(loaderReleases, "HW-CodaLoader").Count == 0,
+        "H.O.W.L. runtime/bootstrap JARs and random loader assets are never optional mods");
+    Check(!GitHubModCatalog.IsOptionalGameplayMod("codaloader", "HW-Mods"),
+        "Runtime artifacts remain disallowed even if accidentally mirrored into HW-Mods");
+    string newMods = """
+      [{"tag_name":"v1.2.3","draft":false,"assets":[
+        {"name":"howl-crystals-1.2.3.jar",
+         "browser_download_url":"https://github.com/HowlingWhispers/HW-Mods/releases/download/v1.2.3/howl-crystals-1.2.3.jar"}
+      ]}]
+      """;
+    Check(GitHubModCatalog.ParseReleases(newMods, "HW-Mods")
+        .Single().Id == "github:howl-crystals",
+        "New genuine HW-Mods releases remain discoverable without hard-coded mod IDs");
+
     var available = GitHubModCatalog.ParseReleases(releases, "HW-CodaLoader");
     Check(available.Count == 1 && available[0].Id == "github:buildcraft-lite",
         "Discovery lists only eligible owner-published optional H.O.W.L. JARs");

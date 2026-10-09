@@ -17,7 +17,7 @@ const el = id => {
   return elements.get(id);
 };
 const modsNav = {
-  dataset: { view: 'mods' },
+  dataset: { view: 'addons' },
   classList: { add() {}, remove() {} },
   addEventListener(event, listener) { this[event] = listener; }
 };
@@ -103,7 +103,7 @@ assert.equal(el('nightly-quiet-card').hidden, false, 'Nightly Quiet Underground 
 assert.equal(el('nightly-quiet-status').textContent, 'Optional · Installed',
   'Quiet Underground is explicitly optional, not a required mod');
 modsNav.click();
-assert.equal(calls.at(-1).action, 'refreshMods', 'opening Mods requests immediate rescan');
+assert.equal(calls.at(-1).action, 'refreshMods', 'opening Add-ons requests immediate mod rescan');
 el('refresh-mods').onclick();
 assert.equal(calls.at(-1).action, 'refreshMods', 'button requests rescan without feed/network wait');
 

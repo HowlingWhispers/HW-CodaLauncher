@@ -272,7 +272,9 @@ function render(){
     const actionsDisabled=installBusy||!!state.gameRunning||!allowed;
     const installDisabled=actionsDisabled||(m.installed&&!managed);
     const uninstallDisabled=actionsDisabled||!m.installed||!managed;
-    const detail=!allowed?'Available in Nightly only'
+    const detail=m.required
+      ? (m.installed?'Present in game profile':'Will install with H.O.W.L. at launch')
+      :!allowed?'Available in Nightly only'
       :m.installed?(managed?'Installed (launcher-managed)':'Present but not managed; review manually')
       :'Not installed';
     const label=m.installed?'CHECK / UPDATE':'INSTALL';

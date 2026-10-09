@@ -31,7 +31,7 @@ const webview = {
   addEventListener(name, callback) { listeners[name] = callback; }
 };
 const modButtons = [
-  { dataset: { action: 'installMod', mod: 'coda_wolf' }, disabled: false, onclick: null },
+  { dataset: { action: 'installMod', mod: 'buildcraft_cml' }, disabled: false, onclick: null },
   { dataset: { action: 'uninstallMod', mod: 'buildcraft_cml' }, disabled: false, onclick: null }
 ];
 let confirmResult = false;
@@ -63,8 +63,8 @@ const source = {
       name: 'BuildCraft CML', version: '0.1.0-dev', valid: true }],
     optionalMods: [
       { id: 'buildcraft_cml', name: 'BuildCraft CML', installed: true, managed: true, recommended: true, nightlyOnly: true, version: '0.1.0-dev' },
-      { id: 'coda_wolf', name: 'Coda Wolf Companion', installed: false, managed: false, recommended: true, nightlyOnly: true, version: '' },
-      { id: 'hw_essentials', name: 'HW Essentials', installed: false, managed: false, recommended: true, nightlyOnly: false, version: '' }
+      { id: 'coda_wolf', name: 'Coda Wolf Companion', installed: false, managed: false, recommended: false, nightlyOnly: false, required: true, version: '' },
+      { id: 'hw_essentials', name: 'HW Essentials', installed: false, managed: false, recommended: false, nightlyOnly: false, required: true, version: '' }
     ],
     account: { configured: false, signedIn: false, offlineAvailable: true, storage: '' },
     settings: { updateChannel: 'nightly', localTestMode: true },
@@ -75,15 +75,22 @@ const source = {
 };
 listeners.message({ data: source });
 assert.equal(el('mods-count').textContent, '1 jar', 'initial drawer matches cached state');
-assert.match(el('optional-mods').innerHTML, /Coda Wolf Companion/, 'Optional Coda Wolf listed when uninstalled');
-assert.match(el('optional-mods').innerHTML, /RECOMMENDED/, 'Recommendation is distinct from requirement');
-assert.match(el('optional-mods').innerHTML, /INSTALL/, 'Optional installation requires explicit button');
-assert.match(el('optional-mods').innerHTML, /UNINSTALL/, 'Optional installed mod supports removal');
-assert.doesNotMatch(el('optional-mods').innerHTML, /REQUIRED/, 'No add-on labeled required');
+assert.match(el('optional-mods').innerHTML, /Coda Wolf Companion/, 'Required Coda displayed');
+assert.match(el('optional-mods').innerHTML, /HW Essentials/, 'Required Essentials displayed');
+assert.equal((el('optional-mods').innerHTML.match(/REQUIRED · BUNDLED WITH H\.O\.W\.L\./g)||[]).length,2,
+  'Both foundational mods marked required');
+assert.doesNotMatch(el('optional-mods').innerHTML, /data-mod="coda_wolf"/,
+  'No Coda manual install or uninstall button');
+assert.doesNotMatch(el('optional-mods').innerHTML, /data-mod="hw_essentials"/,
+  'No Essentials manual install or uninstall button');
+assert.match(el('optional-mods').innerHTML, /OPTIONAL · RECOMMENDED/,
+  'BuildCraft remains an optional addon');
+assert.match(el('optional-mods').innerHTML, /UNINSTALL/,
+  'Optional installed mod still supports removal');
 
 modButtons[0].onclick();
-assert.equal(calls.at(-1).action, 'installMod', 'Coda Wolf install requires a deliberate Mods button');
-assert.equal(calls.at(-1).id, 'coda_wolf', 'Install requests exactly the selected optional mod');
+assert.equal(calls.at(-1).action, 'installMod', 'Optional BuildCraft installation still explicit');
+assert.equal(calls.at(-1).id, 'buildcraft_cml', 'Only selected optional mod is installed');
 listeners.message({ data: { type: 'modActionStatus', busy: false, ok: true, message: 'Installed' } });
 modButtons[1].onclick();
 assert.notEqual(calls.at(-1).action, 'uninstallMod', 'Uninstall requires confirmation before request');
@@ -129,4 +136,15 @@ assert.match(el('mods-list').innerHTML, /Original pipes &amp; engines/, 'Descrip
 assert.match(el('mods-list').innerHTML, /What changed in v0\.1\.2-dev:/, 'Notes belong to the installed manifest version');
 assert.match(el('mods-list').innerHTML, /Fixed placement &lt;crash&gt;/, 'Release summary displays as escaped text');
 assert.doesNotMatch(el('mods-list').innerHTML, /<crash>/, 'Mod metadata cannot inject markup');
-console.log('PASS: Mod Drawer navigation refreshes installed JARs and corrects displayed labels.');
+// Stable channel also shows Coda and Essentials as required even when
+// neither is installed yet; no Nightly-only or manual uninstall control.
+source.data.activeChannel = 'stable';
+source.data.settings.updateChannel = 'stable';
+listeners.message({data:source});
+assert.equal((el('optional-mods').innerHTML.match(/REQUIRED · BUNDLED WITH H\.O\.W\.L\./g)||[]).length,2,
+  'Stable treats both bundled mods as required');
+assert.match(el('optional-mods').innerHTML, /Will install with H\.O\.W\.L\. at launch/,
+  'Stable informs player of automatic dependency provisioning');
+assert.doesNotMatch(el('optional-mods').innerHTML, /data-mod="coda_wolf"|data-mod="hw_essentials"/,
+  'Stable cannot accidentally uninstall required mods');
+console.log('PASS: Mods drawer marks Coda and Essentials required on Stable/Nightly; optional BuildCraft stays removable.');

@@ -55,7 +55,20 @@ document.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   btn.classList.add('active');
   $(btn.dataset.view).classList.add('active');
-  if(btn.dataset.view==='mods') post('refreshMods');
+  if(btn.dataset.view==='addons') post('refreshMods');
+}));
+document.querySelectorAll('.addon-tab').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.addon-tab').forEach(tab=>{
+    const active=tab===btn;
+    tab.classList.toggle('active',active);
+    tab.setAttribute('aria-selected',String(active));
+  });
+  document.querySelectorAll('.addon-panel').forEach(panel=>{
+    const active=panel.id===btn.dataset.addon;
+    panel.classList.toggle('active',active);
+    panel.hidden=!active;
+  });
+  if(btn.dataset.addon==='mods') post('refreshMods');
 }));
 function renderAccount(){
   const a=state?.account;

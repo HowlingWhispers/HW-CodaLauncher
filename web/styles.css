@@ -45,3 +45,13 @@
 .mod-action-result.ok{color:#8df0bb}
 .mod-action-result.error{color:#ffb28a}
 @media(max-width:660px){.optional-mod{flex-direction:column;align-items:stretch}.mod-actions{justify-content:flex-start}}
+
+/* Add-ons: one sidebar destination with accessible categories. */
+.addon-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 24px;padding:6px;border:1px solid #234957;border-radius:14px;background:#09171d}
+.addon-tab{border:0;border-radius:9px;padding:11px 18px;background:transparent;color:#98bac7;cursor:pointer;font-weight:650}
+.addon-tab:hover{background:#14313e;color:#fff}
+.addon-tab.active{background:#17495d;color:#eafaff;box-shadow:inset 0 -2px #73dcff}
+.addon-panel[hidden]{display:none!important}
+.addon-panel header{margin:4px 0 16px}
+.addon-panel header h2{font-size:23px;margin:0}
+@media(max-width:660px){.addon-tabs{gap:4px}.addon-tab{flex:1;padding:10px 7px;font-size:12px}}

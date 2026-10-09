@@ -10,11 +10,9 @@
 <div class="shell">
 <aside>
   <div class="brand"><div class="mark">🐺</div><div><b>CODA</b><small>Howling Whispers</small></div></div>
-  <nav>
+  <nav aria-label="Main navigation">
     <button class="nav active" data-view="home">⌂ <span>Home</span></button>
-    <button class="nav" data-view="mods">◇ <span>Mods</span></button>
-    <button class="nav" data-view="packs">▣ <span>Packs</span></button>
-    <button class="nav" data-view="resourcepacks">▤ <span>Resourcepacks</span></button>
+    <button class="nav" data-view="addons">◇ <span>Add-ons</span></button>
     <button class="nav" data-view="profile">◉ <span>Profile</span></button>
     <button class="nav" data-view="settings">⚙ <span>Settings</span></button>
     <button class="nav" data-view="logs">≡ <span>Logs</span></button>
@@ -44,15 +42,22 @@
   <div id="news" class="news"></div>
 </section>
 
-<section class="view" id="mods">
+<section class="view" id="addons">
+  <header><div><em>CODA'S ADD-ON SHELF</em><h1>Add-ons</h1><small class="header-note">Mods, world data and resource packs, all in one place.</small></div></header>
+  <div class="addon-tabs" role="tablist" aria-label="Add-on categories">
+    <button class="addon-tab active" type="button" data-addon="mods" role="tab" aria-selected="true" aria-controls="mods">Mods</button>
+    <button class="addon-tab" type="button" data-addon="datapacks" role="tab" aria-selected="false" aria-controls="datapacks">Data Packs</button>
+    <button class="addon-tab" type="button" data-addon="resourcepacks" role="tab" aria-selected="false" aria-controls="resourcepacks">Resource Packs</button>
+  </div>
+  <div class="addon-panel active" id="mods" role="tabpanel">
   <header><div><em>CODA'S MOD DRAWER</em><h1>Mods</h1><small class="header-note">Filed, checked, and ready to cause entirely responsible adventures.</small></div></header>
-  <div class="panel"><div class="panel-head"><div><b>HOWL mod shelf</b><small>Coda reads the active Minecraft profile's single mods folder.</small></div><div class="actions"><button id="refresh-mods" class="quiet" type="button">↻ REFRESH MODS</button><button id="open-mods-folder" class="quiet" type="button">OPEN MODS FOLDER</button><span id="mods-count" class="pill"></span></div></div><p class="mod-help">Only H.O.W.L. and the required resource pack are automatic. All add-on mods are optional, even the recommended ones. PLAY never downloads or reinstalls an optional mod.</p><div id="optional-mods" class="optional-mods" aria-live="polite"></div><div id="mod-action-result" class="mod-action-result" role="status" aria-live="polite"></div><h3 class="installed-mod-heading">Installed JARs</h3><div id="mods-list"></div><small class="header-note">Recognized means the JAR metadata is readable, not that Minecraft confirmed loading it. Uninstalling a mod does not erase its world data.</small></div>
-</section>
+  <div class="panel"><div class="panel-head"><div><b>HOWL mod shelf</b><small>Coda reads the active Minecraft profile's single mods folder.</small></div><div class="actions"><button id="refresh-mods" class="quiet" type="button">↻ REFRESH MODS</button><button id="open-mods-folder" class="quiet" type="button">OPEN MODS FOLDER</button><span id="mods-count" class="pill"></span></div></div><p class="mod-help">H.O.W.L., Coda Companion, HW Essentials and the required resources are managed automatically. All other mods are optional and install only when you choose them.</p><div id="optional-mods" class="optional-mods" aria-live="polite"></div><div id="mod-action-result" class="mod-action-result" role="status" aria-live="polite"></div><h3 class="installed-mod-heading">Installed JARs</h3><div id="mods-list"></div><small class="header-note">Recognized means the JAR metadata is readable, not that Minecraft confirmed loading it. Uninstalling a mod does not erase its world data.</small></div>
+</div>
 
-<section class="view" id="packs">
-  <header><div><em>CODA'S PACK SHELF</em><h1>Packs</h1></div></header>
+<div class="addon-panel" id="datapacks" role="tabpanel" hidden>
+  <header><div><em>WORLD CONTENT</em><h2>Data Packs</h2></div></header>
   <div class="packs-intro">
-    <div><b>Complete Howling Whispers experiences</b><small>Coda keeps their mods, resources, music, configs and world content together.</small></div>
+    <div><b>World data and managed content</b><small>HOWL Base is a managed content bundle. Installable Minecraft data packs will also appear here when available.</small></div>
     <span class="pill">1 PACK</span>
   </div>
   <div id="packs-list" class="pack-grid"></div>
@@ -61,15 +66,16 @@
     <p>Much rarer giant caves and ravines. Only affects brand-new Nightly worlds, never existing saves.</p>
     <div class="managed-label">Optional world-generation preset for future worlds. Not installed or updated automatically. Existing worlds are never changed.</div><div class="mod-actions" style="margin-top:13px"><button id="quiet-install" class="quiet quiet-addon-action" type="button">INSTALL / UPDATE</button><button id="quiet-uninstall" class="quiet quiet-addon-action uninstall" type="button">UNINSTALL</button></div>
   </article>
-</section>
+</div>
 
-<section class="view" id="resourcepacks">
-  <header><div><em>CODA'S ART CABINET</em><h1>Resourcepacks</h1></div></header>
+<div class="addon-panel" id="resourcepacks" role="tabpanel" hidden>
+  <header><div><em>CODA'S ART CABINET</em><h2>Resource Packs</h2></div></header>
   <div class="packs-intro">
     <div><b>Visuals, music, menus, and presentation</b><small>Required resources follow their Packs automatically. Coda handles the paperwork.</small></div>
     <span class="pill">1 RESOURCEPACK</span>
   </div>
   <div id="resourcepacks-list" class="pack-grid"></div>
+</div>
 </section>
 
 <section class="view" id="profile">

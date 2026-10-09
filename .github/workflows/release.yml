@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.27
-  CODA_TAG: v0.7.27
+  CODA_VERSION: 0.7.28
+  CODA_TAG: v0.7.28
 
 jobs:
   gate:
@@ -180,14 +180,18 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.27 (prerelease)
+          # CodaLauncher 0.7.28 (prerelease)
 
-          - Correct the H.O.W.L. Nightly version panel to query official Nightly releases instead of the latest Stable version.
-          - Show active Nightly and latest published Nightly separately, including a clear UPDATE AVAILABLE or CURRENT status.
-          - Display CHECK UNAVAILABLE rather than a false update warning when the Nightly release check fails.
-          - Replace the frozen "Update check has not completed" placeholder with the real check outcome.
-          - Keep Stable version discovery, installation, saved worlds, and mod installations untouched.
-          - Add regression tests for 0.0.36 -> 0.0.37 and network-unavailable states.
+          - Harden the Reboot CodaLauncher self-update path after reports of the launcher closing or crashing during update.
+          - Launch and version-check the staged executable *before* shutting down the working launcher.
+          - Require a live WebView ready signal after update, then clean up the rollback backup.
+          - If the new launcher exits or never becomes ready, attempt rollback and reopen the previous executable.
+          - Log the update stages and failures to %TEMP%/CodaLauncher-update.log and retain failed rollback files.
+          - Add a Windows end-to-end test that exercises actual staged replacement and headless reboot in an isolated directory.
+          - Keep Stable, Nightly worlds, resource packs, mods, and player settings untouched.
+
+          This release strengthens future self-updates. If an older updater already fails during Reboot,
+          install 0.7.28 using the Windows setup executable instead of repeating the failing reboot.
           EOF
           if ! gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher $CODA_VERSION" --notes-file release-notes.md; then
             echo "::error::Release creation failed. If the workflow token is denied with HTTP 403, configure a repository secret named CODALAUNCHER_RELEASE_TOKEN with scoped Contents: read/write access, then rerun."

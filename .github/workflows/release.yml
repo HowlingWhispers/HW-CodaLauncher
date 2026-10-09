@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.26
-  CODA_TAG: v0.7.26
+  CODA_VERSION: 0.7.27
+  CODA_TAG: v0.7.27
 
 jobs:
   gate:
@@ -176,34 +176,14 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.26 (prerelease)
+          # CodaLauncher 0.7.27 (prerelease)
 
-          - Keep H.O.W.L. loader/bootstrap and SDK artifacts out of optional gameplay mods.
-          - Discover new optional JAR mods from HW-Mods; temporarily permit the existing BuildCraft Lite JAR from HW-CodaLoader.
-          - Reject loader assets in both the mod shelf and the installer, including old cached entries.
-          - Add automated regression checks for old CodaLoader bootstrap and future HW-Mods discovery.
-
-          - Discover optional H.O.W.L. mod JARs dynamically from trusted HowlingWhispers GitHub Releases.
-          - Install and update direct .jar assets into the active Nightly mods folder; no extra ZIP layer.
-          - New mods require explicit INSTALL; on Play, update only previously installed, hash-managed mods.
-          - Verify H.O.W.L. manifest compatibility and preserve locally modified mod files.
-          - BuildCraft Lite 0.1.0-dev is available as a direct JAR with no manual ZIP extraction.
-
-          - RETIRE the former BuildCraft CML prototype. Do not fetch or install
-            its obsolete Nightly JAR, even if the release SHA-256 is valid.
-          - PLAY blocks entry into Nightly if the legacy BuildCraft JAR remains
-            installed; use Add-ons > Mods > UNINSTALL after backing up modded worlds.
-          - Keep legacy BuildCraft visible ONLY for uninstall and never offer
-            INSTALL/UPDATE in the Add-ons catalog.
-          - Never remove world saves or manually modified JARs automatically.
-          - Continue verifying H.O.W.L., Coda Companion, HW Essentials, and
-            the opted-in Quiet Underground pack separately.
-          - Preserve Stable and Nightly isolation, loader self-update and Play.
-          - The next BuildCraft port will use a completely separate upstream-
-            sourced project, not the retired HW-Mods prototype.
-
-          Tests cover the retired BuildCraft gate, Add-ons visibility,
-          refusal to reinstall and preservation of optional Quiet Underground.
+          - Correct the H.O.W.L. Nightly version panel to query official Nightly releases instead of the latest Stable version.
+          - Show active Nightly and latest published Nightly separately, including a clear UPDATE AVAILABLE or CURRENT status.
+          - Display CHECK UNAVAILABLE rather than a false update warning when the Nightly release check fails.
+          - Replace the frozen "Update check has not completed" placeholder with the real check outcome.
+          - Keep Stable version discovery, installation, saved worlds, and mod installations untouched.
+          - Add regression tests for 0.0.36 -> 0.0.37 and network-unavailable states.
           EOF
           if ! gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher $CODA_VERSION" --notes-file release-notes.md; then
             echo "::error::Release creation failed. If the workflow token is denied with HTTP 403, configure a repository secret named CODALAUNCHER_RELEASE_TOKEN with scoped Contents: read/write access, then rerun."

@@ -22,8 +22,16 @@ internal sealed class GitHubModCatalog
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly HashSet<string> Excluded = new(StringComparer.OrdinalIgnoreCase)
     {
-        "coda-wolf", "hw-essentials", "howl-api", "buildcraft-cml", "hello-coda"
+        "coda-wolf", "hw-essentials", "howl-api", "buildcraft-cml", "hello-coda",
+        // Loader/SDK bootstrap artifacts belong to the launcher update pipeline,
+        // never the optional gameplay-mod shelf.
+        "codaloader", "coda-loader", "hw-codaloader", "howl-loader",
+        "howl-sdk", "codaloader-bootstrap", "cml-loader"
     };
+    internal static bool IsOptionalGameplayMod(string slug) =>
+        slug.Length > 0 && !Excluded.Contains(slug) &&
+        !slug.EndsWith("-bootstrap", StringComparison.OrdinalIgnoreCase);
+
     private static readonly HttpClient SharedHttp = MakeClient();
     private readonly HttpClient _http;
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -105,7 +113,7 @@ internal sealed class GitHubModCatalog
                 var match = Jar.Match(filename);
                 if (!match.Success) continue;
                 string slug = match.Groups["slug"].Value.ToLowerInvariant();
-                if (Excluded.Contains(slug)) continue;
+                if (!IsOptionalGameplayMod(slug)) continue;
                 string url = urlNode.GetString() ?? "";
                 if (!TrustedUrl(url, repo, tag, filename)) continue;
                 string version = match.Groups["version"].Value;

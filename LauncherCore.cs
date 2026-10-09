@@ -149,6 +149,8 @@ internal sealed class LogBuffer
 {
     private readonly object _gate = new();
     private readonly Queue<string> _lines = new();
+    public event Action<string>? LineAdded;
+    public event Action? Cleared;
 
     public string Add(string message)
     {
@@ -158,7 +160,16 @@ internal sealed class LogBuffer
             _lines.Enqueue(line);
             while (_lines.Count > 10000) _lines.Dequeue();
         }
+        // The WebView must see ALL logged messages, including progress,
+        // errors and installation events, not only redirected game stdout.
+        LineAdded?.Invoke(line);
         return line;
+    }
+
+    public void Clear()
+    {
+        lock (_gate) _lines.Clear();
+        Cleared?.Invoke();
     }
 
     public string[] Snapshot()

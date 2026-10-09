@@ -154,7 +154,19 @@ window.chrome.webview.addEventListener('message',e=>{
     result.textContent=m.ok?'✓ Settings saved.':('Could not save: '+(m.message||'Unknown error'));
   }
   if(m.type==='copyLogsResult') $('copy-logs-status').textContent=m.ok?'Copied '+m.count+' log lines to clipboard.':('Copy failed: '+m.message);
-  if(m.type==='log') appendLog(m.line);
+  if(m.type==='logsReset'){
+    if(state) state.logs=[];
+    const pre=$('log-output');
+    if(pre) pre.textContent='Nothing interesting has happened yet.';
+  }
+  if(m.type==='log') {
+    if(state){
+      state.logs=state.logs||[];
+      state.logs.push(m.line);
+      if(state.logs.length>10000) state.logs.shift();
+    }
+    appendLog(m.line);
+  }
   if(m.type==='loaderUpdateStatus'){loaderUpdateMessage=m.message;const result=$('loader-update-result');if(result) result.textContent=loaderUpdateMessage;}
   if(m.type==='installStatus'){
     const box=$('launch-message');
@@ -199,7 +211,10 @@ function render(){
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
   const nightly=state.activeChannel==='nightly';
   $('loader-versions').textContent=nightly
-    ? 'Required H.O.W.L. Nightly: '+(state.nightlyInstalled?'Installed in isolated profile':'Not installed yet')+' | Optional mods are managed in Mods | Stable untouched'
+    ? 'ACTIVE Nightly H.O.W.L.: v'+(state.installedLoaderVersion||'Not installed')
+      +' | Latest: v'+(state.latestLoaderVersion||'Unknown')
+      +' | '+(state.loaderCurrent?'CURRENT':'UPDATE REQUIRED')
+      +' | Stable untouched'
     : 'Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
   $('loader-update-result').textContent=loaderUpdateMessage;
   $('loader-chip').textContent=nightly?'HOWL NIGHTLY':state.loaderCurrent?'HOWL CURRENT':(state.loaderReady?'HOWL UPDATE READY':'HOWL INSTALL');

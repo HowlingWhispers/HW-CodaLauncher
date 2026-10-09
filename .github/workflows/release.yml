@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.23
-  CODA_TAG: v0.7.23
+  CODA_VERSION: 0.7.24
+  CODA_TAG: v0.7.24
 
 jobs:
   gate:
@@ -175,24 +175,23 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.23 (prerelease)
+          # CodaLauncher 0.7.24 (prerelease)
 
-          - PLAY now refreshes H.O.W.L. and every **previously opted-in**
-            SHA-256-managed Nightly add-on before launching Minecraft.
-          - BuildCraft and Quiet Underground are updated to the latest
-            available verified Nightly instead of being left on old builds.
-          - Fresh optional mods remain opt-in through Add-ons; PLAY never
-            silently installs an add-on that the player did not choose.
-          - Edited/unmanaged mod files are preserved, with clear log warnings.
-          - Logs explain precisely which components were checked and updated.
-          - Nightly and Stable game roots remain completely isolated.
-          - The required Coda Wolf companion and HW Essentials continue
-            through the verified H.O.W.L. runtime installation pipeline.
-          - Keep Windows automatic launcher self-update and resume Play.
-          - Update all Windows, Linux, macOS and installer version metadata.
+          - RETIRE the former BuildCraft CML prototype. Do not fetch or install
+            its obsolete Nightly JAR, even if the release SHA-256 is valid.
+          - PLAY blocks entry into Nightly if the legacy BuildCraft JAR remains
+            installed; use Add-ons > Mods > UNINSTALL after backing up modded worlds.
+          - Keep legacy BuildCraft visible ONLY for uninstall and never offer
+            INSTALL/UPDATE in the Add-ons catalog.
+          - Never remove world saves or manually modified JARs automatically.
+          - Continue verifying H.O.W.L., Coda Companion, HW Essentials, and
+            the opted-in Quiet Underground pack separately.
+          - Preserve Stable and Nightly isolation, loader self-update and Play.
+          - The next BuildCraft port will use a completely separate upstream-
+            sourced project, not the retired HW-Mods prototype.
 
-          Automated test coverage includes safe update selection, already
-          current add-ons, user-edited file protection, and other launcher checks.
+          Tests cover the retired BuildCraft gate, Add-ons visibility,
+          refusal to reinstall and preservation of optional Quiet Underground.
           EOF
           if ! gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher $CODA_VERSION" --notes-file release-notes.md; then
             echo "::error::Release creation failed. If the workflow token is denied with HTTP 403, configure a repository secret named CODALAUNCHER_RELEASE_TOKEN with scoped Contents: read/write access, then rerun."

@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.17
-  CODA_TAG: v0.7.17
+  CODA_VERSION: 0.7.18
+  CODA_TAG: v0.7.18
 
 jobs:
   gate:
@@ -171,15 +171,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.17 (prerelease)
+          # CodaLauncher 0.7.18 (prerelease)
 
-          - Installed mods now show a plain-language description.
-          - Show **What changed** from the installed JAR's own metadata beside its
-            manifest version, so an older installed mod cannot inherit newer notes.
-          - BCCE H.O.W.L. port 0.1.2-dev describes the creative-inventory and pipe-placement
-            fixes and the restoration of original BuildCraft textures.
-          - Older mod JARs remain supported. Existing Nightly/Stable profiles and
-            explicit optional-mod Install/Update actions are retained.
+          - Fix Nightly updating H.O.W.L. from stale BuildCraft test bundles,
+            which could downgrade runtime 0.0.30 to 0.0.29.
+          - Fetch versioned H.O.W.L. runtime directly from official releases,
+            verify SHA-256 manifest and keep optional BuildCraft separate.
+          - Show actual active Nightly H.O.W.L. version and available version.
+          - Stream all launcher logs live and reset the log view each play
+            session, making COPY ALL match the visible diagnostic stream.
+          - Never silently reinstall optional mods or alter player worlds.
 
           Tested on Windows, Linux and macOS with mod identity, update selection,
           rendered mod drawer and installer checks.

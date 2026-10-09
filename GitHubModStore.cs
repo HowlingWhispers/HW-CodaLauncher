@@ -89,6 +89,10 @@ internal sealed class GitHubModStore
         Action<string> report, CancellationToken ct)
     {
         string slug = Slug(entry);
+        // Reject old bootstrap/runtime artifacts even if an outdated UI
+        // cached a GitHub release before the catalog filter was updated.
+        if (!GitHubModCatalog.IsOptionalGameplayMod(slug))
+            throw new InvalidDataException("CodaLoader bootstrap/SDK is not an installable mod");
         if (!GitHubModCatalog.TrustedUrl(entry.DownloadUrl, entry.Repository,
                 entry.Tag, entry.AssetName)
             || !entry.AssetName.EndsWith(".jar", StringComparison.Ordinal)

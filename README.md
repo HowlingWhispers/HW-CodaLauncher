@@ -242,3 +242,7 @@ Landing-page Windows download buttons should link directly to the release's `win
 ## Account verification in development
 
 The source now extends **Profile** with Microsoft sign-in, Minecraft Java ownership verification, sign-out, and explicit offline selection. This is not in the published 0.7.4 installer yet. Live sign-in awaits CodaLauncher's own registered Microsoft application ID and API access. See [authentication setup](docs/microsoft-authentication.md) for configuration, storage behavior and release prerequisites.
+
+### Release publishing permission
+
+The CI build can succeed while GitHub refuses to publish a Release (HTTP 403: Resource not accessible by integration). The release job requests `contents: write`, but some repository policies still deny the default workflow token. Repository administrators can create a fine-grained, expiring token limited to `HowlingWhispers/HW-CodaLauncher` with Contents read/write access and save it as the **Actions repository secret** `CODALAUNCHER_RELEASE_TOKEN`. Do not commit or share the token. The release workflow uses that secret if provided, otherwise the normal workflow token. Until the release job succeeds, use the successful **Build CodaLauncher** run's artifacts for installer testing; the public self-updater sees only published GitHub Releases.

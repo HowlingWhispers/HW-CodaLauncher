@@ -169,7 +169,10 @@ jobs:
           path: dist/release
       - name: Publish all platforms together
         env:
-          GH_TOKEN: ${{ github.token }}
+          # Some GitHub installations deny release creation to GITHUB_TOKEN
+          # despite contents: write. An optional, repository-scoped token may
+          # be configured as a secret without embedding credentials in source.
+          GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
           # CodaLauncher 0.7.22 (prerelease)
@@ -202,4 +205,7 @@ jobs:
           Tested on Windows, Linux and macOS with mod identity, update selection,
           rendered mod drawer and installer checks.
           EOF
-          gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher $CODA_VERSION" --notes-file release-notes.md
+          if ! gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher $CODA_VERSION" --notes-file release-notes.md; then
+            echo "::error::Release creation failed. If the workflow token is denied with HTTP 403, configure a repository secret named CODALAUNCHER_RELEASE_TOKEN with scoped Contents: read/write access, then rerun."
+            exit 1
+          fi

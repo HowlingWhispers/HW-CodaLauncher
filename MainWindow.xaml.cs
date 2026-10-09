@@ -704,12 +704,12 @@ public partial class MainWindow : Window
                 if (!_settings.LocalTestMode)
                     throw new InvalidOperationException("H.O.W.L. Nightly currently supports local single-player only. Enable Local Test Mode in Settings.");
                 Send(new { type = "installStatus", busy = true, ok = true,
-                    message = "Checking required H.O.W.L. Nightly runtime. Optional mods unchanged..." });
+                    message = "Checking H.O.W.L. Nightly and updates for installed add-ons..." });
                 var nightRoot = await _nightly.InstallLatestAsync(message =>
                 {
                     _logs.Add(message);
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
-                }, CancellationToken.None);
+                }, CancellationToken.None, updateInstalledOptionalOnPlay: true);
                 SendMods();
                 _logs.Add("Active H.O.W.L. Nightly runtime: v" +
                     (NightlyRuntimeInstaller.InstalledVersion ?? "legacy/unknown"));

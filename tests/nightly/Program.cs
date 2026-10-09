@@ -111,3 +111,25 @@ Assert(StableSelect(
     StableRelease("v0.0.33",prerelease:true)) is null,
     "Stable fails closed when no approved H.O.W.L. release exists.");
 Console.WriteLine("PASS: H.O.W.L. Stable only accepts promoted official releases; Nightly remains independent.");
+
+
+// PLAY updates only add-ons installed by user choice and still checksum-managed.
+// Every combination is deterministic and independent of the release version.
+var none = NightlyPlayUpdatePolicy.Select(false, false, false, false);
+Assert(!none.UpdateBuildCraft && !none.UpdateQuiet
+    && !none.WarnUnmanagedBuildCraft && !none.WarnUnmanagedQuiet,
+    "Play must not silently install any unselected optional add-on.");
+var both = NightlyPlayUpdatePolicy.Select(true, true, true, true);
+Assert(both.UpdateBuildCraft && both.UpdateQuiet,
+    "Play must update both installed SHA-256-managed optional add-ons.");
+var bcOnly = NightlyPlayUpdatePolicy.Select(true, true, false, false);
+Assert(bcOnly.UpdateBuildCraft && !bcOnly.UpdateQuiet,
+    "Play must not opt the player into Quiet Underground.");
+var quietOnly = NightlyPlayUpdatePolicy.Select(false, false, true, true);
+Assert(!quietOnly.UpdateBuildCraft && quietOnly.UpdateQuiet,
+    "Play can update Quiet Underground without installing BuildCraft.");
+var edited = NightlyPlayUpdatePolicy.Select(true, false, true, false);
+Assert(!edited.UpdateBuildCraft && !edited.UpdateQuiet &&
+    edited.WarnUnmanagedBuildCraft && edited.WarnUnmanagedQuiet,
+    "Play must leave edited/unmanaged optional mods intact and warn.");
+Console.WriteLine("PASS: Nightly Play checks only opted-in, verified optional add-ons; edits preserved.");

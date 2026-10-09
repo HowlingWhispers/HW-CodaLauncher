@@ -8,8 +8,9 @@ namespace HowlingWhispers.CodaLauncher;
 
 /// <summary>
 /// Separate Nightly H.O.W.L. runtime that never mutates Stable.
-/// Optional BuildCraft and Quiet Underground are independently installed ONLY
-/// by explicit user actions, not automatically on PLAY or Install/Repair.
+/// Optional BuildCraft and Quiet Underground are installed by explicit player
+/// choice. Play updates only already-installed, SHA-256-managed optional content.
+/// Never opt users in, replace hand-modified files or change Stable.
 /// </summary>
 internal sealed class NightlyBuildInstaller
 {
@@ -20,6 +21,7 @@ internal sealed class NightlyBuildInstaller
     private const string ModJar = "buildcraft-cml-0.1.0-dev.jar";
     private const string QuietPack = "hw-quiet-underground-1.0.0.zip";
     private const string ActiveQuietPack = "hw-quiet-underground.zip";
+    private const string QuietReleaseMarker = ".howl-quiet-release-tag";
     private const int MaxArchiveBytes = 64 * 1024 * 1024;
     private static readonly HttpClient Http = NewHttp();
 
@@ -67,6 +69,13 @@ internal sealed class NightlyBuildInstaller
     }
 
     public static bool BuildCraftInstalled => IsManagedBuildCraft();
+    private static string QuietPath => Path.Combine(
+        GameRoot, "config", "codaloader", "worldgen", ActiveQuietPack);
+    private static string QuietTagPath => Path.Combine(
+        GameRoot, "config", "codaloader", "worldgen", QuietReleaseMarker);
+    private static bool HasCurrentQuiet(string tag) =>
+        QuietInstalled && File.Exists(QuietTagPath) &&
+        File.ReadAllText(QuietTagPath).Trim() == tag;
     private static string ModFolder => Path.Combine(GameRoot, "mods");
     private static string OwnedBuildCraftHash => Path.Combine(ModFolder, ".howl-buildcraft-managed.sha256");
     private static string OwnedBuildCraftTag => Path.Combine(ModFolder, ".howl-buildcraft-tag");
@@ -103,6 +112,7 @@ internal sealed class NightlyBuildInstaller
             throw new IOException("Quiet Underground was modified or is unmanaged. Your copy is preserved.");
         File.Delete(file);
         File.Delete(marker);
+        if (File.Exists(QuietTagPath)) File.Delete(QuietTagPath);
         report("Quiet Underground preset uninstalled. Existing worlds were not touched.");
     }
 
@@ -126,7 +136,8 @@ internal sealed class NightlyBuildInstaller
     }
 
     public async Task<string> InstallLatestAsync(Action<string> report, CancellationToken cancellation,
-        bool installBuildCraft = false, bool installQuiet = false)
+        bool installBuildCraft = false, bool installQuiet = false,
+        bool updateInstalledOptionalOnPlay = false)
     {
         ArgumentNullException.ThrowIfNull(report);
         try
@@ -134,6 +145,29 @@ internal sealed class NightlyBuildInstaller
             // Runtime is versioned by HW-CodaLoader, NEVER by BuildCraft's optional release.
             // Always bring the required loader current before touching optional mods.
             await NightlyRuntimeInstaller.EnsureLatestAsync(report, cancellation);
+            if (updateInstalledOptionalOnPlay)
+            {
+                var selection = NightlyPlayUpdatePolicy.Select(
+                    File.Exists(BuildCraftJar), IsManagedBuildCraft(),
+                    File.Exists(QuietPath), QuietInstalled);
+                if (selection.WarnUnmanagedBuildCraft)
+                    report("BuildCraft JAR is not managed or has changed: Play will NOT overwrite it. "
+                        + "Review it in Add-ons.");
+                if (selection.WarnUnmanagedQuiet)
+                    report("Quiet Underground is not managed or has changed: Play will NOT overwrite it. "
+                        + "Review it in Add-ons.");
+                installBuildCraft |= selection.UpdateBuildCraft;
+                installQuiet |= selection.UpdateQuiet;
+                if (!installBuildCraft && !installQuiet)
+                {
+                    report("Required H.O.W.L. Nightly verified. No launcher-managed optional "
+                        + "add-ons need checking.");
+                    return LoaderRoot;
+                }
+                report("Play is checking installed optional Nightly add-ons: "
+                    + (installBuildCraft ? "BuildCraft " : "")
+                    + (installQuiet ? "Quiet Underground" : "") + "...");
+            }
             if (!installBuildCraft && !installQuiet) return LoaderRoot;
             return await InstallOnlineAsync(report, cancellation, installBuildCraft, installQuiet);
         }
@@ -159,9 +193,9 @@ internal sealed class NightlyBuildInstaller
     {
         var release = await GetReleaseAsync(cancellation);
         if ((!installBuildCraft || HasCurrentBuildCraft(release.Tag))
-            && (!installQuiet || QuietInstalled))
+            && (!installQuiet || HasCurrentQuiet(release.Tag)))
         {
-            report("Optional add-on release " + release.Tag + " already verified; "
+            report("Installed Nightly add-ons already current at " + release.Tag + " and verified; "
                 + "H.O.W.L. runtime remains independent.");
             return LoaderRoot;
         }
@@ -301,10 +335,12 @@ internal sealed class NightlyBuildInstaller
                 {
                     File.Move(quietTemp,targetQuiet,overwrite:true);
                     File.WriteAllText(quietOwner,quietHash);
+                    File.WriteAllText(QuietTagPath,release.Tag);
                 }
-                report("Optional " + release.Tag + " installed. H.O.W.L. runtime v"
-                    + (NightlyRuntimeInstaller.InstalledVersion ?? "unknown")
-                    + " preserved.");
+                report("Installed Nightly add-on update " + release.Tag
+                    + " (BuildCraft=" + installBuildCraft + ", Quiet Underground=" + installQuiet
+                    + "). Verified H.O.W.L. v"
+                    + (NightlyRuntimeInstaller.InstalledVersion ?? "unknown") + " preserved.");
             }
             finally
             {

@@ -140,6 +140,15 @@ internal sealed class NightlyBuildInstaller
         bool updateInstalledOptionalOnPlay = false)
     {
         ArgumentNullException.ThrowIfNull(report);
+        // Old BuildCraft source was DELETED. Do not fetch its immutable
+        // Nightly release as a valid game mod, even with a matching checksum.
+        if (installBuildCraft)
+            throw new InvalidOperationException("BuildCraft's previous prototype is retired. "
+                + "The old Nightly cannot be installed or updated.");
+        if (updateInstalledOptionalOnPlay && File.Exists(BuildCraftJar))
+            throw new InvalidOperationException("Retired BuildCraft JAR is still installed. "
+                + "Use Add-ons > Mods > UNINSTALL before Play. Back up old BuildCraft "
+                + "test worlds: opening them without the mod may delete custom blocks.");
         try
         {
             // Runtime is versioned by HW-CodaLoader, NEVER by BuildCraft's optional release.
@@ -150,13 +159,14 @@ internal sealed class NightlyBuildInstaller
                 var selection = NightlyPlayUpdatePolicy.Select(
                     File.Exists(BuildCraftJar), IsManagedBuildCraft(),
                     File.Exists(QuietPath), QuietInstalled);
-                if (selection.WarnUnmanagedBuildCraft)
-                    report("BuildCraft JAR is not managed or has changed: Play will NOT overwrite it. "
-                        + "Review it in Add-ons.");
+                if (selection.RetiredBuildCraftPresent)
+                    throw new InvalidOperationException(
+                        "Retired BuildCraft prototype detected. Uninstall it in Add-ons.");
                 if (selection.WarnUnmanagedQuiet)
                     report("Quiet Underground is not managed or has changed: Play will NOT overwrite it. "
                         + "Review it in Add-ons.");
-                installBuildCraft |= selection.UpdateBuildCraft;
+                // Never reinstall the retired BuildCraft prototype.
+                installBuildCraft = false;
                 installQuiet |= selection.UpdateQuiet;
                 if (!installBuildCraft && !installQuiet)
                 {
@@ -208,7 +218,7 @@ internal sealed class NightlyBuildInstaller
         string staging = Path.Combine(working, "loader");
         try
         {
-            report($"Downloading optional BuildCraft/Quiet package {release.Tag} "
+            report($"Fetching existing Nightly archive for Quiet Underground only {release.Tag} "
                 + "(H.O.W.L. runtime will not be replaced)...");
             byte[] checksumBytes = await DownloadAsync(release.ChecksumUrl, 4096, cancellation);
             string checksumText = System.Text.Encoding.UTF8.GetString(checksumBytes).Trim();

@@ -25,12 +25,15 @@ internal static class OptionalModCatalog
                 found?.ReleaseTag);
         }
 
-        return [
-            Item("buildcraft_cml", "BuildCraft Community Edition (H.O.W.L. Port)", true, true),
-            Item("coda_wolf", "Coda Wolf Companion", false, false)
-                with { Required = true },
-            Item("hw_essentials", "HW Essentials", false, false)
-                with { Required = true }
-        ];
+        var list = new List<OptionalModView>();
+        // Display only installed legacy BuildCraft so players can uninstall.
+        // No new install option and no claimed availability.
+        if (mods.Any(m => m.Id == "buildcraft_cml"))
+            list.Add(Item("buildcraft_cml", "RETIRED BuildCraft prototype", false, true));
+        list.Add(Item("coda_wolf", "Coda Wolf Companion", false, false)
+            with { Required = true });
+        list.Add(Item("hw_essentials", "HW Essentials", false, false)
+            with { Required = true });
+        return list;
     }
 }

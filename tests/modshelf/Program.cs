@@ -93,8 +93,10 @@ try
             && stableCatalog.First(x => x.Id == "coda_wolf").Required
             && stableCatalog.First(x => x.Id == "hw_essentials").Required,
         "Fresh Stable profile requires Coda and Essentials but does not fake installation");
-    Check(stableCatalog.First(x => x.Id == "buildcraft_cml").NightlyOnly,
-        "Experimental BuildCraft is flagged as Nightly only");
+    Check(!stableCatalog.Any(x => x.Id == "buildcraft_cml"),
+        "Retired BuildCraft must not be advertised to new installs.");
+    Check(catalog.First(x => x.Id == "buildcraft_cml").Name.StartsWith("RETIRED"),
+        "Previously installed BuildCraft must be labeled retired for safe uninstall.");
 
     Console.WriteLine("PASS: " + count + " offline Nightly release-tag / SHA-256 identity assertions");
 }

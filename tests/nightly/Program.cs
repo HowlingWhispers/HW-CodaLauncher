@@ -113,23 +113,21 @@ Assert(StableSelect(
 Console.WriteLine("PASS: H.O.W.L. Stable only accepts promoted official releases; Nightly remains independent.");
 
 
-// PLAY updates only add-ons installed by user choice and still checksum-managed.
-// Every combination is deterministic and independent of the release version.
+// BuildCraft was retired: checksums do NOT authorize reinstalling it.
 var none = NightlyPlayUpdatePolicy.Select(false, false, false, false);
-Assert(!none.UpdateBuildCraft && !none.UpdateQuiet
-    && !none.WarnUnmanagedBuildCraft && !none.WarnUnmanagedQuiet,
-    "Play must not silently install any unselected optional add-on.");
+Assert(!none.UpdateBuildCraft && !none.UpdateQuiet && !none.RetiredBuildCraftPresent,
+    "Absent prototype cannot be installed by Play.");
 var both = NightlyPlayUpdatePolicy.Select(true, true, true, true);
-Assert(both.UpdateBuildCraft && both.UpdateQuiet,
-    "Play must update both installed SHA-256-managed optional add-ons.");
+Assert(!both.UpdateBuildCraft && both.UpdateQuiet && both.RetiredBuildCraftPresent,
+    "Even SHA-managed BuildCraft is retired and blocks Play; Quiet still updates.");
 var bcOnly = NightlyPlayUpdatePolicy.Select(true, true, false, false);
-Assert(bcOnly.UpdateBuildCraft && !bcOnly.UpdateQuiet,
-    "Play must not opt the player into Quiet Underground.");
+Assert(!bcOnly.UpdateBuildCraft && !bcOnly.UpdateQuiet && bcOnly.RetiredBuildCraftPresent,
+    "Retired installed JAR must never be upgraded.");
 var quietOnly = NightlyPlayUpdatePolicy.Select(false, false, true, true);
 Assert(!quietOnly.UpdateBuildCraft && quietOnly.UpdateQuiet,
-    "Play can update Quiet Underground without installing BuildCraft.");
+    "Quiet Underground works independently of the retired BuildCraft mod.");
 var edited = NightlyPlayUpdatePolicy.Select(true, false, true, false);
-Assert(!edited.UpdateBuildCraft && !edited.UpdateQuiet &&
-    edited.WarnUnmanagedBuildCraft && edited.WarnUnmanagedQuiet,
-    "Play must leave edited/unmanaged optional mods intact and warn.");
-Console.WriteLine("PASS: Nightly Play checks only opted-in, verified optional add-ons; edits preserved.");
+Assert(!edited.UpdateBuildCraft && !edited.UpdateQuiet
+    && edited.RetiredBuildCraftPresent && edited.WarnUnmanagedQuiet,
+    "Modified retired BuildCraft also blocks Play.");
+Console.WriteLine("PASS: retired BuildCraft disabled; Quiet remains independent.");

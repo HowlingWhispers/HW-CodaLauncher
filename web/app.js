@@ -283,14 +283,17 @@ function render(){
     const allowed=!m.nightlyOnly||nightly;
     const managed=m.managed;
     const actionsDisabled=installBusy||!!state.gameRunning||!allowed;
-    const installDisabled=actionsDisabled||(m.installed&&!managed);
+    const retired=m.id==='buildcraft_cml';
+    const installDisabled=retired||actionsDisabled||(m.installed&&!managed);
     const uninstallDisabled=actionsDisabled||!m.installed||!managed;
-    const detail=m.required
+    const detail=retired
+      ? 'RETIRED. Uninstall before Play; back up BuildCraft test worlds.'
+      :m.required
       ? (m.installed?'Present in game profile':'Will install with H.O.W.L. at launch')
       :!allowed?'Available in Nightly only'
       :m.installed?(managed?'Installed (launcher-managed)':'Present but not managed; review manually')
       :'Not installed';
-    const label=m.installed?'CHECK / UPDATE':'INSTALL';
+    const label=retired?'RETIRED':m.installed?'CHECK / UPDATE':'INSTALL';
     return '<article class="optional-mod"><div><b>'+esc(m.name)+'</b>'+
       '<small>'+(m.required?'REQUIRED · BUNDLED WITH H.O.W.L.':'OPTIONAL'+(m.recommended?' · RECOMMENDED':''))+' · '+esc(detail)+'</small>'+
       (m.installed?'<small>Manifest v'+esc(m.version||'?')+

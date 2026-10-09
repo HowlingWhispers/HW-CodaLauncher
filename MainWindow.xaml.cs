@@ -994,11 +994,9 @@ public partial class MainWindow : Window
                 switch (id)
                 {
                     case "buildcraft_cml":
-                        if (!NightlyBuildInstaller.Installed)
-                            throw new InvalidOperationException("Install the required H.O.W.L. Nightly runtime first.");
-                        await _nightly.InstallLatestAsync(Report, CancellationToken.None,
-                            installBuildCraft: true);
-                        break;
+                        throw new InvalidOperationException("The BuildCraft prototype was retired and "
+                            + "deleted from HW-Mods. The old Nightly cannot be installed.");
+
                     case "quiet_underground":
                         if (!NightlyBuildInstaller.Installed)
                             throw new InvalidOperationException("Install the required H.O.W.L. Nightly runtime first.");

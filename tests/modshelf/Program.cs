@@ -78,15 +78,21 @@ try
 
     File.WriteAllBytes(bcFile, [1, 2, 3, 4, 5]);
     var catalog = OptionalModCatalog.Build([wolf, buildcraft], nightly, true);
-    Check(catalog.Count == 3 && catalog.All(x => x.Recommended),
-        "All three add-ons are optional, visible and recommended.");
+    Check(catalog.Count == 3 && catalog.Count(x => x.Required) == 2
+            && catalog.First(x => x.Id == "coda_wolf").Required
+            && catalog.First(x => x.Id == "hw_essentials").Required
+            && !catalog.First(x => x.Id == "buildcraft_cml").Required,
+        "Coda and Essentials required; experimental BuildCraft optional.");
     Check(catalog.First(x => x.Id == "coda_wolf").Installed,
         "Present Coda Wolf appears installed even if manually modified");
     Check(!catalog.First(x => x.Id == "hw_essentials").Installed,
-        "Uninstalled Essentials still appears available for explicit installation");
+        "Uninstalled Essentials appears missing until bundled H.O.W.L. provisions it");
     var stableCatalog = OptionalModCatalog.Build([], stable, false);
-    Check(stableCatalog.All(x => !x.Installed),
-        "Fresh Stable profile does not auto-provision add-ons");
+    Check(stableCatalog.All(x => !x.Installed)
+            && stableCatalog.Count(x => x.Required) == 2
+            && stableCatalog.First(x => x.Id == "coda_wolf").Required
+            && stableCatalog.First(x => x.Id == "hw_essentials").Required,
+        "Fresh Stable profile requires Coda and Essentials but does not fake installation");
     Check(stableCatalog.First(x => x.Id == "buildcraft_cml").NightlyOnly,
         "Experimental BuildCraft is flagged as Nightly only");
 

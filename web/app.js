@@ -296,7 +296,9 @@ function render(){
     const label=retired?'RETIRED':m.installed?'CHECK / UPDATE':'INSTALL';
     return '<article class="optional-mod"><div><b>'+esc(m.name)+'</b>'+
       '<small>'+(m.required?'REQUIRED · BUNDLED WITH H.O.W.L.':'OPTIONAL'+(m.recommended?' · RECOMMENDED':''))+' · '+esc(detail)+'</small>'+
-      (m.installed?'<small>Manifest v'+esc(m.version||'?')+
+      (m.availableVersion?'<small>Available on GitHub: v'+esc(m.availableVersion)+
+        (m.source?' · '+esc(m.source):'')+'</small>':'')+
+      (m.installed?'<small>Installed manifest v'+esc(m.version||'?')+
         (m.releaseTag?' · '+esc(m.releaseTag):'')+'</small>':'')+
       '</div>'+(m.required ?
         '<div class="managed-label">Bundled, checked and repaired automatically with H.O.W.L. · No uninstall</div>' :

@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.20
-  CODA_TAG: v0.7.20
+  CODA_VERSION: 0.7.21
+  CODA_TAG: v0.7.21
 
 jobs:
   gate:
@@ -78,6 +78,7 @@ jobs:
           node --check web/app.js
           node tests/web/settings-save.test.cjs
           node tests/web/mod-drawer-refresh.test.cjs
+          node tests/web/addons-play-session.test.cjs
       - name: Test account verification
         run: dotnet run --project tests/accounts/AccountsTests.csproj -c Release
       - name: Test official Minecraft profile registration
@@ -171,7 +172,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.20 (prerelease)
+          # CodaLauncher 0.7.21 (prerelease)
+
+          - PLAY checks the launcher first; verified Windows updates restart
+            automatically, then resume the pending Minecraft launch.
+          - Add-ons groups Mods, Data Packs, and Resource Packs in one tab.
+          - COPY CURRENT LOG copies only the latest Play session.
+          - Windows staged replacements now use best-effort rollback backups.
 
           - Stable now selects only APPROVED non-prerelease H.O.W.L. builds.
           - Future experimental loader releases stay in Nightly until

@@ -1,0 +1,31 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const read = p => fs.readFileSync(p, 'utf8');
+const html=read('web/index.html'), js=read('web/app.js');
+const win=read('MainWindow.xaml.cs'), desktop=read('Desktop/DesktopWindow.cs');
+const start=read('App.xaml.cs'), dialog=read('UpdateWindow.xaml.cs'), core=read('LauncherCore.cs');
+assert.ok(html.includes('data-view="addons"'));
+for(const name of ['mods','datapacks','resourcepacks']) {
+  assert.ok(html.includes('data-addon="'+name+'"'));
+  assert.ok(html.includes('id="'+name+'"'));
+}
+assert.ok(!html.includes('data-view="mods"'));
+assert.ok(!html.includes('data-view="packs"'));
+assert.ok(!html.includes('data-view="resourcepacks"'));
+assert.ok(js.includes("querySelectorAll('.addon-tab')"));
+assert.ok(html.includes('COPY CURRENT LOG'));
+assert.ok(js.includes("post('copyCurrentLog')"));
+assert.ok(win.includes('case "copyCurrentLog":'));
+assert.ok(desktop.includes('Content = "COPY CURRENT LOG"'));
+assert.ok(win.includes('_logs.Clear()'));
+assert.ok(desktop.includes('_logs.Clear()'));
+assert.ok(win.includes('playUpdate = await SelfUpdater.CheckAsync'));
+assert.ok(win.indexOf('playUpdate = await SelfUpdater.CheckAsync') < win.indexOf('await _nightly.InstallLatestAsync'));
+assert.ok(win.includes('resumePlayAfterUpdate: true'));
+assert.ok(win.includes('_resumePlayOnReady = false;'));
+assert.ok(dialog.includes('StartApplyAndRestart(_prepared, _resumePlayAfterUpdate)'));
+assert.ok(core.includes('CodaLauncherRollback'));
+assert.ok(core.includes('changed.AsEnumerable().Reverse()'));
+assert.ok(start.includes('if (!e.Args.Contains("--resume-play"'));
+console.log('PASS: Add-ons, current session log, Play self-update and rollback wiring');

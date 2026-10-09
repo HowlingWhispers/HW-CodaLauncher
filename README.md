@@ -193,7 +193,7 @@ The current loader release ZIP is labeled win64 because it also includes a Windo
 
 ## Interface and updates
 
-Windows keeps the WPF/WebView2 interface and verified staged self-updater.
+Windows keeps the WPF/WebView2 interface and verified staged self-updater. PLAY checks for launcher updates first; verified Windows updates restart the application and resume the requested Play once. Application files are backed up for rollback. Add-ons groups Mods, Data Packs and Resource Packs in the Windows sidebar. COPY CURRENT LOG copies the current or most recent Play session.
 
 Linux/macOS use Avalonia with Home, Mods, Settings and Logs. All editions reuse the feed client, managed installer, mod scanner and Java launch service. The approved Coda portrait is bundled unchanged.
 

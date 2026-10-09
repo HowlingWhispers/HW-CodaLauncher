@@ -250,12 +250,15 @@ internal sealed class InstallService
 
     public async Task<ManagedInstallStatus> CheckManagedStateAsync(
         LauncherFeed feed,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool includeStableLoader = true)
     {
-        var latestLoader = await GetLatestLoaderReleaseAsync(ct);
-        var installedLoaderVersion = ReadInstalledLoaderVersion();
-        var loaderInstalled = LoaderReady;
-        var loaderCurrent = loaderInstalled
+        // The Nightly panel must not discover or compare against a Stable release.
+        CodaLoaderReleaseInfo? latestLoader = includeStableLoader
+            ? await GetLatestLoaderReleaseAsync(ct) : null;
+        var installedLoaderVersion = includeStableLoader ? ReadInstalledLoaderVersion() : null;
+        var loaderInstalled = includeStableLoader && LoaderReady;
+        var loaderCurrent = loaderInstalled && latestLoader is not null
             && string.Equals(
                 installedLoaderVersion,
                 latestLoader.Version,
@@ -277,7 +280,7 @@ internal sealed class InstallService
             loaderInstalled,
             loaderCurrent,
             installedLoaderVersion,
-            latestLoader.Version,
+            latestLoader?.Version ?? "",
             resourceInstalled,
             resourceCurrent,
             packInstalled,

@@ -307,15 +307,42 @@ public partial class MainWindow : Window
             item.Id.Equals("cml-base", StringComparison.OrdinalIgnoreCase));
         var resource = feed.ResourcePacks.First(item =>
             item.Id.Equals("cml-base-resources", StringComparison.OrdinalIgnoreCase));
-        var managed = await _installer.CheckManagedStateAsync(feed, CancellationToken.None);
         bool activeNightly = _settings.UpdateChannel == "nightly";
+        var managed = await _installer.CheckManagedStateAsync(feed, CancellationToken.None,
+            includeStableLoader: !activeNightly);
+        string? latestNightlyVersion = null;
+        string loaderCheckMessage;
+        if (activeNightly)
+        {
+            try
+            {
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_windowLifetime.Token);
+                timeout.CancelAfter(TimeSpan.FromSeconds(10));
+                latestNightlyVersion = await NightlyRuntimeInstaller.GetLatestPublishedVersionAsync(timeout.Token);
+                loaderCheckMessage = "Latest official H.O.W.L. Nightly checked: v" + latestNightlyVersion + ".";
+            }
+            catch (Exception error) when (error is HttpRequestException or IOException
+                or OperationCanceledException or JsonException)
+            {
+                // Failure to query Nightly does not mean an update is required.
+                loaderCheckMessage = "Nightly release check unavailable. Installed version shown; update status unknown.";
+            }
+        }
+        else
+        {
+            loaderCheckMessage = "Latest approved H.O.W.L. Stable checked: v"
+                + managed.LatestLoaderVersion + ".";
+        }
         string installedRuntimeVersion = activeNightly
             ? (NightlyRuntimeInstaller.InstalledVersion ?? "Legacy / unknown")
             : (managed.InstalledLoaderVersion ?? "");
         bool activeRuntimeReady = activeNightly
             ? NightlyBuildInstaller.Installed : managed.LoaderInstalled;
+        string nightlyStatus = activeNightly
+            ? LoaderVersionStatus.Nightly(installedRuntimeVersion, latestNightlyVersion, activeRuntimeReady)
+            : "";
         bool activeRuntimeCurrent = activeNightly
-            ? activeRuntimeReady && installedRuntimeVersion == managed.LatestLoaderVersion
+            ? nightlyStatus is "CURRENT" or "AHEAD OF RELEASE"
             : managed.LoaderCurrent;
 
         var loaderReady = activeRuntimeReady;
@@ -341,7 +368,10 @@ public partial class MainWindow : Window
                 loaderReady,
                 loaderCurrent = activeRuntimeCurrent,
                 installedLoaderVersion = installedRuntimeVersion,
-                latestLoaderVersion = managed.LatestLoaderVersion,
+                latestLoaderVersion = activeNightly ? latestNightlyVersion : managed.LatestLoaderVersion,
+                loaderVersionStatus = activeNightly ? nightlyStatus :
+                    (!activeRuntimeReady ? "NOT INSTALLED" : activeRuntimeCurrent ? "CURRENT" : "UPDATE AVAILABLE"),
+                loaderCheckMessage,
                 basePackReady,
                 managedInstalled = managed.Installed,
                 managedCurrent = managed.Current,

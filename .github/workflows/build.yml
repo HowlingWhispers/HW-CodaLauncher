@@ -26,6 +26,7 @@ jobs:
           node tests/web/settings-save.test.cjs
           node tests/web/mod-drawer-refresh.test.cjs
           node tests/web/addons-play-session.test.cjs
+          node tests/web/nightly-version-panel.test.cjs
           dotnet run --project tests/news/NewsTests.csproj -c Release
       - name: Test account verification
         run: dotnet run --project tests/accounts/AccountsTests.csproj -c Release
@@ -95,6 +96,7 @@ jobs:
           node tests/web/settings-save.test.cjs
           node tests/web/mod-drawer-refresh.test.cjs
           node tests/web/addons-play-session.test.cjs
+          node tests/web/nightly-version-panel.test.cjs
           dotnet run --project tests/news/NewsTests.csproj -c Release
       - name: Test account verification
         run: dotnet run --project tests/accounts/AccountsTests.csproj -c Release

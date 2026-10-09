@@ -144,6 +144,7 @@ window.chrome.webview.addEventListener('message',e=>{
   if(m.type==='state'){
     state=m.data;
     launcherUpdateVersion=state.launcherUpdateVersion||null;
+    loaderUpdateMessage=state.loaderCheckMessage||'Release check has not completed yet.';
     render();
   }
   if(m.type==='modsState'&&state){
@@ -224,9 +225,9 @@ function render(){
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
   const nightly=state.activeChannel==='nightly';
   $('loader-versions').textContent=nightly
-    ? 'ACTIVE Nightly H.O.W.L.: v'+(state.installedLoaderVersion||'Not installed')
-      +' | Latest: v'+(state.latestLoaderVersion||'Unknown')
-      +' | '+(state.loaderCurrent?'CURRENT':'UPDATE REQUIRED')
+    ? 'ACTIVE Nightly H.O.W.L.: '+(state.installedLoaderVersion?'v'+state.installedLoaderVersion:'Not installed')
+      +' | Latest Nightly: '+(state.latestLoaderVersion?'v'+state.latestLoaderVersion:'unavailable')
+      +' | '+(state.loaderVersionStatus||'CHECK UNAVAILABLE')
       +' | Stable untouched'
     : 'Installed: '+(state.installedLoaderVersion||'Not installed')+' | Latest published: '+(state.latestLoaderVersion||'Unknown');
   $('loader-update-result').textContent=loaderUpdateMessage;

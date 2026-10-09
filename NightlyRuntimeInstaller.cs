@@ -115,6 +115,10 @@ internal static class NightlyRuntimeInstaller
         }
     }
 
+    /** Read the same authoritative Nightly release used by EnsureLatestAsync. */
+    internal static async Task<string> GetLatestPublishedVersionAsync(CancellationToken ct) =>
+        (await FindReleaseAsync(ct)).Version;
+
     private static async Task<RuntimeRelease> FindReleaseAsync(CancellationToken ct)
     {
         var data = await DownloadAsync(new Uri(ReleasesUrl), 512 * 1024, ct);

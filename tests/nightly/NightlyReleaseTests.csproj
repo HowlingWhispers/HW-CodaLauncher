@@ -9,6 +9,7 @@
     <Compile Include="../../NightlyReleaseSelector.cs" Link="NightlyReleaseSelector.cs" />
     <Compile Include="../../NightlyPlayUpdatePolicy.cs" Link="NightlyPlayUpdatePolicy.cs" />
     <Compile Include="../../StableLoaderReleaseSelector.cs" Link="StableLoaderReleaseSelector.cs" />
+    <Compile Include="../../LoaderVersionStatus.cs" Link="LoaderVersionStatus.cs" />
     <Compile Include="../../NightlyAtomReleaseReader.cs" Link="NightlyAtomReleaseReader.cs" />
   </ItemGroup>
 </Project>

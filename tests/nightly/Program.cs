@@ -131,3 +131,17 @@ Assert(!edited.UpdateBuildCraft && !edited.UpdateQuiet
     && edited.RetiredBuildCraftPresent && edited.WarnUnmanagedQuiet,
     "Modified retired BuildCraft also blocks Play.");
 Console.WriteLine("PASS: retired BuildCraft disabled; Quiet remains independent.");
+
+Assert(LoaderVersionStatus.Nightly("0.0.36", "0.0.37", true) == "UPDATE AVAILABLE",
+    "Nightly 0.0.36 must compare to 0.0.37 rather than Stable 0.0.32.");
+Assert(LoaderVersionStatus.Nightly("0.0.37", "0.0.37", true) == "CURRENT",
+    "Matching Nightly versions are current.");
+Assert(LoaderVersionStatus.Nightly("0.0.37", "0.0.36", true) == "AHEAD OF RELEASE",
+    "Newer local Nightly must not be reported as outdated.");
+Assert(LoaderVersionStatus.Nightly("0.0.36", null, true) == "CHECK UNAVAILABLE",
+    "Failed release check must never be reported as UPDATE REQUIRED.");
+Assert(LoaderVersionStatus.Nightly("legacy/unknown", "0.0.37", true) == "VERSION UNKNOWN",
+    "Missing installed version cannot be treated as verified.");
+Assert(LoaderVersionStatus.Nightly(null, null, false) == "NOT INSTALLED",
+    "Absent Nightly is not the same as an available update.");
+Console.WriteLine("PASS: Nightly panel compares the correct release and handles failed checks.");

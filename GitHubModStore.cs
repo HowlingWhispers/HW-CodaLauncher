@@ -14,7 +14,10 @@ namespace HowlingWhispers.CodaLauncher;
 internal sealed class GitHubModStore
 {
     private const int MaximumJarBytes = 24 * 1024 * 1024;
-    private static readonly HttpClient Http = NewClient();
+    private static readonly HttpClient SharedHttp = NewClient();
+    private readonly HttpClient _http;
+
+    internal GitHubModStore(HttpClient? http = null) => _http = http ?? SharedHttp;
     internal sealed record Receipt(string Slug, string ModId, string FileName,
         string Version, string Tag, string Hash);
 
@@ -110,7 +113,7 @@ internal sealed class GitHubModStore
         try
         {
             report("Downloading " + entry.Name + " " + entry.Version + " from trusted GitHub release...");
-            using (var response = await Http.GetAsync(entry.DownloadUrl,
+            using (var response = await _http.GetAsync(entry.DownloadUrl,
                        HttpCompletionOption.ResponseHeadersRead, ct))
             {
                 response.EnsureSuccessStatusCode();

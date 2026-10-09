@@ -9,6 +9,8 @@
     <Compile Include="../../LauncherModels.cs" Link="LauncherModels.cs" />
     <Compile Include="../../NightlyModIdentity.cs" Link="NightlyModIdentity.cs" />
     <Compile Include="../../OptionalModCatalog.cs" Link="OptionalModCatalog.cs" />
+    <Compile Include="../../GitHubModCatalog.cs" Link="GitHubModCatalog.cs" />
+    <Compile Include="../../GitHubModStore.cs" Link="GitHubModStore.cs" />
     <Compile Include="../../ManagedMods.cs" Link="ManagedMods.cs" />
   </ItemGroup>
 </Project>

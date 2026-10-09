@@ -6,12 +6,14 @@ namespace HowlingWhispers.CodaLauncher;
 /// </summary>
 internal sealed record OptionalModView(
     string Id, string Name, bool Recommended, bool Installed,
-    bool Managed, bool NightlyOnly, string Version, string? ReleaseTag, bool Required = false);
+    bool Managed, bool NightlyOnly, string Version, string? ReleaseTag, bool Required = false,
+    string? AvailableVersion = null, string? Source = null);
 
 internal static class OptionalModCatalog
 {
     internal static IReadOnlyList<OptionalModView> Build(IReadOnlyList<ModInfo> mods,
-        string gameRoot, bool nightly)
+        string gameRoot, bool nightly,
+        IReadOnlyList<GitHubModRelease>? available = null)
     {
         OptionalModView Item(string id, string name, bool recommended, bool nightlyOnly)
         {
@@ -34,6 +36,24 @@ internal static class OptionalModCatalog
             with { Required = true });
         list.Add(Item("hw_essentials", "HW Essentials", false, false)
             with { Required = true });
+        // Real GitHub release discovery, not a frozen list of old mod names.
+        // The catalog intentionally contains no executable code until the
+        // player explicitly selects INSTALL. Stable never installs Nightly mods.
+        foreach (var entry in available ?? [])
+        {
+            var receipt = GitHubModStore.ReadReceipt(gameRoot, entry);
+            var found = receipt is null
+                ? mods.FirstOrDefault(x => x.FileName.Equals(entry.AssetName,
+                    StringComparison.OrdinalIgnoreCase))
+                : mods.FirstOrDefault(x => x.FileName.Equals(receipt.FileName,
+                    StringComparison.OrdinalIgnoreCase));
+            bool installed = found != null;
+            bool managed = installed && GitHubModStore.IsManaged(gameRoot, entry);
+            list.Add(new OptionalModView(entry.Id, entry.Name, false, installed,
+                managed, entry.NightlyOnly, found?.Version ?? receipt?.Version ?? "",
+                managed ? receipt?.Tag : null, false, entry.Version,
+                "GitHub: HowlingWhispers/" + entry.Repository));
+        }
         return list;
     }
 }

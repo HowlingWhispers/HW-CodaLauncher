@@ -131,6 +131,10 @@ internal sealed class NightlyBuildInstaller
         ArgumentNullException.ThrowIfNull(report);
         try
         {
+            // Runtime is versioned by HW-CodaLoader, NEVER by BuildCraft's optional release.
+            // Always bring the required loader current before touching optional mods.
+            await NightlyRuntimeInstaller.EnsureLatestAsync(report, cancellation);
+            if (!installBuildCraft && !installQuiet) return LoaderRoot;
             return await InstallOnlineAsync(report, cancellation, installBuildCraft, installQuiet);
         }
         catch (Exception error) when (error is HttpRequestException
@@ -154,11 +158,11 @@ internal sealed class NightlyBuildInstaller
         bool installBuildCraft, bool installQuiet)
     {
         var release = await GetReleaseAsync(cancellation);
-        if (Installed && File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim() == release.Tag
-            && (!installBuildCraft || HasCurrentBuildCraft(release.Tag))
+        if ((!installBuildCraft || HasCurrentBuildCraft(release.Tag))
             && (!installQuiet || QuietInstalled))
         {
-            report($"Nightly {release.Tag} is already installed in its isolated test profile.");
+            report("Optional add-on release " + release.Tag + " already verified; "
+                + "H.O.W.L. runtime remains independent.");
             return LoaderRoot;
         }
 
@@ -170,7 +174,8 @@ internal sealed class NightlyBuildInstaller
         string staging = Path.Combine(working, "loader");
         try
         {
-            report($"Downloading experimental BuildCraft {release.Tag}...");
+            report($"Downloading optional BuildCraft/Quiet package {release.Tag} "
+                + "(H.O.W.L. runtime will not be replaced)...");
             byte[] checksumBytes = await DownloadAsync(release.ChecksumUrl, 4096, cancellation);
             string checksumText = System.Text.Encoding.UTF8.GetString(checksumBytes).Trim();
             string expected = checksumText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
@@ -187,15 +192,15 @@ internal sealed class NightlyBuildInstaller
             await File.WriteAllBytesAsync(nested, package, cancellation);
             ZipFile.ExtractToDirectory(nested, staging, overwriteFiles: false);
 
-            string loaderJar = Path.Combine(staging, "CodaLoader.jar");
+            // BuildCraft archive loader bytes must NEVER be installed as H.O.W.L.
+            // Optional mods own only their package payload. This prevents
+            // previously shipped, stale test ZIPs from downgrading the runtime.
             // New nightlies provide a transient package payload. For migration,
             // older pre-refactor ZIPs may still carry run/mods, but that
             // directory is never installed under the active loader.
             string bundledMod = Path.Combine(staging, "payload", ModJar);
             if (!File.Exists(bundledMod))
                 bundledMod = Path.Combine(staging, "run", "mods", ModJar);
-            if (!File.Exists(loaderJar))
-                throw new InvalidDataException("Nightly bundle does not contain the required H.O.W.L. runtime.");
             if (installBuildCraft)
             {
                 if (!File.Exists(bundledMod))
@@ -259,72 +264,53 @@ internal sealed class NightlyBuildInstaller
             Directory.CreateDirectory(modFolder);
             Directory.CreateDirectory(worldgen);
 
-            // Preserve legacy ownership identity before advancing the loader
-            // tag. Older BuildCraft releases stored only the loader tag.
+            // Keep the optional BuildCraft tag independent of the loader
+            // version (a legacy .nightly-tag may still contain a BuildCraft tag).
+            string previousTag=Path.Combine(LoaderRoot, ".nightly-tag");
             if (File.Exists(BuildCraftJar) && IsManagedBuildCraft()
-                && !File.Exists(OwnedBuildCraftTag)
-                && File.Exists(Path.Combine(LoaderRoot, ".nightly-tag")))
+                && !File.Exists(OwnedBuildCraftTag) && File.Exists(previousTag))
             {
-                File.WriteAllText(OwnedBuildCraftTag,
-                    File.ReadAllText(Path.Combine(LoaderRoot, ".nightly-tag")).Trim());
+                string legacy=File.ReadAllText(previousTag).Trim();
+                if (legacy.StartsWith(TagPrefix, StringComparison.Ordinal))
+                    File.WriteAllText(OwnedBuildCraftTag, legacy);
             }
 
-            string jarTemp = Path.Combine(LoaderRoot, "." + Guid.NewGuid().ToString("N") + ".tmp");
-            string modTemp = Path.Combine(modFolder, "." + Guid.NewGuid().ToString("N") + ".tmp");
-            string quietTemp = Path.Combine(worldgen, "." + Guid.NewGuid().ToString("N") + ".tmp");
+            string modTemp=Path.Combine(modFolder, "."+Guid.NewGuid().ToString("N")+".tmp");
+            string quietTemp=Path.Combine(worldgen, "."+Guid.NewGuid().ToString("N")+".tmp");
             try
             {
-                File.Copy(loaderJar, jarTemp);
-                if (HashFile(jarTemp) != HashFile(loaderJar))
-                    throw new IOException("Nightly loader verification failed.");
                 if (installBuildCraft)
                 {
-                    File.Copy(bundledMod, modTemp);
+                    File.Copy(bundledMod,modTemp);
                     if (HashFile(modTemp) != newHash)
-                        throw new IOException("BuildCraft staging verification failed.");
+                        throw new IOException("BuildCraft mod checksum mismatch");
                 }
                 if (installQuiet)
                 {
-                    File.Copy(bundledQuiet, quietTemp);
-                    if (!HashFile(quietTemp).Equals(quietHash, StringComparison.OrdinalIgnoreCase))
-                        throw new IOException("Quiet Underground staging verification failed.");
+                    File.Copy(bundledQuiet,quietTemp);
+                    if (!HashFile(quietTemp).Equals(quietHash,StringComparison.OrdinalIgnoreCase))
+                        throw new IOException("Quiet Underground checksum mismatch");
                 }
-
-                // Back up the previous owned runtime, never player worlds.
-                string oldLoader = Path.Combine(LoaderRoot, "CodaLoader.jar");
-                if (File.Exists(oldLoader))
-                {
-                    string backups = Path.Combine(LoaderRoot, "previous-loader-code");
-                    Directory.CreateDirectory(backups);
-                    File.Copy(oldLoader, Path.Combine(backups,
-                        DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + "-"
-                        + Guid.NewGuid().ToString("N") + ".jar"));
-                }
-                File.Move(jarTemp, oldLoader, overwrite: true);
-                File.WriteAllText(LoaderHashMarker, HashFile(oldLoader));
                 if (installBuildCraft)
                 {
-                    File.Move(modTemp, targetMod, overwrite: true);
-                    File.WriteAllText(ownerMarker, newHash);
-                    File.WriteAllText(OwnedBuildCraftTag, release.Tag);
+                    File.Move(modTemp,targetMod,overwrite:true);
+                    File.WriteAllText(ownerMarker,newHash);
+                    File.WriteAllText(OwnedBuildCraftTag,release.Tag);
                 }
                 if (installQuiet)
                 {
-                    File.Move(quietTemp, targetQuiet, overwrite: true);
-                    File.WriteAllText(quietOwner, quietHash);
+                    File.Move(quietTemp,targetQuiet,overwrite:true);
+                    File.WriteAllText(quietOwner,quietHash);
                 }
-                File.WriteAllText(Path.Combine(LoaderRoot, ".nightly-tag"), release.Tag);
-                report("Required H.O.W.L. Nightly " + release.Tag +
-                    " installed. Optional mods " + (installBuildCraft ? "BuildCraft installed." : "unchanged.") +
-                    (installQuiet ? " Quiet Underground installed." : ""));
+                report("Optional " + release.Tag + " installed. H.O.W.L. runtime v"
+                    + (NightlyRuntimeInstaller.InstalledVersion ?? "unknown")
+                    + " preserved.");
             }
             finally
             {
-                if (File.Exists(jarTemp)) File.Delete(jarTemp);
                 if (File.Exists(modTemp)) File.Delete(modTemp);
                 if (File.Exists(quietTemp)) File.Delete(quietTemp);
             }
-
             return LoaderRoot;
         }
         finally

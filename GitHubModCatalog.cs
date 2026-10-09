@@ -28,9 +28,15 @@ internal sealed class GitHubModCatalog
         "codaloader", "coda-loader", "hw-codaloader", "howl-loader",
         "howl-sdk", "codaloader-bootstrap", "cml-loader"
     };
-    internal static bool IsOptionalGameplayMod(string slug) =>
+    // HW-Mods is the normal discovery source. BuildCraft Lite was released
+    // directly from HW-CodaLoader before a dedicated mods publisher existed;
+    // keep that one historical release installable until it is migrated.
+    // Never interpret arbitrary loader release assets as gameplay mods.
+    internal static bool IsOptionalGameplayMod(string slug, string repository) =>
         slug.Length > 0 && !Excluded.Contains(slug) &&
-        !slug.EndsWith("-bootstrap", StringComparison.OrdinalIgnoreCase);
+        !slug.EndsWith("-bootstrap", StringComparison.OrdinalIgnoreCase) &&
+        (repository == "HW-Mods" ||
+         (repository == "HW-CodaLoader" && slug == "buildcraft-lite"));
 
     private static readonly HttpClient SharedHttp = MakeClient();
     private readonly HttpClient _http;
@@ -113,7 +119,7 @@ internal sealed class GitHubModCatalog
                 var match = Jar.Match(filename);
                 if (!match.Success) continue;
                 string slug = match.Groups["slug"].Value.ToLowerInvariant();
-                if (!IsOptionalGameplayMod(slug)) continue;
+                if (!IsOptionalGameplayMod(slug, repo)) continue;
                 string url = urlNode.GetString() ?? "";
                 if (!TrustedUrl(url, repo, tag, filename)) continue;
                 string version = match.Groups["version"].Value;

@@ -7,7 +7,6 @@ namespace HowlingWhispers.CodaLauncher;
 /// H.O.W.L. Stable accepts only public non-prerelease GitHub releases.
 /// Nightly has its own independent selector. No automatic experimental upgrade.
 /// Sort by semantic version rather than GitHub API list order.
-*/
 internal static class StableLoaderReleaseSelector
 {
     internal sealed record Release(string Version, string BundleUrl, string BundleName);

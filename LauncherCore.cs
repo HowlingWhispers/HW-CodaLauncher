@@ -376,28 +376,14 @@ internal sealed class InstallService
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
 
-        foreach (var release in doc.RootElement.EnumerateArray())
-        {
-            if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
+        var stable = StableLoaderReleaseSelector.SelectNewest(doc.RootElement);
+        if (stable is not null)
+            return new CodaLoaderReleaseInfo(stable.Version, stable.BundleUrl, stable.BundleName);
 
-            var tag = release.GetProperty("tag_name").GetString() ?? "";
-            var version = tag.StartsWith('v') ? tag[1..] : tag;
-
-            foreach (var asset in release.GetProperty("assets").EnumerateArray())
-            {
-                var candidate = asset.GetProperty("name").GetString() ?? "";
-                if (!candidate.StartsWith("CodaLoader-v", StringComparison.OrdinalIgnoreCase)
-                    || !candidate.EndsWith("-win64.zip", StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                var url = asset.GetProperty("browser_download_url").GetString();
-                if (!string.IsNullOrWhiteSpace(url))
-                    return new CodaLoaderReleaseInfo(version, url, candidate);
-            }
-        }
-
+        // Fail closed. Stable must NEVER auto-select a prerelease from the
+        // GitHub release list, regardless of its timestamp or list order.
         throw new InvalidOperationException(
-            "No current HW-CodaLoader release with a Windows bundle is available.");
+            "No approved H.O.W.L. Stable release with a Windows bundle is available.");
     }
 
     private static string? ReadInstalledLoaderVersion()

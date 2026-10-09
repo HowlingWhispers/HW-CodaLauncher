@@ -18,6 +18,8 @@ public partial class MainWindow : Window
     private readonly LogBuffer _logs = new();
     private readonly FeedService _feeds = new();
     private readonly ModScanner _mods = new();
+    private readonly GitHubModCatalog _githubMods = new();
+    private readonly GitHubModStore _githubModStore = new();
     private readonly LauncherService _launcher;
     private readonly InstallService _installer = new();
     private readonly NightlyBuildInstaller _nightly = new();
@@ -244,6 +246,7 @@ public partial class MainWindow : Window
                     OpenModsFolder();
                     break;
                 case "refreshMods":
+                    await _githubMods.DiscoverAsync(_windowLifetime.Token, force: true);
                     SendMods();
                     break;
                 case "installMod":
@@ -278,7 +281,7 @@ public partial class MainWindow : Window
             type = "modsState",
             mods = found,
             optionalMods = OptionalModCatalog.Build(found, gameRoot,
-                _settings.UpdateChannel == "nightly"),
+                _settings.UpdateChannel == "nightly", _githubMods.Cached),
             modCount = found.Count(m => m.Valid),
             minecraftRoot = gameRoot
         });
@@ -292,6 +295,9 @@ public partial class MainWindow : Window
                 ? "https://thehowlingwhispers.com/launcher"
                 : _settings.FeedUrl;
         var feed = await _feeds.FetchAsync(feedUrl, CancellationToken.None);
+        // The Github mod shelf is best-effort. Offline mode retains last
+        // verified catalog and never blocks Minecraft launch.
+        await _githubMods.DiscoverAsync(_windowLifetime.Token);
         _lastFeed = feed;
         _installer.CurrentFeedBase = FeedBaseUri(feedUrl);
 
@@ -393,7 +399,7 @@ public partial class MainWindow : Window
                 optionalMods = OptionalModCatalog.Build(mods,
                     _settings.UpdateChannel == "nightly"
                         ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot,
-                    _settings.UpdateChannel == "nightly"),
+                    _settings.UpdateChannel == "nightly", _githubMods.Cached),
                 feed = new
                 {
                     feed.Schema,
@@ -710,6 +716,30 @@ public partial class MainWindow : Window
                     _logs.Add(message);
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
                 }, CancellationToken.None, updateInstalledOptionalOnPlay: true);
+                // Keep each optional mod opt-in. PLAY updates only mods the
+                // player already installed through the trusted GitHub shelf.
+                foreach (var release in await _githubMods.DiscoverAsync(_windowLifetime.Token))
+                {
+                    var owned = GitHubModStore.ReadReceipt(NightlyBuildInstaller.GameRoot, release);
+                    if (owned is null || !GitHubModStore.HasUpdate(NightlyBuildInstaller.GameRoot, release))
+                        continue;
+                    if (!GitHubModStore.IsManaged(NightlyBuildInstaller.GameRoot, release))
+                    {
+                        _logs.Add("Skipping modified optional mod: " + release.Name);
+                        continue;
+                    }
+                    try
+                    {
+                        await _githubModStore.InstallAsync(release, NightlyBuildInstaller.GameRoot,
+                            message => _logs.Add(message), _windowLifetime.Token);
+                    }
+                    catch (Exception modUpdateError) when (modUpdateError is IOException
+                        or HttpRequestException or InvalidDataException)
+                    {
+                        _logs.Add("Optional mod update skipped; current mod preserved: "
+                            + release.Name + ": " + modUpdateError.Message);
+                    }
+                }
                 SendMods();
                 _logs.Add("Active H.O.W.L. Nightly runtime: v" +
                     (NightlyRuntimeInstaller.InstalledVersion ?? "legacy/unknown"));
@@ -949,12 +979,14 @@ public partial class MainWindow : Window
             throw new InvalidOperationException("Close Minecraft before changing installed mods.");
         if (!await _installGate.WaitAsync(0))
             throw new InvalidOperationException("Another install/update operation is active.");
+        var githubEntry = _githubMods.Cached.FirstOrDefault(x => x.Id == id);
         string title = id switch
         {
             "buildcraft_cml" => "BuildCraft CML",
             "coda_wolf" => "Coda Wolf",
             "hw_essentials" => "HW Essentials",
             "quiet_underground" => "Quiet Underground",
+            _ when githubEntry != null => githubEntry.Name,
             _ => throw new InvalidOperationException("Unknown optional mod.")
         };
         var root = _settings.UpdateChannel == "nightly"
@@ -976,10 +1008,14 @@ public partial class MainWindow : Window
                 throw new InvalidOperationException(title + " is a required H.O.W.L. component. "
                     + "It is automatically installed, repaired and updated with H.O.W.L. "
                     + "in Stable and Nightly. Manual removal is not supported.");
-            if ((id is "buildcraft_cml" or "quiet_underground")
+            if ((id is "buildcraft_cml" or "quiet_underground" || githubEntry != null)
                 && _settings.UpdateChannel != "nightly")
                 throw new InvalidOperationException(title + " is currently offered only in Nightly.");
-            if (uninstall)
+            if (uninstall && githubEntry != null)
+                GitHubModStore.Uninstall(githubEntry, root, Report);
+            else if (!uninstall && githubEntry != null)
+                await _githubModStore.InstallAsync(githubEntry, root, Report, _windowLifetime.Token);
+            else if (uninstall)
             {
                 switch (id)
                 {

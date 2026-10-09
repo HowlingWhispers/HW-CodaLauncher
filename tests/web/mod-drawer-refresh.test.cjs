@@ -140,6 +140,16 @@ assert.doesNotMatch(el('mods-list').innerHTML, /<crash>/, 'Mod metadata cannot i
 // neither is installed yet; no Nightly-only or manual uninstall control.
 source.data.activeChannel = 'stable';
 source.data.settings.updateChannel = 'stable';
+// A preceding Mods refresh intentionally supplied no catalog and cleared the
+// cached list, so restore the required catalog as Stable's fresh state.
+source.data.optionalMods = [
+  { id: 'buildcraft_cml', name: 'BuildCraft CML', installed: false,
+    managed: false, recommended: true, nightlyOnly: true, version: '' },
+  { id: 'coda_wolf', name: 'Coda Wolf Companion', installed: false,
+    managed: false, recommended: false, nightlyOnly: false, required: true, version: '' },
+  { id: 'hw_essentials', name: 'HW Essentials', installed: false,
+    managed: false, recommended: false, nightlyOnly: false, required: true, version: '' }
+];
 listeners.message({data:source});
 assert.equal((el('optional-mods').innerHTML.match(/REQUIRED · BUNDLED WITH H\.O\.W\.L\./g)||[]).length,2,
   'Stable treats both bundled mods as required');

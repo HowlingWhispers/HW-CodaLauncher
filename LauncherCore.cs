@@ -713,6 +713,82 @@ internal static class SelfUpdater
     private const string ReleasesApi =
         "https://api.github.com/repos/HowlingWhispers/HW-CodaLauncher/releases?per_page=10";
     private static readonly HttpClient Http = CreateHttp();
+    private static string? postUpdateHealthMarker;
+    private static readonly string UpdateLog = Path.Combine(
+        Path.GetTempPath(), "CodaLauncher-update.log");
+
+    private static void LogUpdate(string message)
+    {
+        try { File.AppendAllText(UpdateLog,
+            DateTimeOffset.UtcNow.ToString("O") + " " + message + Environment.NewLine); }
+        catch { /* Logging must not prevent recovery. */ }
+    }
+
+    /// <summary>
+    /// A headless proof that the downloaded EXE can load its runtime. This
+    /// runs from staging before the still-running launcher is replaced.
+    /// </summary>
+    internal static int? RunStagedProbe(string[] args)
+    {
+        if (args.Length < 2 || args[0] != "--update-probe") return null;
+        try
+        {
+            var root = AppContext.BaseDirectory;
+            foreach (string file in new[] { "CodaLauncher.dll", "web/index.html",
+                "web/app.js", "web/assets/coda-headshot.png" })
+                if (!File.Exists(Path.Combine(root, file)))
+                    throw new FileNotFoundException("Staged update missing " + file);
+            File.WriteAllText(args[1], App.LauncherVersion);
+            return 0;
+        }
+        catch (Exception ex) { LogUpdate("Staged executable probe failed: " + ex); return 2; }
+    }
+
+    private static void VerifyStagedLauncher(string staging, string version)
+    {
+        string exe = Path.Combine(staging, "CodaLauncher.exe");
+        if (!File.Exists(exe)) throw new InvalidDataException("Staged CodaLauncher.exe is missing");
+        string marker = Path.Combine(staging, ".staged-boot-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo(exe)
+            {
+                WorkingDirectory = staging,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                ArgumentList = { "--update-probe", marker }
+            }) ?? throw new IOException("Windows could not run the staged CodaLauncher executable.");
+            if (!process.WaitForExit(20_000))
+            {
+                try { process.Kill(true); } catch { }
+                throw new TimeoutException("Staged CodaLauncher did not finish its startup check.");
+            }
+            if (process.ExitCode != 0 || !File.Exists(marker)
+                || File.ReadAllText(marker).Trim() != version)
+                throw new InvalidDataException("Staged launcher did not pass its runtime and version check.");
+            LogUpdate("Staged executable passed boot probe for v" + version);
+        }
+        finally { try { File.Delete(marker); } catch { } }
+    }
+
+    internal static void ConfigurePostUpdateHealth(string[] args)
+    {
+        int index = Array.IndexOf(args, "--update-health");
+        if (index >= 0 && index + 1 < args.Length)
+            postUpdateHealthMarker = args[index + 1];
+    }
+
+    internal static void MarkPostUpdateHealthy()
+    {
+        string? marker = Interlocked.Exchange(ref postUpdateHealthMarker, null);
+        if (marker is null) return;
+        try
+        {
+            File.WriteAllText(marker, "ready");
+            LogUpdate("Updated launcher WebView UI reported ready.");
+        }
+        catch (Exception ex) { LogUpdate("Could not write UI-ready marker: " + ex); }
+    }
 
     public static async Task<LauncherUpdateInfo?> CheckAsync(string currentVersion, CancellationToken ct)
     {
@@ -837,9 +913,9 @@ internal static class SelfUpdater
             100));
 
         ZipFile.ExtractToDirectory(zip, staging, true);
-        var stagedExe = Path.Combine(staging, "CodaLauncher.exe");
-        if (!File.Exists(stagedExe))
-            throw new InvalidDataException("Staged launcher update does not contain CodaLauncher.exe.");
+        // Prove the staged EXE and its self-contained runtime can boot before
+        // asking the player to close their known-good launcher.
+        VerifyStagedLauncher(staging, update.Version);
 
         progress(new LauncherUpdateProgress(
             "ready",
@@ -867,6 +943,8 @@ internal static class SelfUpdater
         info.ArgumentList.Add(update.InstallRoot);
         if (resumePlayAfterUpdate) info.ArgumentList.Add("--resume-play");
 
+        LogUpdate("Starting detached updater for v" + update.Version +
+            " from " + update.StagingDirectory + " to " + update.InstallRoot);
         var updaterProcess = Process.Start(info);
         if (updaterProcess is null)
             throw new InvalidOperationException("Could not start staged CodaLauncher updater.");
@@ -886,8 +964,10 @@ internal static class SelfUpdater
         // Apply from the verified staging copy with a rollback backup.
         var rollback = Path.Combine(Path.GetTempPath(), "CodaLauncherRollback", Guid.NewGuid().ToString("N"));
         var changed = new List<(string Destination, string? Backup)>();
+        bool rollbackCompleted = true;
         try
         {
+            LogUpdate("Apply started for target " + target + ". Waiting for parent " + parentPid);
             try
             {
                 using var parent = Process.GetProcessById(parentPid);
@@ -936,11 +1016,52 @@ internal static class SelfUpdater
             };
             if (args.Skip(4).Contains("--resume-play", StringComparer.Ordinal))
                 restart.ArgumentList.Add("--resume-play");
-            if (Process.Start(restart) is null)
-                throw new InvalidOperationException("Could not restart the updated launcher.");
+            // The special headless probe is used by CI to test the entire
+            // replacement/restart flow without modifying a real installation.
+            bool smoke = args.Skip(4).Contains("--smoke-update", StringComparer.Ordinal);
+            string ready = Path.Combine(Path.GetTempPath(), "CodaLauncherUpdate",
+                "ready-" + Guid.NewGuid().ToString("N") + ".txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(ready)!);
+            if (smoke)
+            {
+                restart.ArgumentList.Add("--update-probe");
+                restart.ArgumentList.Add(ready);
+            }
+            else
+            {
+                restart.ArgumentList.Add("--update-health");
+                restart.ArgumentList.Add(ready);
+            }
+            LogUpdate("Files replaced. Starting v" + App.LauncherVersion +
+                " from " + installedExe);
+            using var launched = Process.Start(restart)
+                ?? throw new InvalidOperationException("Updated CodaLauncher did not start.");
+            bool confirmed = false;
+            for (int attempt = 0; attempt < 240; attempt++)
+            {
+                if (File.Exists(ready))
+                {
+                    string result = File.ReadAllText(ready).Trim();
+                    confirmed = smoke ? result == App.LauncherVersion : result == "ready";
+                    if (confirmed) break;
+                }
+                if (launched.HasExited)
+                    throw new IOException("Updated launcher exited before reporting a ready UI. Exit code: "
+                        + launched.ExitCode);
+                Thread.Sleep(250);
+            }
+            try { File.Delete(ready); } catch { }
+            if (!confirmed)
+            {
+                try { launched.Kill(true); } catch { }
+                throw new TimeoutException("Updated launcher never reported a working UI within 60 seconds.");
+            }
+            LogUpdate("Update confirmed: new executable reached " +
+                (smoke ? "headless probe" : "user interface") + ".");
         }
         catch (Exception ex)
         {
+            LogUpdate("Update failed; restoring previous launcher: " + ex);
             foreach (var (destination, backup) in changed.AsEnumerable().Reverse())
             {
                 try
@@ -948,19 +1069,41 @@ internal static class SelfUpdater
                     if (backup is null) File.Delete(destination);
                     else File.Copy(backup, destination, true);
                 }
-                catch { /* Best-effort restore; preserve original error. */ }
+                catch (Exception restoreError)
+                {
+                    rollbackCompleted = false;
+                    LogUpdate("Rollback could not restore " + destination + ": " + restoreError);
+                }
             }
             try
             {
-                File.WriteAllText(
-                    Path.Combine(Path.GetTempPath(), "CodaLauncher-update-error.txt"),
-                    ex.ToString());
+                File.WriteAllText(Path.Combine(Path.GetTempPath(),
+                    "CodaLauncher-update-error.txt"), ex.ToString());
             }
             catch { }
+            if (rollbackCompleted && changed.Count > 0)
+            {
+                try
+                {
+                    var original = Path.Combine(target, "CodaLauncher.exe");
+                    LogUpdate("Reopening previous launcher after successful rollback.");
+                    if (File.Exists(original) && !args.Skip(4).Contains("--smoke-update",
+                        StringComparer.Ordinal))
+                        Process.Start(new ProcessStartInfo(original)
+                        { WorkingDirectory = target, UseShellExecute = true });
+                }
+                catch (Exception recoveryError)
+                {
+                    LogUpdate("Reopening previous launcher failed: " + recoveryError);
+                }
+            }
         }
         finally
         {
-            try { if (Directory.Exists(rollback)) Directory.Delete(rollback, true); } catch { }
+            // Preserve original backups if a file could not be restored.
+            if (rollbackCompleted)
+                try { if (Directory.Exists(rollback)) Directory.Delete(rollback, true); }
+                catch { }
         }
 
         return true;

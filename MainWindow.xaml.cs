@@ -152,6 +152,9 @@ public partial class MainWindow : Window
             {
                 case "ready":
                     if (App.IsSmokeTest) { Application.Current.Shutdown(0); return; }
+                    // Only the real WebView's readiness signal confirms that
+                    // the new application reached a working user interface.
+                    SelfUpdater.MarkPostUpdateHealthy();
                     _uiReady = true;
                     _updateTimer.Start();
                     if (!_resumePlayOnReady) _ = CheckLauncherUpdateAsync(force: true);

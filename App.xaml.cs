@@ -18,11 +18,18 @@ public partial class App : Application
         base.OnStartup(e);
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
+        var probeResult = SelfUpdater.RunStagedProbe(e.Args);
+        if (probeResult.HasValue)
+        {
+            Shutdown(probeResult.Value);
+            return;
+        }
         if (SelfUpdater.TryRunApplyMode(e.Args))
         {
             Shutdown();
             return;
         }
+        SelfUpdater.ConfigurePostUpdateHealth(e.Args);
 
         IsSmokeTest = e.Args.Contains("--smoke-ui");
         if (IsSmokeTest)

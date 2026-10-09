@@ -42,6 +42,17 @@ try {
         throw 'Self-update did not confirm that the installed executable restarted successfully'
     }
     Write-Host "PASS: CodaLauncher $version staged EXE, full replacement, preserved player files and verified restart"
+} catch {
+    Write-Warning ("Self-update smoke failed: " + $_.Exception.Message)
+    if (Test-Path $log) {
+        Write-Host "--- CodaLauncher update transaction log ---"
+        Get-Content $log | Select-Object -Last 35 | ForEach-Object { Write-Host $_ }
+    }
+    if (Test-Path $target) {
+        Write-Host "--- Installed target contents ---"
+        Get-ChildItem $target -Recurse -File | Select-Object -First 25 -ExpandProperty FullName | ForEach-Object { Write-Host $_ }
+    }
+    throw
 } finally {
     foreach ($dir in @($stage, $target)) {
         if (Test-Path $dir) { Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue }

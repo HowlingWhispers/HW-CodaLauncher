@@ -98,6 +98,98 @@ try
     Check(catalog.First(x => x.Id == "buildcraft_cml").Name.StartsWith("RETIRED"),
         "Previously installed BuildCraft must be labeled retired for safe uninstall.");
 
-    Console.WriteLine("PASS: " + count + " offline Nightly release-tag / SHA-256 identity assertions");
+    // A newly published GitHub mod is discovered without writing a new
+    // hard-coded OptionalModCatalog entry. Required components never appear.
+    string releases = """
+      [
+        {"tag_name":"v0.0.35","draft":false,"assets":[
+          {"name":"buildcraft-lite-0.1.0-dev.jar",
+           "browser_download_url":"https://github.com/HowlingWhispers/HW-CodaLoader/releases/download/v0.0.35/buildcraft-lite-0.1.0-dev.jar"},
+          {"name":"hw-essentials.jar",
+           "browser_download_url":"https://github.com/HowlingWhispers/HW-CodaLoader/releases/download/v0.0.35/hw-essentials.jar"},
+          {"name":"howl-api-0.0.35.jar",
+           "browser_download_url":"https://github.com/HowlingWhispers/HW-CodaLoader/releases/download/v0.0.35/howl-api-0.0.35.jar"},
+          {"name":"buildcraft-lite-0.1.0-dev.jar",
+           "browser_download_url":"https://malicious.example/whatever.jar"}
+        ]},
+        {"tag_name":"evil-draft","draft":true,"assets":[
+          {"name":"experimental-mod-1.0.0.jar",
+           "browser_download_url":"https://github.com/HowlingWhispers/HW-CodaLoader/releases/download/evil-draft/experimental-mod-1.0.0.jar"}
+        ]}
+      ]
+      """;
+    var available = GitHubModCatalog.ParseReleases(releases, "HW-CodaLoader");
+    Check(available.Count == 1 && available[0].Id == "github:buildcraft-lite",
+        "Discovery lists only eligible owner-published optional H.O.W.L. JARs");
+    Check(!GitHubModCatalog.TrustedUrl("https://github.com.evil.example/HowlingWhispers/HW-CodaLoader/releases/download/v0.0.35/buildcraft-lite-0.1.0-dev.jar",
+        "HW-CodaLoader", "v0.0.35", "buildcraft-lite-0.1.0-dev.jar"),
+        "Disallow deceptive GitHub download URLs");
+    var shelf = OptionalModCatalog.Build([], nightly, true, available);
+    Check(shelf.Count == 3 && shelf.Single(x => x.Id == "github:buildcraft-lite").AvailableVersion == "0.1.0-dev",
+        "Discovered GitHub release automatically appears alongside required mods");
+
+    // A complete offline download fixture validates the archive manifest,
+    // the SHA receipt, updates, user edits, and removal without real HTTP.
+    byte[] JarBytes(string version) {
+        using var mem = new MemoryStream();
+        using (var zip = new System.IO.Compression.ZipArchive(mem, System.IO.Compression.ZipArchiveMode.Create, true)) {
+            var metadata = zip.CreateEntry("coda.mod.json");
+            using (var writer = new StreamWriter(metadata.Open()))
+                writer.Write(System.Text.Json.JsonSerializer.Serialize(new {
+                    schema = 1, id = "hw_buildcraft_lite", name = "BuildCraft Lite",
+                    version, minecraft = "26.4-snapshot-3",
+                    entrypoint = "dev.howlingwhispers.buildcraftlite.BuildCraftLiteMod"
+                }));
+            using var entry = zip.CreateEntry("dev/howlingwhispers/buildcraftlite/BuildCraftLiteMod.class").Open();
+            entry.WriteByte(42);
+        }
+        return mem.ToArray();
+    }
+    var payload = JarBytes("0.1.0-dev");
+    using var http = new HttpClient(new StubHandler(() => payload));
+    var store = new GitHubModStore(http);
+    string game = Path.Combine(temporary, "discovered-game");
+    var release = available.Single();
+    await store.InstallAsync(release, game, _ => {}, CancellationToken.None);
+    Check(GitHubModStore.IsManaged(game, release),
+        "Downloaded JAR is managed only after manifest and hash verification");
+    Check(File.Exists(Path.Combine(game, "mods", release.AssetName)), "Mod installed in active profile mods/");
+    Check(!GitHubModStore.HasUpdate(game, release), "Installed matching tag has no pending update");
+
+    var changed = release with {
+        Version = "0.1.1-dev", Tag = "v0.0.36",
+        AssetName = "buildcraft-lite-0.1.1-dev.jar",
+        DownloadUrl = "https://github.com/HowlingWhispers/HW-CodaLoader/releases/download/v0.0.36/buildcraft-lite-0.1.1-dev.jar"
+    };
+    Check(GitHubModStore.HasUpdate(game, changed), "New tagged release triggers installed-only update");
+    payload = JarBytes("0.1.1-dev");
+    await store.InstallAsync(changed, game, _ => {}, CancellationToken.None);
+    Check(GitHubModStore.IsManaged(game, changed) &&
+        !File.Exists(Path.Combine(game, "mods", release.AssetName)),
+        "Updated package replaces only old owned JAR");
+    string installed = Path.Combine(game, "mods", changed.AssetName);
+    File.AppendAllText(installed, "user edit");
+    Check(!GitHubModStore.IsManaged(game, changed), "Local edits revoke managed status");
+    try {
+        GitHubModStore.Uninstall(changed, game, _ => {});
+        throw new Exception("Modified JAR uninstall should have been refused");
+    }
+    catch (IOException) { count++; }
+    Check(File.Exists(installed), "Modified JAR remains untouched after refused uninstall");
+    // Restore exact bytes to simulate the user reverting a local modification.
+    File.WriteAllBytes(installed, payload);
+    GitHubModStore.Uninstall(changed, game, _ => {});
+    Check(!File.Exists(installed), "Owned JAR can be removed without affecting any world");
+
+    Console.WriteLine("PASS: " + count + " offline GitHub shelf and SHA-256 mod install assertions");
 }
 finally { Directory.Delete(temporary, recursive: true); }
+
+
+internal sealed class StubHandler(Func<byte[]> bytes) : HttpMessageHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
+        Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) {
+            Content = new ByteArrayContent(bytes())
+        });
+}

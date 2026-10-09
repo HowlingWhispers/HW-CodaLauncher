@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.24
-  CODA_TAG: v0.7.24
+  CODA_VERSION: 0.7.25
+  CODA_TAG: v0.7.25
 
 jobs:
   gate:
@@ -175,7 +175,13 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.24 (prerelease)
+          # CodaLauncher 0.7.25 (prerelease)
+
+          - Discover optional H.O.W.L. mod JARs dynamically from trusted HowlingWhispers GitHub Releases.
+          - Install and update direct .jar assets into the active Nightly mods folder; no extra ZIP layer.
+          - New mods require explicit INSTALL; on Play, update only previously installed, hash-managed mods.
+          - Verify H.O.W.L. manifest compatibility and preserve locally modified mod files.
+          - BuildCraft Lite 0.1.0-dev is available as a direct JAR with no manual ZIP extraction.
 
           - RETIRE the former BuildCraft CML prototype. Do not fetch or install
             its obsolete Nightly JAR, even if the release SHA-256 is valid.

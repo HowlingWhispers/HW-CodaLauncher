@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.25
-  CODA_TAG: v0.7.25
+  CODA_VERSION: 0.7.26
+  CODA_TAG: v0.7.26
 
 jobs:
   gate:
@@ -175,7 +175,12 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.25 (prerelease)
+          # CodaLauncher 0.7.26 (prerelease)
+
+          - Keep H.O.W.L. loader/bootstrap and SDK artifacts out of optional gameplay mods.
+          - Discover new optional JAR mods from HW-Mods; temporarily permit the existing BuildCraft Lite JAR from HW-CodaLoader.
+          - Reject loader assets in both the mod shelf and the installer, including old cached entries.
+          - Add automated regression checks for old CodaLoader bootstrap and future HW-Mods discovery.
 
           - Discover optional H.O.W.L. mod JARs dynamically from trusted HowlingWhispers GitHub Releases.
           - Install and update direct .jar assets into the active Nightly mods folder; no extra ZIP layer.

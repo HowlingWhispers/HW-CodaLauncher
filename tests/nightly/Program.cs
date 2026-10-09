@@ -67,3 +67,47 @@ Assert(atomBuild?.ChecksumUrl.AbsolutePath.EndsWith(".sha256") == true,
     "BuildCraft fallback includes official SHA-256 filename");
 
 Console.WriteLine("PASS: newest published Nightly selection, old-first release order, URLs, checksum, draft and host restrictions.");
+
+ 
+// Stable channel is NOT a synonym for newest H.O.W.L. release.
+// Only an explicitly promoted non-prerelease can become Stable.
+static object StableRelease(string tag, bool prerelease=false, bool draft=false,
+                            string host="github.com", bool complete=true)
+{
+    string name="CodaLoader-"+tag+"-win64.zip";
+    return new {
+        tag_name=tag,
+        prerelease,
+        draft,
+        assets=complete ? new[] {new {
+            name,
+            browser_download_url="https://"+host+
+                 "/HowlingWhispers/HW-CodaLoader/releases/download/"+tag+"/"+name
+        }} : Array.Empty<object>()
+    };
+}
+static StableLoaderReleaseSelector.Release? StableSelect(params object[] releases)
+{
+    using var doc=JsonDocument.Parse(JsonSerializer.Serialize(releases));
+    return StableLoaderReleaseSelector.SelectNewest(doc.RootElement);
+}
+Assert(StableSelect(
+    StableRelease("v0.0.33",prerelease:true),
+    StableRelease("v0.0.31"),
+    StableRelease("v0.0.32"))?.Version=="0.0.32",
+    "Stable ignores newer experimental 0.0.33 and selects 0.0.32.");
+Assert(StableSelect(
+    StableRelease("v0.0.30"),
+    StableRelease("v0.0.32"),
+    StableRelease("v0.0.31"))?.Version=="0.0.32",
+    "Stable semver selection is independent of release list order.");
+Assert(StableSelect(
+    StableRelease("v0.0.34",draft:true),
+    StableRelease("v0.0.33",host:"evil.example"),
+    StableRelease("v0.0.36",complete:false),
+    StableRelease("v0.0.32"))?.Version=="0.0.32",
+    "Stable excludes drafts, foreign download URLs and incomplete releases.");
+Assert(StableSelect(
+    StableRelease("v0.0.33",prerelease:true)) is null,
+    "Stable fails closed when no approved H.O.W.L. release exists.");
+Console.WriteLine("PASS: H.O.W.L. Stable only accepts promoted official releases; Nightly remains independent.");

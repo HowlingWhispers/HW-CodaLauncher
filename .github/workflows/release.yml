@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.19
-  CODA_TAG: v0.7.19
+  CODA_VERSION: 0.7.20
+  CODA_TAG: v0.7.20
 
 jobs:
   gate:
@@ -171,8 +171,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.19 (prerelease)
+          # CodaLauncher 0.7.20 (prerelease)
 
+          - Stable now selects only APPROVED non-prerelease H.O.W.L. builds.
+          - Future experimental loader releases stay in Nightly until
+            separately promoted, never auto-upgrade unsuspecting Stable worlds.
           - Bundle tested Coda Companion with H.O.W.L. for Stable and Nightly.
           - Treat BOTH Coda Companion and HW Essentials as required foundation.
           - Show required status in Mods with no manual uninstall buttons.

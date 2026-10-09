@@ -880,33 +880,52 @@ internal static class SelfUpdater
         var staging = Path.GetFullPath(args[2]);
         var target = Path.GetFullPath(args[3]);
 
+        // Apply from the verified staging copy with a rollback backup.
+        var rollback = Path.Combine(Path.GetTempPath(), "CodaLauncherRollback", Guid.NewGuid().ToString("N"));
+        var changed = new List<(string Destination, string? Backup)>();
         try
         {
             try
             {
                 using var parent = Process.GetProcessById(parentPid);
-                parent.WaitForExit(60_000);
+                if (!parent.WaitForExit(60_000))
+                    throw new TimeoutException("CodaLauncher did not exit before replacement.");
             }
-            catch { }
+            catch (ArgumentException) { /* Parent already exited. */ }
 
             Directory.CreateDirectory(target);
+            Directory.CreateDirectory(rollback);
             foreach (var source in Directory.EnumerateFiles(staging, "*", SearchOption.AllDirectories))
             {
                 var relative = Path.GetRelativePath(staging, source);
                 var destination = Path.Combine(target, relative);
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-
-                if (destination.Equals(
-                    Path.Combine(target, Path.GetFileName(Environment.ProcessPath ?? "CodaLauncher.exe")),
-                    StringComparison.OrdinalIgnoreCase))
+                string? backup = null;
+                if (File.Exists(destination))
                 {
-                    // The updater itself is running from staging, not target, so replacement is safe.
+                    backup = Path.Combine(rollback, relative);
+                    Directory.CreateDirectory(Path.GetDirectoryName(backup)!);
+                    File.Copy(destination, backup, true);
                 }
 
-                File.Copy(source, destination, true);
+                var incoming = destination + ".coda-new-" + Guid.NewGuid().ToString("N");
+                try
+                {
+                    // Copy next to the destination, then rename in place.
+                    // This avoids leaving half-written application binaries.
+                    File.Copy(source, incoming, true);
+                    changed.Add((destination, backup));
+                    File.Move(incoming, destination, true);
+                }
+                finally
+                {
+                    try { if (File.Exists(incoming)) File.Delete(incoming); } catch { }
+                }
             }
 
             var installedExe = Path.Combine(target, "CodaLauncher.exe");
+            if (!File.Exists(installedExe))
+                throw new FileNotFoundException("Updated launcher executable is missing.", installedExe);
             var restart = new ProcessStartInfo(installedExe)
             {
                 WorkingDirectory = target,
@@ -915,10 +934,19 @@ internal static class SelfUpdater
             if (args.Skip(4).Contains("--resume-play", StringComparer.Ordinal))
                 restart.ArgumentList.Add("--resume-play");
             if (Process.Start(restart) is null)
-                throw new InvalidOperationException("Could not restart CodaLauncher.");
+                throw new InvalidOperationException("Could not restart the updated launcher.");
         }
         catch (Exception ex)
         {
+            foreach (var (destination, backup) in changed.AsEnumerable().Reverse())
+            {
+                try
+                {
+                    if (backup is null) File.Delete(destination);
+                    else File.Copy(backup, destination, true);
+                }
+                catch { /* Best-effort restore; preserve original error. */ }
+            }
             try
             {
                 File.WriteAllText(
@@ -926,6 +954,10 @@ internal static class SelfUpdater
                     ex.ToString());
             }
             catch { }
+        }
+        finally
+        {
+            try { if (Directory.Exists(rollback)) Directory.Delete(rollback, true); } catch { }
         }
 
         return true;

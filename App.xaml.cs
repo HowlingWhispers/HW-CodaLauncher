@@ -37,14 +37,19 @@ public partial class App : Application
         }
 
         LauncherUpdateInfo? update = null;
-        try
+        // A successful Play update must resume its one-shot launch without
+        // displaying another preflight update prompt.
+        if (!e.Args.Contains("--resume-play", StringComparer.Ordinal))
         {
-            using var checkTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            update = await SelfUpdater.CheckAsync(LauncherVersion, checkTimeout.Token);
-        }
-        catch
-        {
-            // Update checks must never stop an installed launcher from opening.
+            try
+            {
+                using var checkTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                update = await SelfUpdater.CheckAsync(LauncherVersion, checkTimeout.Token);
+            }
+            catch
+            {
+                // Update checks must never prevent launcher startup.
+            }
         }
 
         if (update is not null)

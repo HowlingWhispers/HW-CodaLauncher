@@ -126,7 +126,7 @@ internal static class NightlyRuntimeInstaller
             if (item.GetProperty("draft").GetBoolean()) continue;
             string tag = item.GetProperty("tag_name").GetString() ?? "";
             if (!tag.StartsWith('v') || !Version.TryParse(tag[1..], out var parsed)
-                || parsed.Build >= 0 || parsed.Revision >= 0) continue;
+                || parsed.Build < 0 || parsed.Revision >= 0) continue;
             string name = "CodaLoader-" + tag + "-win64.zip";
             Uri? zip = null, manifest = null;
             foreach (var asset in item.GetProperty("assets").EnumerateArray())

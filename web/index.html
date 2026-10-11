@@ -10,14 +10,22 @@
 <div class="shell">
 <aside>
   <div class="brand"><div class="mark">🐺</div><div><b>CODA</b><small>Howling Whispers</small></div></div>
+  <div class="channel-switch" role="group" aria-label="H.O.W.L. release channel">
+    <button type="button" class="channel active" data-channel="stable" aria-pressed="true">Stable</button>
+    <button type="button" class="channel" data-channel="nightly" aria-pressed="false">Nightly</button>
+  </div>
+  <p class="channel-note" id="channel-note">Main profile and saves.</p>
   <nav aria-label="Main navigation">
     <button class="nav active" data-view="home">⌂ <span>Home</span></button>
-    <button class="nav" data-view="addons">◇ <span>Add-ons</span></button>
-    <button class="nav" data-view="profile">◉ <span>Profile</span></button>
+    <button class="nav" data-view="addons">◇ <span>Library</span></button>
+    <button class="nav" data-view="worlds">◉ <span>Worlds</span></button>
     <button class="nav" data-view="settings">⚙ <span>Settings</span></button>
     <button class="nav" data-view="logs">≡ <span>Logs</span></button>
   </nav>
-  <div class="foot"><span id="feed-pill" class="pill online">NEWS INCLUDED</span><small id="version">CodaLauncher</small></div>
+  <div class="foot">
+    <button class="nav account-nav" data-view="profile" type="button">◉ <span>Profile / Account</span></button>
+    <span id="feed-pill" class="pill online">NEWS INCLUDED</span><small id="version">CodaLauncher</small>
+  </div>
 </aside>
 
 <main>
@@ -28,15 +36,43 @@
 <section class="view active" id="home">
   <header><div><em>CODA CONTROL CENTER</em><h1 id="home-heading">Ready when you are.</h1></div><button id="refresh" class="quiet">↻ Refresh</button></header>
   <div class="hero">
-    <div class="hero-copy">
-      <div class="chips"><span id="loader-chip">HOWL checking…</span><span id="pack-chip">BASE PACK checking…</span><span>Minecraft 26.4 Snapshot 3</span><span id="mod-chip">0 mods</span></div>
-      <h2>H.O.W.L.</h2><p>Howling Open Works Loader · Minecraft</p>
-      <p id="loader-summary">CodaLauncher keeps the required game components current automatically.</p>
-      <div class="actions"><button id="play" class="play">INSTALL &amp; PLAY ▶</button><button id="open-loader" class="quiet">Open files</button></div>
-      <div id="launch-message"></div>
-      <div class="panel" style="margin-top:14px;padding:12px"><b>H.O.W.L. versions</b><div id="loader-versions" aria-live="polite" style="margin-top:6px"></div><small id="loader-update-result">Update check has not completed yet.</small></div>
+    <div class="verification-moon" role="img" aria-label="Verified distribution status unavailable until the signed manifest system ships">
+      <svg viewBox="0 0 140 140" aria-hidden="true">
+        <circle cx="70" cy="70" r="54" fill="none" stroke="#335165" stroke-width="3"/>
+        <circle cx="70" cy="70" r="50" fill="#172b3c"/>
+        <path d="M70 21 A49 49 0 1 1 70 119 A35 49 0 1 0 70 21" fill="#eefcff" opacity=".78"/>
+      </svg>
+      <b id="verification-label">NOT SIGNED</b>
+      <small>Distribution trust</small>
     </div>
-    <div class="coda"><div class="halo"></div><img class="coda-face" src="assets/coda-headshot.png" alt="Coda"><b>Coda</b><small id="coda-status">clipboard online</small></div>
+    <div class="hero-copy">
+      <em>H.O.W.L.  /  MINECRAFT</em>
+      <h2 id="hero-title">Checking your installation</h2>
+      <p id="loader-summary">Coda is reading the local profile and release information.</p>
+      <div class="chips"><span id="loader-chip">HOWL checking…</span><span id="pack-chip">BASE PACK checking…</span><span id="mod-chip">0 mods</span></div>
+      <div class="actions"><button id="play" class="play">INSTALL &amp; PLAY ▶</button><button id="open-loader" class="quiet">Open files</button></div>
+      <div id="launch-message" role="status" aria-live="polite"></div>
+      <p class="build-details">Minecraft 26.4 Snapshot 3 · Stable / Nightly profiles</p>
+    </div>
+    <div class="coda"><img class="coda-face" src="assets/coda-headshot.png" alt="Coda"><b>Coda</b><small id="coda-status">clipboard online</small></div>
+  </div>
+  <div class="status-columns">
+    <div class="panel">
+      <h3>When you press Play</h3>
+      <p class="panel-intro">Actual launcher checks, not simulated progress.</p>
+      <div class="check-row"><b>1 · Check launcher update</b><small id="step-launcher">Checking for a published update.</small></div>
+      <div class="check-row"><b>2 · Prepare H.O.W.L. and content</b><small id="step-content">Checking installed versions and required components.</small></div>
+      <div class="check-row"><b>3 · Start Minecraft</b><small id="step-play">Local test or official Minecraft Launcher.</small></div>
+      <div class="version-strip"><b>H.O.W.L. versions</b><div id="loader-versions" aria-live="polite"></div><small id="loader-update-result">Update check has not completed yet.</small></div>
+    </div>
+    <div class="panel">
+      <h3>Safety</h3>
+      <p class="panel-intro">What the launcher can establish today.</p>
+      <div class="check-row"><b>Distribution signature</b><small class="caution">Not yet implemented. Release metadata is not a cryptographic trust proof.</small></div>
+      <div class="check-row"><b>Installed H.O.W.L.</b><small id="safety-loader">Checking local status.</small></div>
+      <div class="check-row"><b>Your own files</b><small>Existing user files are preserved and not silently replaced.</small></div>
+      <div class="check-row"><b>Active profile</b><small id="safety-profile">Stable (main saves)</small></div>
+    </div>
   </div>
   <div class="section-title"><div><em>FROM CODA'S DESK</em><h3>News</h3></div><small id="feed-note"></small></div>
   <div id="news" class="news"></div>
@@ -76,6 +112,15 @@
   </div>
   <div id="resourcepacks-list" class="pack-grid"></div>
 </div>
+</section>
+
+<section class="view" id="worlds">
+  <header><div><em>YOUR MINECRAFT WORLDS</em><h1>Worlds</h1><small class="header-note">View the active profile's local saves. Nothing is modified from this screen.</small></div><button id="open-worlds-folder" class="quiet" type="button">Open worlds folder</button></header>
+  <div class="panel">
+    <div class="panel-head"><div><b>Saved worlds</b><small id="worlds-profile">Stable profile</small></div><span class="pill" id="worlds-count">Checking…</span></div>
+    <div id="worlds-list" class="worlds-list" aria-live="polite"><p>Checking saved worlds.</p></div>
+    <p class="panel-intro">Backup and rollback controls will be enabled after safe, tested save transactions are implemented.</p>
+  </div>
 </section>
 
 <section class="view" id="profile">

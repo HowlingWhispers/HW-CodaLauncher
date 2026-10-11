@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.28
-  CODA_TAG: v0.7.28
+  CODA_VERSION: 0.7.29
+  CODA_TAG: v0.7.29
 
 jobs:
   gate:
@@ -80,6 +80,7 @@ jobs:
           node tests/web/mod-drawer-refresh.test.cjs
           node tests/web/addons-play-session.test.cjs
           node tests/web/nightly-version-panel.test.cjs
+          node tests/web/concept-ui.test.cjs
       - name: Test account verification
         run: dotnet run --project tests/accounts/AccountsTests.csproj -c Release
       - name: Test official Minecraft profile registration
@@ -180,19 +181,19 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.28 (prerelease)
+          # CodaLauncher 0.7.29 (prerelease)
 
-          - Harden the Reboot CodaLauncher self-update path after reports of the launcher closing or crashing during update.
-          - Launch and version-check the staged executable *before* shutting down the working launcher.
-          - Require a live WebView ready signal after update, then clean up the rollback backup.
-          - If the new launcher exits or never becomes ready, attempt rollback and reopen the previous executable.
-          - Log the update stages and failures to %TEMP%/CodaLauncher-update.log and retain failed rollback files.
-          - Add a Windows end-to-end test that exercises actual staged replacement and headless reboot in an isolated directory.
-          - Keep Stable, Nightly worlds, resource packs, mods, and player settings untouched.
+          - Apply the H.O.W.L. midnight/cyan launcher concept to the real Windows interface.
+          - Add Stable/Nightly sidebar controls using the existing validated Settings flow.
+          - Show read-only local Worlds for the active profile, without modifying saves.
+          - Display live preparation status, version checks and Coda's portrait.
+          - Clearly distinguish local version checks from not-yet-implemented signed-manifest verification.
+          - Update the cross-platform Avalonia layout while retaining the existing launcher backend.
+          - Preserve the 0.7.28 staged self-update, startup health check and rollback.
 
-          This release strengthens future self-updates. If an older updater already fails during Reboot,
-          install 0.7.28 using the Windows setup executable instead of repeating the failing reboot.
-          EOF
+          Security note: this release does not yet add signed release manifests.
+          Windows launcher updates still use the existing SHA-256 verification.
+                    EOF
           if ! gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher $CODA_VERSION" --notes-file release-notes.md; then
             echo "::error::Release creation failed. If the workflow token is denied with HTTP 403, configure a repository secret named CODALAUNCHER_RELEASE_TOKEN with scoped Contents: read/write access, then rerun."
             exit 1

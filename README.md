@@ -1,5 +1,23 @@
 # CodaLauncher
 
+## H.O.W.L. launcher concept integration (v0.7.29)
+
+Windows now presents the midnight-and-cyan H.O.W.L. Home, a status moon that
+explicitly says when signed distribution verification is **not yet available**,
+Stable/Nightly controls, Library, read-only Worlds, Settings, Logs and Coda's
+account shortcut. The existing Play, updater, mod ownership and rollback
+handlers are retained. Linux/macOS receive the corresponding Avalonia shell.
+
+The self-updater on Windows remains operational, but its manifest is
+**currently SHA-256 checked, not Ed25519-signed**. Do not describe it as a
+signed distribution until the trust engine is implemented. The Worlds screen
+lists local saves and opens their folder; backups are not implemented there yet.
+Changing the release version is necessary for the existing automatic updater
+to deliver this new UI.
+
+### Historical notes
+
+
 ## Optional and recommended mods (v0.7.16)
 
 Only H.O.W.L. and its required resource pack are automatic. The Mods tab

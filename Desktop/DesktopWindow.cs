@@ -46,6 +46,8 @@ internal sealed class DesktopWindow : Window
     private bool _busy, _running, _refreshing, _checkingUpdate;
     private string? _updateUrl;
     private readonly Bitmap _portrait;
+    private readonly StackPanel _worldList = new() { Spacing = 12 };
+    private LauncherConceptUI? _concept;
 
     public DesktopWindow()
     {
@@ -56,10 +58,11 @@ internal sealed class DesktopWindow : Window
         _feedUrl = new TextBox { Text = _settings.FeedUrl, MinWidth = 360 };
         _portrait = new Bitmap(Path.Combine(AppContext.BaseDirectory, "assets", "coda-headshot.png"));
         _launcher = new LauncherService(_logs, _ => Dispatcher.UIThread.Post(UpdateLog));
-        _launcher.SessionStarted += _ => Dispatcher.UIThread.Post(() => { _running = true; SetControls(); _status.Text = "Minecraft is running. Coda is on standby."; });
+        _launcher.SessionStarted += _ => Dispatcher.UIThread.Post(() => { _running = true; SetControls(); _status.Text = "Minecraft is running. Coda is on standby."; _concept?.ShowGameRunning(); });
         _launcher.SessionExited += (_, code) => Dispatcher.UIThread.Post(async () => {
             _running = false; SetControls();
             _status.Text = code == 0 ? "Minecraft closed. Ready when you are." : "Minecraft closed unexpectedly. Coda left the logs on the desk.";
+            _concept?.ShowMessage(_status.Text);
             await RefreshAsync(false);
         });
 
@@ -143,7 +146,31 @@ internal sealed class DesktopWindow : Window
             }
             catch (Exception ex) { copyStatus.Text = "Copy failed: " + ex.Message; }
         };
-        tabs.Items.Add(Tab("LOGS", Stack(copyLogs, copyStatus, _log))); root.Children.Add(tabs); Content = root;
+        tabs.Items.Add(Tab("LOGS", Stack(copyLogs, copyStatus, _log)));
+        // Preserve every existing service and event handler. Rehouse only the views:
+        // the Avalonia concept is a real launcher, not the HTML timer simulation.
+        var oldPages = tabs.Items.Cast<TabItem>().ToArray();
+        Control Detach(int index)
+        {
+            var page = (Control)oldPages[index].Content!;
+            oldPages[index].Content = null;
+            return page;
+        }
+        foreach (var control in new Control[] { _play, _repair, _refresh, _update })
+            actions.Children.Remove(control);
+        _essentialsUninstall.IsVisible = false; // First-party Essentials is required, not an optional add-on.
+        _optionalHint.Text = "HW Essentials is managed content. User-added mods are never silently overwritten or removed.";
+        var openWorlds = new Button { Content = "OPEN WORLDS FOLDER" };
+        openWorlds.Click += (_, _) => OpenFolder(Path.Combine(AppPaths.MinecraftRoot, "saves"));
+        var worlds = Stack(
+            Text("Worlds in this Stable profile", 21),
+            Text("Saved worlds are listed locally. Backup and restore controls will appear after they have real transactional support.", 13),
+            openWorlds, _worldList);
+        _concept = new LauncherConceptUI(_portrait,
+            _play, _repair, _refresh, _update,
+            Detach(0), Detach(1), worlds, Detach(3), Detach(4), Detach(2),
+            RefreshWorlds);
+        Content = _concept.Root;
         _play.Click += async (_, _) => await PrepareAsync(true);
         _repair.Click += async (_, _) => await PrepareAsync(false);
         _refresh.Click += async (_, _) => await RefreshAsync();
@@ -188,6 +215,8 @@ internal sealed class DesktopWindow : Window
             _versions.Text = $"Minecraft 26.4 Snapshot 3 • H.O.W.L. {state.InstalledLoaderVersion ?? "not installed"} • Latest {state.LatestLoaderVersion}";
             if (replaceStatus && !_running) _status.Text = state.Current ? "Everything is where it belongs. Ready to play." : "Coda has updates to file. PLAY prepares everything automatically.";
             _news.Text = string.Join("\n\n", feed.News.Take(8).Select(n => n.Title + "\n" + n.Text));
+            _concept?.ShowManaged(state);
+            RefreshWorlds();
             ScanMods();
             await CheckUpdateAsync();
         }
@@ -294,7 +323,41 @@ internal sealed class DesktopWindow : Window
         finally { _busy = false; SetControls(); }
     }
 
-    private void Report(string message) { _status.Text = message; _logs.Add(message); UpdateLog(); }
+    private void RefreshWorlds()
+    {
+        _worldList.Children.Clear();
+        var saves = Path.Combine(AppPaths.MinecraftRoot, "saves");
+        try
+        {
+            if (!Directory.Exists(saves))
+            {
+                _worldList.Children.Add(Text("No saved worlds were found in this profile.", 14));
+                return;
+            }
+            foreach (var path in Directory.EnumerateDirectories(saves).OrderBy(Path.GetFileName))
+            {
+                var directory = new DirectoryInfo(path);
+                if ((directory.Attributes & FileAttributes.ReparsePoint) != 0) continue;
+                var row = new StackPanel { Spacing = 4 };
+                row.Children.Add(Text(directory.Name, 16));
+                row.Children.Add(Text("Local world • last changed " + directory.LastWriteTime.ToString("yyyy-MM-dd HH:mm"), 12));
+                _worldList.Children.Add(new Border
+                {
+                    Child = row, Padding = new Thickness(14),
+                    BorderBrush = Brush.Parse("#273b4d"),
+                    BorderThickness = new Thickness(0, 0, 0, 1)
+                });
+            }
+            if (_worldList.Children.Count == 0)
+                _worldList.Children.Add(Text("No saved worlds were found in this profile.", 14));
+        }
+        catch (Exception ex)
+        {
+            _worldList.Children.Add(Text("Could not list saved worlds: " + ex.Message, 13));
+        }
+    }
+
+    private void Report(string message) { _status.Text = message; _concept?.ShowMessage(message); _logs.Add(message); UpdateLog(); }
     private void UpdateLog() { _log.Text = string.Join("\n", _logs.Snapshot()); _log.CaretIndex = _log.Text.Length; }
     private void SetControls()
     {

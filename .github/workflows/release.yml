@@ -193,7 +193,7 @@ jobs:
 
           Security note: this release does not yet add signed release manifests.
           Windows launcher updates still use the existing SHA-256 verification.
-                    EOF
+          EOF
           if ! gh release create "$CODA_TAG" dist/release/* --target "$GITHUB_SHA" --prerelease --title "CodaLauncher $CODA_VERSION" --notes-file release-notes.md; then
             echo "::error::Release creation failed. If the workflow token is denied with HTTP 403, configure a repository secret named CODALAUNCHER_RELEASE_TOKEN with scoped Contents: read/write access, then rerun."
             exit 1

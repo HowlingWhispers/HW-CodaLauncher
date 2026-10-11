@@ -248,6 +248,12 @@ public partial class MainWindow : Window
                 case "openModsFolder":
                     OpenModsFolder();
                     break;
+                case "refreshWorlds":
+                    SendWorlds();
+                    break;
+                case "openWorldsFolder":
+                    OpenWorldsFolder();
+                    break;
                 case "refreshMods":
                     await _githubMods.DiscoverAsync(_windowLifetime.Token, force: true);
                     SendMods();
@@ -384,6 +390,7 @@ public partial class MainWindow : Window
                 gameProcessId = _gameRunning ? _gameProcessId : 0,
                 installRoot = AppPaths.InstallRoot,
                 minecraftRoot = _settings.UpdateChannel == "nightly" ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot,
+                worlds = ListWorlds(),
                 activeChannel = _settings.UpdateChannel,
                 nightlyInstalled = NightlyBuildInstaller.Installed,
                 nightlyQuietInstalled = NightlyBuildInstaller.QuietInstalled,
@@ -1102,6 +1109,49 @@ public partial class MainWindow : Window
             SendMods();
         }
         finally { _installGate.Release(); }
+    }
+
+    private object[] ListWorlds()
+    {
+        string root = _settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot;
+        string saves = Path.Combine(root, "saves");
+        if (!Directory.Exists(saves)) return [];
+        try
+        {
+            return Directory.EnumerateDirectories(saves)
+                .Where(path => (File.GetAttributes(path) & FileAttributes.ReparsePoint) == 0)
+                .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
+                .Take(100)
+                .Select(path => (object)new
+                {
+                    name = Path.GetFileName(path),
+                    lastModified = Directory.GetLastWriteTimeUtc(path).ToString("O"),
+                    hasLevelDat = File.Exists(Path.Combine(path, "level.dat"))
+                })
+                .ToArray();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            _logs.Add("World listing unavailable: " + error.Message);
+            return [];
+        }
+    }
+
+    private void SendWorlds()
+    {
+        var game = _settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot;
+        Send(new { type = "worldsState", worlds = ListWorlds(), minecraftRoot = game });
+    }
+
+    private void OpenWorldsFolder()
+    {
+        string game = _settings.UpdateChannel == "nightly"
+            ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot;
+        string saves = Path.Combine(game, "saves");
+        Directory.CreateDirectory(saves);
+        Process.Start(new ProcessStartInfo("explorer.exe", saves) { UseShellExecute = true });
     }
 
     private void OpenModsFolder()

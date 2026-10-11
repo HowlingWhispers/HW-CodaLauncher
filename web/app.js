@@ -56,6 +56,7 @@ document.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>
   btn.classList.add('active');
   $(btn.dataset.view).classList.add('active');
   if(btn.dataset.view==='addons') post('refreshMods');
+  if(btn.dataset.view==='worlds') post('refreshWorlds');
 }));
 document.querySelectorAll('.addon-tab').forEach(btn=>btn.addEventListener('click',()=>{
   document.querySelectorAll('.addon-tab').forEach(tab=>{
@@ -93,6 +94,16 @@ $('account-signout').onclick=()=>post('signOutAccount');
 $('account-cancel').onclick=()=>post('cancelSignIn');
 $('account-offline').onchange=()=>post('setPlayMode',{offline:$('account-offline').checked});
 $('copy-current-log').onclick=()=>post('copyCurrentLog');
+// Switching from the sidebar goes through the same validated Settings path.
+document.querySelectorAll('.channel').forEach(btn=>btn.addEventListener('click',()=>{
+  if(!state||installBusy||settingsSaving||state.gameRunning||state.accountBusy) return;
+  if(btn.dataset.channel===state.activeChannel) return;
+  $('update-channel').value=btn.dataset.channel;
+  $('nightly-warning').hidden=btn.dataset.channel!=='nightly';
+  if(btn.dataset.channel==='nightly') $('local-test-mode').checked=true;
+  $('save').click();
+}));
+$('open-worlds-folder').onclick=()=>post('openWorldsFolder');
 $('update-channel').onchange=()=>{
   const nightly=$('update-channel').value==='nightly';
   $('nightly-warning').hidden=!nightly;
@@ -146,6 +157,11 @@ window.chrome.webview.addEventListener('message',e=>{
     launcherUpdateVersion=state.launcherUpdateVersion||null;
     loaderUpdateMessage=state.loaderCheckMessage||'Release check has not completed yet.';
     render();
+  }
+  if(m.type==='worldsState'&&state){
+    state.worlds=m.worlds||[];
+    state.minecraftRoot=m.minecraftRoot||state.minecraftRoot;
+    renderWorlds();
   }
   if(m.type==='modsState'&&state){
     state.mods=m.mods||[];
@@ -224,6 +240,34 @@ function render(){
   $('home-heading').textContent=state.gameRunning?'World session active.':'Ready when you are.';
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
   const nightly=state.activeChannel==='nightly';
+  document.querySelectorAll('.channel').forEach(btn=>{
+    const active=btn.dataset.channel===state.activeChannel;
+    btn.classList.toggle('active',active);
+    btn.setAttribute('aria-pressed',String(active));
+    btn.disabled=installBusy||settingsSaving||state.gameRunning||state.accountBusy;
+  });
+  $('channel-note').textContent=nightly
+    ? 'Experiments use a separate test world directory.'
+    : 'Main profile and saves.';
+  $('verification-label').textContent='NOT SIGNED';
+  $('hero-title').textContent=state.gameRunning?'Minecraft is running'
+    :state.managedCurrent?'Ready to play'
+    :state.managedInstalled?'An update before you play':'Prepare H.O.W.L. to play';
+  $('step-launcher').textContent=launcherUpdateVersion
+    ?'CodaLauncher '+launcherUpdateVersion+' available: verified update and restart offered.'
+    :'Checks for new launcher releases when launched or Play is pressed.';
+  $('step-content').textContent=nightly
+    ?'Installs the Nightly runtime in its isolated profile.'
+    :state.managedCurrent?'Published versions match the installed managed components.'
+    :'Repairs or installs required H.O.W.L. components before launch.';
+  $('step-play').textContent=state.localSingleplayer
+    ?'Launches local, unverified singleplayer only.'
+    :'Opens the official Minecraft Launcher for account verification.';
+  $('safety-loader').textContent=state.installedLoaderVersion
+    ?'Installed v'+state.installedLoaderVersion+'; '+(state.loaderCurrent?'published version matches':'update or further check needed')
+    :'H.O.W.L. is not installed.';
+  $('safety-profile').textContent=nightly?'Nightly • isolated saves':'Stable • main saves';
+
   $('loader-versions').textContent=nightly
     ? 'ACTIVE Nightly H.O.W.L.: '+(state.installedLoaderVersion?'v'+state.installedLoaderVersion:'Not installed')
       +' | Latest Nightly: '+(state.latestLoaderVersion?'v'+state.latestLoaderVersion:'unavailable')
@@ -335,6 +379,19 @@ function render(){
   $('nightly-warning').hidden=$('update-channel').value!=='nightly';
   $('p-cml').textContent=state.profile.cmlAccount;$('p-mc').textContent=state.localSingleplayer?'Unverified (local test)':'Handled by Minecraft Launcher';$('p-discord').textContent=state.profile.discord;
   $('log-output').textContent=(state.logs||[]).join('\n')||'Nothing interesting has happened yet.';
+  renderWorlds();
+}
+function renderWorlds(){
+  if(!state) return;
+  const worlds=state.worlds||[];
+  $('worlds-profile').textContent=(state.activeChannel==='nightly'?'Nightly':'Stable')+' • '+(state.minecraftRoot||'');
+  $('worlds-count').textContent=worlds.length+' world'+(worlds.length===1?'':'s');
+  $('worlds-list').innerHTML=worlds.length?worlds.map(w=>
+    '<div class="world-entry"><div><b>'+esc(w.name)+'</b><small>'+
+    esc(w.lastModified?new Date(w.lastModified).toLocaleString():'Modification time unknown')+
+    '</small></div><span class="pill '+(w.hasLevelDat?'online':'offline')+'">'+
+    (w.hasLevelDat?'Local save':'Incomplete folder')+'</span></div>'
+  ).join(''):'<p>No local worlds in this profile yet.</p>';
 }
 function appendLog(line){const pre=$('log-output');pre.textContent=(pre.textContent==='Nothing interesting has happened yet.'?'':pre.textContent+'\n')+line;pre.parentElement.scrollTop=pre.parentElement.scrollHeight;}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}

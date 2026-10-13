@@ -51,7 +51,7 @@ internal static class OptionalModCatalog
             bool managed = installed && GitHubModStore.IsManaged(gameRoot, entry);
             list.Add(new OptionalModView(entry.Id, entry.Name, false, installed,
                 managed, entry.NightlyOnly, found?.Version ?? receipt?.Version ?? "",
-                managed ? receipt?.Tag : null, false, entry.Version,
+                managed ? receipt?.Tag : null, entry.Required, entry.Version,
                 "GitHub: HowlingWhispers/" + entry.Repository));
         }
         return list;

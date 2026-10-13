@@ -200,6 +200,8 @@ internal sealed record ManagedInstallStatus(
 
 internal sealed class InstallService
 {
+    internal OfficialModsInstaller OfficialMods { get; } = new();
+
     private const string ReleasesApi =
         "https://api.github.com/repos/HowlingWhispers/HW-CodaLoader/releases?per_page=20";
     private const string CmlBasePackVersion = "1";
@@ -347,8 +349,8 @@ internal sealed class InstallService
         File.WriteAllText(AppPaths.CmlBasePackFingerprint, PackFingerprint(packVersion, resource));
         progress("HOWL Base is current.");
 
-        // HW Essentials and all other add-ons are optional. The user installs
-        // them explicitly from Mods; never bring back a removed mod on PLAY.
+        await OfficialMods.EnsureAsync(AppPaths.MinecraftRoot,
+            Path.Combine(AppPaths.LoaderRoot, "CodaLoader.jar"), "stable", progress, ct);
         progress("Install ready.");
     }
 

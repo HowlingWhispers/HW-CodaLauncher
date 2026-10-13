@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>CodaLauncher</AssemblyName>
-    <Version>0.7.29</Version>
+    <Version>0.7.30</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
@@ -25,6 +25,9 @@
     <Compile Include="../LauncherModels.cs" Link="Shared/LauncherModels.cs" />
     <Compile Include="../NightlyModIdentity.cs" Link="Shared/NightlyModIdentity.cs" />
     <Compile Include="../ManagedMods.cs" Link="Shared/ManagedMods.cs" />
+    <Compile Include="../GitHubModCatalog.cs" Link="Shared/GitHubModCatalog.cs" />
+    <Compile Include="../GitHubModStore.cs" Link="Shared/GitHubModStore.cs" />
+    <Compile Include="../OfficialModsInstaller.cs" Link="Shared/OfficialModsInstaller.cs" />
     <Content Include="../web/assets/coda-headshot.png" Link="assets/coda-headshot.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

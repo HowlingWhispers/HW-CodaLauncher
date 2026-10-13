@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace HowlingWhispers.CodaLauncher;
 
 /// <summary>
-/// Installs an explicitly selected, validated optional JAR from the trusted
+/// Installs a validated player-selected or declared required JAR from the trusted
 /// HowlingWhispers GitHub release catalog into the active Minecraft profile.
 /// Tracks local ownership by SHA-256. Never alters untracked/modified mod JARs.
 /// </summary>
@@ -101,12 +101,17 @@ internal sealed class GitHubModStore
         string mods = ModsRoot(gameRoot);
         Directory.CreateDirectory(mods);
         var old = ReadReceipt(gameRoot, entry);
-        if (old != null && !IsManaged(gameRoot, entry))
+        if (old != null && File.Exists(Path.Combine(mods, old.FileName)) && !IsManaged(gameRoot, entry))
             throw new IOException("The installed mod was modified. Existing JAR preserved.");
-        if (old == null && File.Exists(Path.Combine(mods, entry.AssetName)))
+        bool matchingPublishedFile = entry.ExpectedSha256 is { Length: 64 }
+            && entry.ExpectedSha256.All(Uri.IsHexDigit)
+            && File.Exists(Path.Combine(mods, entry.AssetName))
+            && Hash(Path.Combine(mods, entry.AssetName)).Equals(entry.ExpectedSha256, StringComparison.OrdinalIgnoreCase);
+        if (old == null && File.Exists(Path.Combine(mods, entry.AssetName)) && !matchingPublishedFile)
             throw new IOException("A manually installed JAR has this name. Refusing to overwrite it.");
 
-        if (old != null && !HasUpdate(gameRoot, entry))
+        if (old != null && IsManaged(gameRoot, entry) && !HasUpdate(gameRoot, entry)
+            && (entry.ExpectedSha256 == null || old.Hash.Equals(entry.ExpectedSha256, StringComparison.OrdinalIgnoreCase)))
         {
             report(entry.Name + " already current and SHA-256 verified.");
             return;
@@ -165,11 +170,27 @@ internal sealed class GitHubModStore
             }
 
             string hash = Hash(staged);
+            if (entry.ExpectedSha256 != null && (entry.ExpectedSha256.Length != 64
+                || !entry.ExpectedSha256.All(Uri.IsHexDigit)
+                || !hash.Equals(entry.ExpectedSha256, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidDataException("Published mod SHA-256 mismatch; previous installation preserved.");
             string target = Path.Combine(mods, entry.AssetName);
             // Never replace an unrelated JAR, even during a version upgrade.
-            if (File.Exists(target) && (old == null ||
+            if (File.Exists(target) && !matchingPublishedFile && (old == null ||
                 old.FileName != entry.AssetName || !IsManaged(gameRoot, entry)))
                 throw new IOException("A different local mod already owns the target filename");
+            // Reject a duplicate mod ID under any other filename before committing.
+            foreach (var other in Directory.EnumerateFiles(mods, "*.jar"))
+            {
+                if (Path.GetFileName(other) == entry.AssetName || Path.GetFileName(other) == old?.FileName) continue;
+                using var existing = ZipFile.OpenRead(other);
+                var existingManifest = existing.GetEntry("coda.mod.json");
+                if (existingManifest == null) continue;
+                if (existingManifest.Length > 8192) throw new InvalidDataException("Oversized local mod metadata; existing files preserved.");
+                using var input = existingManifest.Open(); using var metadata = JsonDocument.Parse(input);
+                if (metadata.RootElement.TryGetProperty("id", out var localId) && localId.GetString() == modId)
+                    throw new IOException("Another local JAR already provides " + modId + "; existing files preserved.");
+            }
             string receipts = Path.GetDirectoryName(ReceiptPath(gameRoot, slug))!;
             Directory.CreateDirectory(receipts);
             var next = new Receipt(slug, modId, entry.AssetName, entry.Version, entry.Tag, hash);
@@ -184,7 +205,8 @@ internal sealed class GitHubModStore
                 if (File.Exists(previous) && Hash(previous).Equals(old.Hash,
                     StringComparison.OrdinalIgnoreCase)) File.Delete(previous);
             }
-            report(entry.Name + " installed: " + entry.Tag + " (SHA-256 verified locally).");
+            report(entry.Name + " installed: " + entry.Tag + (entry.ExpectedSha256 != null
+                ? " (published SHA-256 verified)." : " (SHA-256 verified locally)."));
         }
         finally
         {

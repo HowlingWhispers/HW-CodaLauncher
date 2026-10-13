@@ -280,6 +280,9 @@ public partial class MainWindow : Window
         }
     }
 
+    private IReadOnlyList<GitHubModRelease> OfficialGitHubMods() => _githubMods.Cached
+        .Select(entry => entry with { Required = _installer.OfficialMods.IsRequired(entry.Id, _settings.UpdateChannel) }).ToArray();
+
     private void SendMods()
     {
         var gameRoot = _settings.UpdateChannel == "nightly"
@@ -290,7 +293,7 @@ public partial class MainWindow : Window
             type = "modsState",
             mods = found,
             optionalMods = OptionalModCatalog.Build(found, gameRoot,
-                _settings.UpdateChannel == "nightly", _githubMods.Cached),
+                _settings.UpdateChannel == "nightly", OfficialGitHubMods()),
             modCount = found.Count(m => m.Valid),
             minecraftRoot = gameRoot
         });
@@ -439,7 +442,7 @@ public partial class MainWindow : Window
                 optionalMods = OptionalModCatalog.Build(mods,
                     _settings.UpdateChannel == "nightly"
                         ? NightlyBuildInstaller.GameRoot : AppPaths.MinecraftRoot,
-                    _settings.UpdateChannel == "nightly", _githubMods.Cached),
+                    _settings.UpdateChannel == "nightly", OfficialGitHubMods()),
                 feed = new
                 {
                     feed.Schema,
@@ -490,9 +493,12 @@ public partial class MainWindow : Window
                     _logs.Add(message);
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
                 }, CancellationToken.None);
+                await _installer.OfficialMods.EnsureAsync(NightlyBuildInstaller.GameRoot,
+                    Path.Combine(NightlyBuildInstaller.LoaderRoot, "CodaLoader.jar"), "nightly",
+                    message => _logs.Add(message), _windowLifetime.Token);
                 SendMods();
                 Send(new { type = "installStatus", busy = false, ok = true,
-                    message = "Required H.O.W.L. Nightly runtime checked. Optional mods unchanged." });
+                    message = "Required H.O.W.L. Nightly runtime and mods verified." });
                 await SendState();
                 return;
             }
@@ -756,10 +762,14 @@ public partial class MainWindow : Window
                     _logs.Add(message);
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
                 }, CancellationToken.None, updateInstalledOptionalOnPlay: true);
+                await _installer.OfficialMods.EnsureAsync(NightlyBuildInstaller.GameRoot,
+                    Path.Combine(nightRoot, "CodaLoader.jar"), "nightly",
+                    message => _logs.Add(message), _windowLifetime.Token);
                 // Keep each optional mod opt-in. PLAY updates only mods the
                 // player already installed through the trusted GitHub shelf.
                 foreach (var release in await _githubMods.DiscoverAsync(_windowLifetime.Token))
                 {
+                    if (_installer.OfficialMods.IsRequired(release.Id, "nightly")) continue;
                     var owned = GitHubModStore.ReadReceipt(NightlyBuildInstaller.GameRoot, release);
                     if (owned is null || !GitHubModStore.HasUpdate(NightlyBuildInstaller.GameRoot, release))
                         continue;
@@ -1044,7 +1054,8 @@ public partial class MainWindow : Window
         {
             Send(new { type = "modActionStatus", busy = true, ok = true,
                 message = (uninstall ? "Uninstalling " : "Installing/updating ") + title + "..." });
-            if (id is "coda_wolf" or "hw_essentials")
+            if (id is "coda_wolf" or "hw_essentials" ||
+                (id != null && _installer.OfficialMods.IsRequired(id, _settings.UpdateChannel)))
                 throw new InvalidOperationException(title + " is a required H.O.W.L. component. "
                     + "It is automatically installed, repaired and updated with H.O.W.L. "
                     + "in Stable and Nightly. Manual removal is not supported.");

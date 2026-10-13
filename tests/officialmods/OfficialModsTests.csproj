@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../OfficialModsInstaller.cs" Link="OfficialModsInstaller.cs" />
+    <Compile Include="../../GitHubModCatalog.cs" Link="GitHubModCatalog.cs" />
+    <Compile Include="../../GitHubModStore.cs" Link="GitHubModStore.cs" />
+    <Compile Include="../../LauncherModels.cs" Link="LauncherModels.cs" />
+  </ItemGroup>
+</Project>

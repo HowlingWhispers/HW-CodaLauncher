@@ -158,3 +158,11 @@ assert.match(el('optional-mods').innerHTML, /Will install with H\.O\.W\.L\. at l
 assert.doesNotMatch(el('optional-mods').innerHTML, /data-mod="coda_wolf"|data-mod="hw_essentials"/,
   'Stable cannot accidentally uninstall required mods');
 console.log('PASS: Mods drawer marks Coda and Essentials required on Stable/Nightly; optional BuildCraft stays removable.');
+
+source.data.activeChannel = 'nightly';
+source.data.settings.updateChannel = 'nightly';
+source.data.optionalMods = [{id:'github:howl-sorting-pipes',name:'H.O.W.L. Sorting Pipes',installed:true,managed:true,required:true,nightlyOnly:true,version:'1.0.0',source:'GitHub: HowlingWhispers/HW-Mods'}];
+listeners.message({data:source});
+assert.match(el('optional-mods').innerHTML,/REQUIRED · MANAGED FROM GITHUB/,'Sorting Pipes displays independent GitHub management');
+assert.doesNotMatch(el('optional-mods').innerHTML,/BUNDLED WITH H\.O\.W\.L\./,'Independent required mod is not described as loader-bundled');
+assert.doesNotMatch(el('optional-mods').innerHTML,/data-mod="github:howl-sorting-pipes"/,'Required Sorting Pipes has no manual uninstall button');

@@ -327,6 +327,7 @@ function render(){
   $('optional-mods').innerHTML=modCatalog.map(m=>{
     const allowed=!m.nightlyOnly||nightly;
     const managed=m.managed;
+    const bundled=m.required&&!m.source;
     const actionsDisabled=installBusy||!!state.gameRunning||!allowed;
     const retired=m.id==='buildcraft_cml';
     const installDisabled=retired||actionsDisabled||(m.installed&&!managed);
@@ -340,13 +341,13 @@ function render(){
       :'Not installed';
     const label=retired?'RETIRED':m.installed?'CHECK / UPDATE':'INSTALL';
     return '<article class="optional-mod"><div><b>'+esc(m.name)+'</b>'+
-      '<small>'+(m.required?'REQUIRED · BUNDLED WITH H.O.W.L.':'OPTIONAL'+(m.recommended?' · RECOMMENDED':''))+' · '+esc(detail)+'</small>'+
+      '<small>'+(m.required?(bundled?'REQUIRED · BUNDLED WITH H.O.W.L.':'REQUIRED · MANAGED FROM GITHUB'):'OPTIONAL'+(m.recommended?' · RECOMMENDED':''))+' · '+esc(detail)+'</small>'+
       (m.availableVersion?'<small>Available on GitHub: v'+esc(m.availableVersion)+
         (m.source?' · '+esc(m.source):'')+'</small>':'')+
       (m.installed?'<small>Installed manifest v'+esc(m.version||'?')+
         (m.releaseTag?' · '+esc(m.releaseTag):'')+'</small>':'')+
       '</div>'+(m.required ?
-        '<div class="managed-label">Bundled, checked and repaired automatically with H.O.W.L. · No uninstall</div>' :
+        '<div class="managed-label">'+(bundled?'Bundled, checked and repaired automatically with H.O.W.L.':'Checked and updated automatically from GitHub')+' · No uninstall</div>' :
         '<div class="mod-actions"><button type="button" class="quiet mod-action" data-action="installMod" data-mod="'+escAttr(m.id)+'"'+
         (installDisabled?' disabled':'')+'>'+label+'</button>'+
         '<button type="button" class="quiet mod-action uninstall" data-action="uninstallMod" data-mod="'+escAttr(m.id)+'"'+

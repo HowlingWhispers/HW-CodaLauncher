@@ -1,5 +1,19 @@
 # CodaLauncher
 
+## Required GitHub mod updates (v0.7.30)
+
+PLAY and Install/Repair now read the owner-controlled HW-Mods required-mod
+catalog. Sorting Pipes is automatically installed and updated in Nightly,
+after H.O.W.L. 0.0.38+ and its item-filter API have been verified. Stable keeps
+its own declared catalog and does not receive Nightly mods. Required mod
+updates verify the release's published SHA-256, exact Minecraft/mod identity
+and entrypoint before committing a download. Changed/manual duplicate JARs
+are preserved with an actionable error. Previously verified installed mods
+can be reused during a network outage, with an explicit unconfirmed-update
+message. Add-ons labels these mods as Required; use Install/Repair to maintain
+them. Additional official mods can be declared in HW-Mods without another
+launcher executable update.
+
 ## H.O.W.L. launcher concept integration (v0.7.29)
 
 Windows now presents the midnight-and-cyan H.O.W.L. Home, a status moon that

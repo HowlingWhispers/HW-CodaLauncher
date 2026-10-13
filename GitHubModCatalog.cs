@@ -8,11 +8,11 @@ namespace HowlingWhispers.CodaLauncher;
 /// <summary>
 /// Discover optional H.O.W.L. mod JAR releases from owner-controlled GitHub repos.
 /// Never install an unknown release merely because it was discovered.
-/// Executable mod code is installed only via an explicit player action.
+/// Optional mod code requires player selection. The separate official-mod policy owns automatic required installs.
 /// </summary>
 internal sealed record GitHubModRelease(
     string Id, string Name, string Version, string Tag, string AssetName,
-    string DownloadUrl, string Repository, bool NightlyOnly = true);
+    string DownloadUrl, string Repository, bool NightlyOnly = true, string? ExpectedSha256 = null, bool Required = false);
 
 internal sealed class GitHubModCatalog
 {

@@ -78,6 +78,7 @@ jobs:
           node --check web/app.js
           node tests/web/settings-save.test.cjs
           node tests/web/mod-drawer-refresh.test.cjs
+          node tests/web/mod-browser.test.cjs
           node tests/web/addons-play-session.test.cjs
           node tests/web/nightly-version-panel.test.cjs
           node tests/web/concept-ui.test.cjs

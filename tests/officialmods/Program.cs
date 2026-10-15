@@ -99,10 +99,10 @@ try {
     // Codex is a required Nightly test mod. Verify the automatic full
     // release-catalog path, minimum loader API, integrity and Stable exclusion.
     {
-        const string codexVersion = "0.1.0-dev.2";
-        const string codexName = "howl-codex-" + codexVersion + ".jar";
-        const string codexTag = "codex-v" + codexVersion;
-        const string codexUrl = "https://github.com/HowlingWhispers/HW-Mods/releases/download/"
+        string codexVersion = "0.1.0-dev.2";
+        string codexName = "howl-codex-" + codexVersion + ".jar";
+        string codexTag = "codex-v" + codexVersion;
+        string codexUrl = "https://github.com/HowlingWhispers/HW-Mods/releases/download/"
             + codexTag + "/" + codexName;
         byte[] codex;
         using (var output = new MemoryStream()) {
@@ -118,6 +118,11 @@ try {
             }
             codex = output.ToArray();
         }
+        string previousCodexTag = codexTag;
+        string previousCodexName = codexName;
+        string previousCodexUrl = codexUrl;
+        byte[] previousCodex = codex;
+
         string codexManifest = JsonSerializer.Serialize(new {
             schema=1, minecraft="26.4-snapshot-3", mods=new[] {
                 new {
@@ -135,15 +140,23 @@ try {
                 return new StringContent("[]");
             if (url.Contains("HW-Mods/releases?"))
                 return new StringContent(JsonSerializer.Serialize(new[] {
+                    new {tag_name=previousCodexTag, draft=false, assets=new[] {
+                        new {name=previousCodexName,browser_download_url=previousCodexUrl}
+                    }},
                     new {tag_name=codexTag, draft=false, assets=new[] {
                         new {name=codexName,browser_download_url=codexUrl}
                     }}
                 }));
             if (url == codexUrl)
                 return new ByteArrayContent(codex);
+            if (url == previousCodexUrl)
+                return new ByteArrayContent(previousCodex);
             if (url == codexUrl + ".sha256")
                 return new StringContent(Convert.ToHexString(SHA256.HashData(codex))
                     + "  " + codexName);
+            if (url == previousCodexUrl + ".sha256")
+                return new StringContent(Convert.ToHexString(SHA256.HashData(previousCodex))
+                    + "  " + previousCodexName);
             throw new Exception("Unexpected Codex Nightly request: " + url);
         }));
         var codexInstaller = new OfficialModsInstaller(codexHttp);
@@ -166,6 +179,36 @@ try {
         Check(File.Exists(codexInstalled) &&
             File.ReadAllBytes(codexInstalled).SequenceEqual(codex),
             "Codex automatically installs in Nightly with verified release bytes");
+        // A real published Codex update must replace the old managed JAR
+        // even when the H.O.W.L. runtime stays at 0.0.42 and the launcher
+        // has not restarted or changed its mod-catalog instance.
+        codexVersion = "0.1.0-dev.3";
+        codexName = "howl-codex-" + codexVersion + ".jar";
+        codexTag = "codex-v" + codexVersion;
+        codexUrl = "https://github.com/HowlingWhispers/HW-Mods/releases/download/"
+            + codexTag + "/" + codexName;
+        using (var next = new MemoryStream()) {
+            using (var zip = new ZipArchive(next, ZipArchiveMode.Create, true)) {
+                using (var writer = new StreamWriter(zip.CreateEntry("coda.mod.json").Open()))
+                    writer.Write(JsonSerializer.Serialize(new {
+                        schema=1, id="howl_codex", name="H.O.W.L. Codex",
+                        version=codexVersion, minecraft="26.4-snapshot-3",
+                        entrypoint="dev.howlingwhispers.codex.HowlCodexMod"
+                    }));
+                zip.CreateEntry("dev/howlingwhispers/codex/HowlCodexMod.class").Open().Dispose();
+            }
+            codex = next.ToArray();
+        }
+        await codexInstaller.EnsureAsync(codexRoot,loader,"nightly",
+                messages.Add,CancellationToken.None);
+        string upgraded = Path.Combine(codexRoot, "mods", codexName);
+        Check(File.Exists(upgraded) && File.ReadAllBytes(upgraded).SequenceEqual(codex),
+            "Codex 0.1.0-dev.3 installed automatically while loader remains 0.0.42");
+        Check(!File.Exists(codexInstalled),
+            "Old checksum-owned Codex 0.1.0-dev.2 must be retired");
+        Check(messages.Any(m => m.Contains("codex-v0.1.0-dev.3")),
+            "Nightly logs must report the newly installed Codex release");
+
         Check(codexInstaller.IsRequired("github:howl-codex", "nightly"),
             "Codex flagged required in Nightly");
         Check(!codexInstaller.IsRequired("github:howl-codex", "stable"),

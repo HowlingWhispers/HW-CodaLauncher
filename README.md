@@ -1,6 +1,18 @@
 # CodaLauncher
 
-## Required GitHub mod updates (v0.7.30)
+## Nightly Codex automatic updates (v0.7.31)
+
+H.O.W.L. Codex updates are delivered through CodaLauncher Nightly on Play,
+without separate test archives or manual installation. The item-grid release
+is selected by its versioned H.O.W.L. Codex GitHub Release and verified
+SHA-256 sidecar, independently of the H.O.W.L. loader version.
+Nightly v0.0.42 remains the minimum loader API for Codex.
+The launcher now has a new executable release version to ensure the automatic
+Windows self-updater actually distributes this verified update behavior.
+No Stable game mods, saves, settings or user-owned JARs are touched.
+
+
+## Required GitHub mod updates (v0.7.31)
 
 PLAY and Install/Repair now read the owner-controlled HW-Mods required-mod
 catalog. Sorting Pipes is automatically installed and updated in Nightly,

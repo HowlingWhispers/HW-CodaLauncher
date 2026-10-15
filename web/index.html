@@ -87,7 +87,20 @@
   </div>
   <div class="addon-panel active" id="mods" role="tabpanel">
   <header><div><em>CODA'S MOD DRAWER</em><h1>Mods</h1><small class="header-note">Filed, checked, and ready to cause entirely responsible adventures.</small></div></header>
-  <div class="panel"><div class="panel-head"><div><b>HOWL mod shelf</b><small>Coda reads the active Minecraft profile's single mods folder.</small></div><div class="actions"><button id="refresh-mods" class="quiet" type="button">↻ REFRESH MODS</button><button id="open-mods-folder" class="quiet" type="button">OPEN MODS FOLDER</button><span id="mods-count" class="pill"></span></div></div><p class="mod-help">H.O.W.L., Coda Companion, HW Essentials, required resources and declared official mods are managed automatically. Nightly also installs Sorting Pipes. Other mods install only when you choose them.</p><div id="optional-mods" class="optional-mods" aria-live="polite"></div><div id="mod-action-result" class="mod-action-result" role="status" aria-live="polite"></div><h3 class="installed-mod-heading">Installed JARs</h3><div id="mods-list"></div><small class="header-note">Recognized means the JAR metadata is readable, not that Minecraft confirmed loading it. Uninstalling a mod does not erase its world data.</small></div>
+  <div class="panel"><div class="panel-head"><div><b>HOWL mod shelf</b><small>Coda reads the active Minecraft profile's single mods folder.</small></div><div class="actions"><button id="refresh-mods" class="quiet" type="button">↻ REFRESH MODS</button><button id="open-mods-folder" class="quiet" type="button">OPEN MODS FOLDER</button><span id="mods-count" class="pill"></span></div></div><p class="mod-help">H.O.W.L., Coda Companion, HW Essentials, required resources and declared official mods are managed automatically. Nightly also installs Sorting Pipes. Other mods install only when you choose them.</p><div class="mod-browser-tools" role="search" aria-label="Browse H.O.W.L. mods">
+        <label for="mod-browser-search">Find mods
+          <input id="mod-browser-search" type="search" autocomplete="off" placeholder="Search by name or mod ID…" aria-controls="optional-mods">
+        </label>
+        <label for="mod-browser-filter">Show
+          <select id="mod-browser-filter" aria-controls="optional-mods">
+            <option value="all">All mods</option>
+            <option value="installed">Installed</option>
+            <option value="available">Not installed</option>
+            <option value="required">Required</option>
+            <option value="optional">Optional</option>
+          </select>
+        </label>
+      </div><div class="mod-browser-head"><b>Official mod catalog</b><small id="mod-browser-count" aria-live="polite">Loading catalog…</small></div><small class="mod-browser-disclaimer">Only published H.O.W.L. listings appear here. Listed does not mean security-audited or gameplay-tested. Required Nightly test mods are installed through PLAY automatically.</small><div id="optional-mods" class="optional-mods" aria-live="polite"></div><div id="mod-action-result" class="mod-action-result" role="status" aria-live="polite"></div><h3 class="installed-mod-heading">Installed JARs</h3><div id="mods-list"></div><small class="header-note">Recognized means the JAR metadata is readable, not that Minecraft confirmed loading it. Uninstalling a mod does not erase its world data.</small></div>
 </div>
 
 <div class="addon-panel" id="datapacks" role="tabpanel" hidden>

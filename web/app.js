@@ -1,6 +1,9 @@
 const post=(action,extra={})=>window.chrome.webview.postMessage({action,...extra});
 let state=null;
 let installBusy=false;
+let modBrowserQuery='';
+let modBrowserFilter='all';
+let modBrowserExpanded=null;
 let launcherUpdateVersion=null;
 let launcherUpdateBusy=false;
 let settingsSaving=false;
@@ -118,6 +121,14 @@ $('play').onclick=()=>{
 $('open-loader').onclick=()=>post('openLoaderFolder');
 $('open-mods-folder').onclick=()=>post('openModsFolder');
 $('refresh-mods').onclick=()=>post('refreshMods');
+$('mod-browser-search').oninput=()=>{
+  modBrowserQuery=$('mod-browser-search').value.trim().toLocaleLowerCase();
+  if(state) render();
+};
+$('mod-browser-filter').onchange=()=>{
+  modBrowserFilter=$('mod-browser-filter').value;
+  if(state) render();
+};
 $('quiet-install').onclick=()=>{
   if(installBusy||state?.gameRunning) return;
   setInstallBusy(true,'Installing optional Quiet Underground…');
@@ -323,8 +334,19 @@ function render(){
       post('installResourcePack');
     };
   });
-  const modCatalog=state.optionalMods||[];
-  $('optional-mods').innerHTML=modCatalog.map(m=>{
+  const allMods=state.optionalMods||[];
+  const modCatalog=allMods.filter(m=>{
+    const searchable=[m.name,m.id,m.source,m.version,m.availableVersion]
+      .map(x=>String(x||'')).join(' ').toLocaleLowerCase();
+    if(modBrowserQuery&&!searchable.includes(modBrowserQuery)) return false;
+    if(modBrowserFilter==='installed') return !!m.installed;
+    if(modBrowserFilter==='available') return !m.installed&&!m.required;
+    if(modBrowserFilter==='required') return !!m.required;
+    if(modBrowserFilter==='optional') return !m.required;
+    return true;
+  });
+  $('mod-browser-count').textContent=modCatalog.length+' of '+allMods.length+' mods · '+(nightly?'Nightly':'Stable');
+  $('optional-mods').innerHTML=modCatalog.length?modCatalog.map(m=>{
     const allowed=!m.nightlyOnly||nightly;
     const managed=m.managed;
     const bundled=m.required&&!m.source;
@@ -351,8 +373,23 @@ function render(){
         '<div class="mod-actions"><button type="button" class="quiet mod-action" data-action="installMod" data-mod="'+escAttr(m.id)+'"'+
         (installDisabled?' disabled':'')+'>'+label+'</button>'+
         '<button type="button" class="quiet mod-action uninstall" data-action="uninstallMod" data-mod="'+escAttr(m.id)+'"'+
-        (uninstallDisabled?' disabled':'')+'>UNINSTALL</button></div>')+'</article>';
-  }).join('');
+        (uninstallDisabled?' disabled':'')+'>UNINSTALL</button></div>')+
+      '<button type="button" class="quiet mod-detail-toggle" data-details="'+escAttr(m.id)+
+      '" aria-expanded="'+(modBrowserExpanded===m.id?'true':'false')+'">'+
+      (modBrowserExpanded===m.id?'HIDE DETAILS':'DETAILS')+'</button>'+
+      (modBrowserExpanded===m.id?'<div class="mod-details"><b>Mod details</b>'+
+        '<small>ID: '+esc(m.id)+'</small>'+
+        '<small>Profile: '+(nightly?'Nightly':'Stable')+'</small>'+
+        '<small>Compatibility: '+(!allowed?'Nightly only':'H.O.W.L. catalog listing, runtime not validated here')+'</small>'+
+        '<small>Available version: '+esc(m.availableVersion||'Not published in catalog')+'</small>'+
+        '<small>Installed version: '+esc(m.installed?m.version||'Unknown':'Not installed')+'</small>'+
+        '<small>Publisher: '+esc(m.source||'Bundled with H.O.W.L.')+'</small></div>':'')+
+      '</article>';
+  }).join(''):'<div class="mod-browser-empty">No mods match your search or filter.</div>';
+  document.querySelectorAll('.mod-detail-toggle').forEach(btn=>btn.onclick=()=>{
+    modBrowserExpanded=modBrowserExpanded===btn.dataset.details?null:btn.dataset.details;
+    render();
+  });
   document.querySelectorAll('.mod-action').forEach(btn=>btn.onclick=()=>{
     if(installBusy||state.gameRunning||btn.disabled) return;
     const mod=modCatalog.find(m=>m.id===btn.dataset.mod);

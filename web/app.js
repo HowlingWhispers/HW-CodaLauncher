@@ -374,7 +374,7 @@ function render(){
         (installDisabled?' disabled':'')+'>'+label+'</button>'+
         '<button type="button" class="quiet mod-action uninstall" data-action="uninstallMod" data-mod="'+escAttr(m.id)+'"'+
         (uninstallDisabled?' disabled':'')+'>UNINSTALL</button></div>')+
-      '<button type="button" class="quiet mod-detail-toggle" data-mod="'+escAttr(m.id)+
+      '<button type="button" class="quiet mod-detail-toggle" data-details="'+escAttr(m.id)+
       '" aria-expanded="'+(modBrowserExpanded===m.id?'true':'false')+'">'+
       (modBrowserExpanded===m.id?'HIDE DETAILS':'DETAILS')+'</button>'+
       (modBrowserExpanded===m.id?'<div class="mod-details"><b>Mod details</b>'+
@@ -387,7 +387,7 @@ function render(){
       '</article>';
   }).join(''):'<div class="mod-browser-empty">No mods match your search or filter.</div>';
   document.querySelectorAll('.mod-detail-toggle').forEach(btn=>btn.onclick=()=>{
-    modBrowserExpanded=modBrowserExpanded===btn.dataset.mod?null:btn.dataset.mod;
+    modBrowserExpanded=modBrowserExpanded===btn.dataset.details?null:btn.dataset.details;
     render();
   });
   document.querySelectorAll('.mod-action').forEach(btn=>btn.onclick=()=>{

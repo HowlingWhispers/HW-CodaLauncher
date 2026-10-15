@@ -16,3 +16,13 @@
 **Code / PR -> CI compatibility checks -> versioned Nightly loader and mod releases -> automatic CodaLauncher Nightly installation -> real gameplay testing -> approval/promotion to Stable, if appropriate.**
 
 Publishing requires implementation and working release automation, not only a documented intention. An unreleased feature must be called "not yet in Nightly" until the launcher can actually fetch and install it.
+
+## Mandatory version bump and delivery proof
+
+Every player-facing Nightly change **must bump the version of the component that changed** and publish a new, immutable release before it is called delivered. A successful PR, source commit or CI artifact is **not** a Nightly update.
+
+- **Launcher changes:** increment the CodaLauncher executable version in Windows and desktop project files, workflows, Windows installer, and macOS Info.plist. All platform versions must match; the new GitHub Release must exist and the in-app updater must offer it. Existing release tags are immutable, so unchanged version numbers silently skip publishing.
+- **Mod changes:** increment `coda.mod.json`, output JAR filename and matching GitHub Release tag, publish the checksum, and exercise an automated upgrade from the previously installed mod to the newly published one. The H.O.W.L. loader may retain its own version when only a mod changes.
+- **Loader API/runtime changes:** increment `CodaTarget.LOADER_VERSION`, publish the compatible runtime and verify its required classes.
+- Show mod versions where practical in the in-game UI or startup logs, and distinguish loader, launcher and mod versions in testing instructions.
+- Never claim the player has the change until version selection and verified automatic Nightly installation have been demonstrated. No manual-install workaround is permitted.

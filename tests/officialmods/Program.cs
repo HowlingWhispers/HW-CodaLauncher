@@ -131,6 +131,8 @@ try {
             string url = request.RequestUri!.ToString();
             if (url == OfficialModsInstaller.ManifestUrl)
                 return new StringContent(codexManifest);
+            if (url.Contains("HW-CodaLoader/releases?"))
+                return new StringContent("[]");
             if (url.Contains("HW-Mods/releases?"))
                 return new StringContent(JsonSerializer.Serialize(new[] {
                     new {tag_name=codexTag, draft=false, assets=new[] {

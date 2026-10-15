@@ -96,6 +96,83 @@ try {
     foreach(string text in new[]{Manifest().Replace("howl-sorting-pipes","codaloader"),Manifest().Replace("howl_sorting_pipes","bad"),Manifest().Replace("api/CodaItemFilter.class","../../evil.class"),Manifest().Replace("26.4-snapshot-3","other")}) {
         try{OfficialModsInstaller.ParseManifest(text);throw new Exception("Bad manifest accepted");}catch(InvalidDataException){checks++;}
     }
+    // Codex is a required Nightly test mod. Verify the automatic full
+    // release-catalog path, minimum loader API, integrity and Stable exclusion.
+    {
+        const string codexVersion = "0.1.0-dev.2";
+        const string codexName = "howl-codex-" + codexVersion + ".jar";
+        const string codexTag = "codex-v" + codexVersion;
+        const string codexUrl = "https://github.com/HowlingWhispers/HW-Mods/releases/download/"
+            + codexTag + "/" + codexName;
+        byte[] codex;
+        using (var output = new MemoryStream()) {
+            using (var zip = new ZipArchive(output, ZipArchiveMode.Create, true)) {
+                using (var w = new StreamWriter(zip.CreateEntry("coda.mod.json").Open()))
+                    w.Write(JsonSerializer.Serialize(new {
+                        schema=1, id="howl_codex", name="H.O.W.L. Codex",
+                        version=codexVersion, minecraft="26.4-snapshot-3",
+                        entrypoint="dev.howlingwhispers.codex.HowlCodexMod"
+                    }));
+                zip.CreateEntry("dev/howlingwhispers/codex/HowlCodexMod.class")
+                    .Open().Dispose();
+            }
+            codex = output.ToArray();
+        }
+        string codexManifest = JsonSerializer.Serialize(new {
+            schema=1, minecraft="26.4-snapshot-3", mods=new[] {
+                new {
+                    slug="howl-codex", modId="howl_codex", name="H.O.W.L. Codex",
+                    channel="nightly", minimumLoader="0.0.42",
+                    requiredLoaderClass="dev/howlingwhispers/codaloader/api/CodaInventoryPanels.class"
+                }
+            }
+        });
+        using var codexHttp = new HttpClient(new Handler(request => {
+            string url = request.RequestUri!.ToString();
+            if (url == OfficialModsInstaller.ManifestUrl)
+                return new StringContent(codexManifest);
+            if (url.Contains("HW-Mods/releases?"))
+                return new StringContent(JsonSerializer.Serialize(new[] {
+                    new {tag_name=codexTag, draft=false, assets=new[] {
+                        new {name=codexName,browser_download_url=codexUrl}
+                    }}
+                }));
+            if (url == codexUrl)
+                return new ByteArrayContent(codex);
+            if (url == codexUrl + ".sha256")
+                return new StringContent(Convert.ToHexString(SHA256.HashData(codex))
+                    + "  " + codexName);
+            throw new Exception("Unexpected Codex Nightly request: " + url);
+        }));
+        var codexInstaller = new OfficialModsInstaller(codexHttp);
+        string codexRoot = Path.Combine(temporary, "codex-nightly");
+        Loader("0.0.41");
+        try {
+            await codexInstaller.EnsureAsync(codexRoot,loader,"nightly",messages.Add,CancellationToken.None);
+            throw new Exception("Codex accepted outdated loader");
+        } catch (InvalidDataException) { checks++; }
+        Loader("0.0.42");
+        try {
+            await codexInstaller.EnsureAsync(codexRoot,loader,"nightly",messages.Add,CancellationToken.None);
+            throw new Exception("Codex accepted missing panel API");
+        } catch (InvalidDataException) { checks++; }
+        // Match new public 0.0.42 API. Normal local fixtures have no Codex class.
+        using (var loadedZip = ZipFile.Open(loader, ZipArchiveMode.Update))
+            loadedZip.CreateEntry("dev/howlingwhispers/codaloader/api/CodaInventoryPanels.class");
+        await codexInstaller.EnsureAsync(codexRoot,loader,"nightly",messages.Add,CancellationToken.None);
+        string codexInstalled = Path.Combine(codexRoot, "mods", codexName);
+        Check(File.Exists(codexInstalled) &&
+            File.ReadAllBytes(codexInstalled).SequenceEqual(codex),
+            "Codex automatically installs in Nightly with verified release bytes");
+        Check(codexInstaller.IsRequired("github:howl-codex", "nightly"),
+            "Codex flagged required in Nightly");
+        Check(!codexInstaller.IsRequired("github:howl-codex", "stable"),
+            "Codex must never become required in Stable");
+        string codexStable = Path.Combine(temporary, "codex-stable");
+        await codexInstaller.EnsureAsync(codexStable,loader,"stable",messages.Add,CancellationToken.None);
+        Check(!File.Exists(Path.Combine(codexStable, "mods", codexName)),
+            "Stable must not receive Codex automatically");
+    }
     Console.WriteLine("PASS: "+checks+" automatic official-mod install/update and preservation checks");
 } finally {Directory.Delete(temporary,true);}
 internal sealed class Handler(Func<HttpRequestMessage,HttpContent> contents):HttpMessageHandler {

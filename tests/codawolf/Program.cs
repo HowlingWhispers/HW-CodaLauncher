@@ -13,8 +13,13 @@ if (args.Contains("--live-atom", StringComparer.Ordinal))
     string xml = await client.GetStringAsync(NightlyAtomReleaseReader.FeedUrl);
     var found = NightlyAtomReleaseReader.SelectNewest(xml, CodaWolfNightlyInstaller.TagPrefix,
         CodaWolfNightlyInstaller.ModJar, CodaWolfNightlyInstaller.ChecksumFile);
-    if (found is null) throw new Exception("Public GitHub Atom feed did not list a Coda Wolf prerelease.");
-    Console.WriteLine("PASS: actual public GitHub releases.atom contains Coda Wolf Nightly: " + found.Tag);
+    var tags=NightlyAtomReleaseReader.ReadTags(xml);
+    if(tags.Count==0)throw new Exception("Public GitHub release feed has no valid owner-controlled release tags.");
+    bool listed=tags.Any(t=>t.Tag.StartsWith(CodaWolfNightlyInstaller.TagPrefix,StringComparison.Ordinal));
+    if(listed != (found is not null))throw new Exception("Coda Wolf prefix selection disagrees with the actual feed.");
+    Console.WriteLine(found is not null
+        ? "PASS: actual public GitHub Atom feed selects Coda Wolf Nightly: "+found.Tag
+        : "PASS: actual bounded GitHub Atom feed parses "+tags.Count+" recent owner releases; older Coda Wolf is outside this feed. Its bundled/verified cached fallback remains required.");
     return;
 }
 

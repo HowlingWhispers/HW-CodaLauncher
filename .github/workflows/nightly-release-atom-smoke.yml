@@ -31,5 +31,5 @@ jobs:
           dotnet-version: "8.0.x"
       - name: Verify simulated GitHub 403 and safe JAR upgrade
         run: dotnet run --project tests/codawolf/CodaWolfReleaseTests.csproj -c Release
-      - name: Verify real public GitHub release Atom includes a Coda Wolf prerelease
+      - name: Verify real bounded public Atom feed and exact Coda Wolf prefix selection
         run: dotnet run --project tests/codawolf/CodaWolfReleaseTests.csproj -c Release -- --live-atom

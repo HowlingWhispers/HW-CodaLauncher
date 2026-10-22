@@ -99,13 +99,23 @@ document.querySelectorAll('.channel').forEach(btn=>btn.addEventListener('click',
   if(!state||installBusy||settingsSaving||state.gameRunning||state.accountBusy) return;
   if(btn.dataset.channel===state.activeChannel) return;
   $('update-channel').value=btn.dataset.channel;
+  if(btn.dataset.channel==='stable') $('play-mode').value='classic';
   $('nightly-warning').hidden=btn.dataset.channel!=='nightly';
   if(btn.dataset.channel==='nightly') $('local-test-mode').checked=true;
   $('save').click();
 }));
 $('open-worlds-folder').onclick=()=>post('openWorldsFolder');
+$('play-mode').onchange=()=>{
+  if($('play-mode').value==='frontier'){
+    $('update-channel').value='nightly';
+    $('local-test-mode').checked=true;
+    $('nightly-warning').hidden=false;
+  }
+  $('save').click();
+};
 $('update-channel').onchange=()=>{
   const nightly=$('update-channel').value==='nightly';
+  if(!nightly) $('play-mode').value='classic';
   $('nightly-warning').hidden=!nightly;
   if(nightly) $('local-test-mode').checked=true;
 };
@@ -143,6 +153,7 @@ $('save').onclick=()=>{
     feedUrl:$('feed-url').value.trim(),
     localTestMode:$('local-test-mode').checked,
     updateChannel:$('update-channel').value,
+    playMode:$('play-mode').value,
     closeAfterLaunch:$('close-after').checked
   }});
 };
@@ -376,6 +387,11 @@ function render(){
   }).join(''):'<div class="mod"><div><b>No HOWL mods found</b><small>It is suspiciously tidy in here.</small></div></div>';
   $('loader-path').value=state.settings.loaderPath||'';$('feed-url').value=state.settings.feedUrl||'';$('close-after').checked=!!state.settings.closeAfterLaunch;
   $('local-test-mode').checked=!!state.settings.localTestMode;
+  $('play-mode').value=state.settings.playMode||'classic';
+  $('play-mode').disabled=installBusy||state.gameRunning||settingsSaving;
+  $('play-mode-description').textContent=state.settings.playMode==='frontier'
+    ?'Establish a camp. Welcome settlers. Keep them fed. Separate Frontier worlds.'
+    :'Your existing collection and worlds.';
   $('update-channel').value=state.settings.updateChannel||'stable';
   $('nightly-warning').hidden=$('update-channel').value!=='nightly';
   $('p-cml').textContent=state.profile.cmlAccount;$('p-mc').textContent=state.localSingleplayer?'Unverified (local test)':'Handled by Minecraft Launcher';$('p-discord').textContent=state.profile.discord;
@@ -385,7 +401,7 @@ function render(){
 function renderWorlds(){
   if(!state) return;
   const worlds=state.worlds||[];
-  $('worlds-profile').textContent=(state.activeChannel==='nightly'?'Nightly':'Stable')+' • '+(state.minecraftRoot||'');
+  $('worlds-profile').textContent=(state.settings.playMode==='frontier'?'Frontier Nightly':state.activeChannel==='nightly'?'Classic Nightly':'Classic Stable')+' • '+(state.minecraftRoot||'');
   $('worlds-count').textContent=worlds.length+' world'+(worlds.length===1?'':'s');
   $('worlds-list').innerHTML=worlds.length?worlds.map(w=>
     '<div class="world-entry"><div><b>'+esc(w.name)+'</b><small>'+

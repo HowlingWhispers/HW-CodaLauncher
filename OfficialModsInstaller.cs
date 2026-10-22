@@ -10,6 +10,17 @@ namespace HowlingWhispers.CodaLauncher;
 internal sealed class OfficialModsInstaller
 {
     internal const string ManifestUrl = "https://raw.githubusercontent.com/HowlingWhispers/HW-Mods/main/mods/official-mods.json";
+    internal const string FrontierManifestUrl = "https://raw.githubusercontent.com/HowlingWhispers/HW-Mods/main/mods/frontier-mods.json";
+    private string _mode = "classic";
+    internal void SetMode(string mode)
+    {
+        PlayProfiles.Validate(mode, "nightly");
+        if (_mode == mode) return;
+        _mode = mode;
+        _requirements = mode == "frontier"
+            ? [new("howl-frontier", "howl_frontier", "H.O.W.L. Frontier", "nightly", "0.0.43", "dev/howlingwhispers/codaloader/api/CodaLivingWorld.class")]
+            : [new("howl-sorting-pipes", "howl_sorting_pipes", "H.O.W.L. Sorting Pipes", "nightly", "0.0.38", "dev/howlingwhispers/codaloader/api/CodaItemFilter.class")];
+    }
     internal sealed record Requirement(string Slug, string ModId, string Name, string Channel,
         string MinimumLoader, string RequiredLoaderClass);
     private readonly HttpClient _http;
@@ -76,7 +87,7 @@ internal sealed class OfficialModsInstaller
         if (channel is not ("stable" or "nightly")) throw new ArgumentException("Unknown mod channel");
         string cache = Path.Combine(gameRoot, "config", "howl-required-mods.json");
         string text;
-        try { text = await DownloadTextAsync(ManifestUrl, 65536, ct); }
+        try { text = await DownloadTextAsync(_mode == "frontier" ? FrontierManifestUrl : ManifestUrl, 65536, ct); }
         catch (Exception ex) when (!ct.IsCancellationRequested && ex is HttpRequestException or TaskCanceledException)
         {
             if (!File.Exists(cache)) {

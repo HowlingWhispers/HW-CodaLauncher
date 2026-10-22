@@ -11,7 +11,8 @@ const listeners = {};
 const el = id => {
   if (!elements.has(id)) elements.set(id, {
     textContent: '', className: '', disabled: false, checked: false,
-    value: '', hidden: false, style: {}, onclick: null, onchange: null
+    value: '', hidden: false, style: {}, onclick: null, onchange: null,
+    click() { if(!this.disabled) this.onclick?.(); }
   });
   return elements.get(id);
 };
@@ -59,4 +60,13 @@ el('save').onclick();
 assert.equal(calls.at(-1).settings.updateChannel, 'nightly', 'Nightly opt-in reaches native launcher');
 assert.equal(calls.at(-1).settings.localTestMode, true, 'Nightly launch remains local');
 listeners.message({ data: { type: 'settingsSaveResult', ok: true } });
+el('play-mode').value='frontier';
+el('play-mode').onchange();
+assert.equal(calls.at(-1).settings.playMode,'frontier','Frontier selection reaches native settings');
+assert.equal(calls.at(-1).settings.updateChannel,'nightly','Frontier always chooses Nightly');
+assert.equal(calls.at(-1).settings.localTestMode,true,'Frontier selects the supported local runtime');
+listeners.message({ data: { type: 'settingsSaveResult', ok: true } });
+el('update-channel').value='stable';
+el('update-channel').onchange();
+assert.equal(el('play-mode').value,'classic','Switching back to Stable selects Classic');
 console.log('PASS: settings save shows pending, success, error, retries and opt-in local switch');

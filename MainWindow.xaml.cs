@@ -79,6 +79,7 @@ public partial class MainWindow : Window
         try
         {
             _settings = _settingsStore.Load();
+            _installer.OfficialMods.SetMode(_settings.PlayMode);
             _logs.Add("CodaLauncher starting.");
             Directory.CreateDirectory(AppPaths.WebViewData);
 
@@ -223,8 +224,10 @@ public partial class MainWindow : Window
                         throw new InvalidOperationException("Nightly requires Local Test Mode to protect your normal Minecraft installation.");
                     if (string.IsNullOrWhiteSpace(updated.FeedUrl))
                         updated.FeedUrl = "https://thehowlingwhispers.com/launcher";
+                    PlayProfiles.Validate(updated.PlayMode, updated.UpdateChannel);
                     _settingsStore.Save(updated);
                     _settings = updated;
+                    _installer.OfficialMods.SetMode(updated.PlayMode);
                     _logs.Add("Launcher settings saved.");
                     Send(new { type = "settingsSaveResult", ok = true, message = "Settings saved." });
                     try { await SendState(); }
@@ -281,6 +284,7 @@ public partial class MainWindow : Window
     }
 
     private IReadOnlyList<GitHubModRelease> OfficialGitHubMods() => _githubMods.Cached
+        .Where(entry => PlayProfiles.CatalogVisible(_settings.PlayMode, entry.Id))
         .Select(entry => entry with { Required = _installer.OfficialMods.IsRequired(entry.Id, _settings.UpdateChannel) }).ToArray();
 
     private void SendMods()
@@ -493,6 +497,7 @@ public partial class MainWindow : Window
                     _logs.Add(message);
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
                 }, CancellationToken.None);
+                PlayProfiles.Prepare(NightlyBuildInstaller.GameRoot, _settings.PlayMode);
                 await _installer.OfficialMods.EnsureAsync(NightlyBuildInstaller.GameRoot,
                     Path.Combine(NightlyBuildInstaller.LoaderRoot, "CodaLoader.jar"), "nightly",
                     message => _logs.Add(message), _windowLifetime.Token);
@@ -762,6 +767,7 @@ public partial class MainWindow : Window
                     _logs.Add(message);
                     Dispatcher.Invoke(() => Send(new { type = "installStatus", busy = true, ok = true, message }));
                 }, CancellationToken.None, updateInstalledOptionalOnPlay: true);
+                PlayProfiles.Prepare(NightlyBuildInstaller.GameRoot, _settings.PlayMode);
                 await _installer.OfficialMods.EnsureAsync(NightlyBuildInstaller.GameRoot,
                     Path.Combine(nightRoot, "CodaLoader.jar"), "nightly",
                     message => _logs.Add(message), _windowLifetime.Token);

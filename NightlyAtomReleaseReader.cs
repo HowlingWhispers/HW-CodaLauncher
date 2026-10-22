@@ -17,8 +17,10 @@ internal static class NightlyAtomReleaseReader
     private const string DownloadPath = "/HowlingWhispers/HW-Mods/releases/download/";
     private static readonly XNamespace Atom = "http://www.w3.org/2005/Atom";
 
-    internal static NightlyReleaseSelector.Release? SelectNewest(string xml, string prefix,
-        string packageName, string checksumName)
+    internal sealed record PublishedTag(string Tag, DateTimeOffset Published);
+
+    // GitHub's Atom feed contains only its recent releases, not the complete mod catalog.
+    internal static IReadOnlyList<PublishedTag> ReadTags(string xml)
     {
         using var reader = XmlReader.Create(new StringReader(xml), new XmlReaderSettings
         {
@@ -29,7 +31,7 @@ internal static class NightlyAtomReleaseReader
         var document = XDocument.Load(reader);
         if (document.Root?.Name != Atom + "feed")
             throw new InvalidDataException("GitHub release feed is not Atom XML.");
-        NightlyReleaseSelector.Release? newest = null;
+        var tags = new List<PublishedTag>();
         foreach (var entry in document.Root.Elements(Atom + "entry"))
         {
             string time = (string?) entry.Element(Atom + "published")
@@ -49,14 +51,26 @@ internal static class NightlyAtomReleaseReader
 
             string tag = Uri.UnescapeDataString(url.AbsolutePath[TagPath.Length..]);
             // Tag must be one safe path segment, never redirect to arbitrary URLs.
-            if (!tag.StartsWith(prefix, StringComparison.Ordinal)
-                || tag.Length > 130 || tag.Length <= prefix.Length
+            if (tag.Length > 130 || tag.Length == 0
                 || !tag.All(c => char.IsAsciiLetterOrDigit(c) || c == '-' || c == '_' || c == '.'))
                 continue;
+            tags.Add(new PublishedTag(tag, published));
+        }
+        return tags;
+    }
+
+    internal static NightlyReleaseSelector.Release? SelectNewest(string xml, string prefix,
+        string packageName, string checksumName)
+    {
+        NightlyReleaseSelector.Release? newest = null;
+        foreach (var entry in ReadTags(xml))
+        {
+            string tag = entry.Tag;
+            if (!tag.StartsWith(prefix, StringComparison.Ordinal) || tag.Length <= prefix.Length) continue;
             string downloadBase = "https://github.com" + DownloadPath + tag + "/";
             var candidate = new NightlyReleaseSelector.Release(tag,
                 new Uri(downloadBase + Uri.EscapeDataString(packageName)),
-                new Uri(downloadBase + Uri.EscapeDataString(checksumName)), published);
+                new Uri(downloadBase + Uri.EscapeDataString(checksumName)), entry.Published);
             if (newest is null || candidate.Published > newest.Published
                 || (candidate.Published == newest.Published
                     && string.CompareOrdinal(candidate.Tag, newest.Tag) > 0))

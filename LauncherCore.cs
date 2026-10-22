@@ -46,18 +46,23 @@ internal sealed class SettingsStore
     {
         try
         {
-            if (!File.Exists(AppPaths.SettingsFile)) return new LauncherSettings();
-            return JsonSerializer.Deserialize<LauncherSettings>(File.ReadAllText(AppPaths.SettingsFile), Json) ?? new LauncherSettings();
+            var settings = File.Exists(AppPaths.SettingsFile)
+                ? JsonSerializer.Deserialize<LauncherSettings>(File.ReadAllText(AppPaths.SettingsFile), Json) ?? new LauncherSettings()
+                : new LauncherSettings();
+            PlayProfiles.Select(settings.PlayMode, settings.UpdateChannel);
+            return settings;
         }
-        catch { return new LauncherSettings(); }
+        catch { PlayProfiles.Select("classic", "stable"); return new LauncherSettings(); }
     }
 
     public void Save(LauncherSettings settings)
     {
+        PlayProfiles.Validate(settings.PlayMode, settings.UpdateChannel);
         Directory.CreateDirectory(Path.GetDirectoryName(AppPaths.SettingsFile)!);
         var temp = AppPaths.SettingsFile + ".tmp";
         File.WriteAllText(temp, JsonSerializer.Serialize(settings, Json));
         File.Move(temp, AppPaths.SettingsFile, true);
+        PlayProfiles.Select(settings.PlayMode, settings.UpdateChannel);
     }
 }
 

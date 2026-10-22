@@ -239,6 +239,7 @@ internal sealed class DesktopWindow : Window
         }
         try
         {
+            if (_settings.PlayMode == "frontier") throw new InvalidOperationException("Frontier currently requires CodaLauncher Nightly on Windows. Classic worlds were not changed.");
             var identity = launch && _settings.LocalTestMode ? LocalSingleplayer.Identity() : null;
             if (launch && _settings.OfflineMode && !LocalSingleplayer.Enabled)
             {

@@ -28,7 +28,7 @@ internal sealed class NightlyBuildInstaller
     private sealed record NightlyRelease(string Tag, Uri PackageUrl, Uri ChecksumUrl);
 
     public static string LoaderRoot => Path.Combine(AppPaths.InstallRoot, "nightly", "loader");
-    public static string GameRoot => Path.Combine(AppPaths.InstallRoot, "nightly", "minecraft");
+    public static string GameRoot => PlayProfiles.NightlyGameRoot(AppPaths.InstallRoot, PlayProfiles.SelectedMode);
 
     /// <summary>File presence and checksum only, not proof Minecraft enabled terrain.</summary>
     public static bool QuietInstalled

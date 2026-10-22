@@ -11,6 +11,7 @@ public sealed class LauncherSettings
     // Stable is the backward-compatible default for every existing install.
     // Experimental nightlies are local-only and use a separate Minecraft root.
     public string UpdateChannel { get; set; } = "stable";
+    public string PlayMode { get; set; } = "classic";
 }
 
 public sealed class CmlBasePackInfo

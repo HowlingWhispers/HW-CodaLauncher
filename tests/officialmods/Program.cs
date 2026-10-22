@@ -218,6 +218,63 @@ try {
         Check(!File.Exists(Path.Combine(codexStable, "mods", codexName)),
             "Stable must not receive Codex automatically");
     }
+    // Frontier uses its own required catalog and profile; older clients keep the original catalog.
+    {
+        string classicRoot = PlayProfiles.NightlyGameRoot(Path.Combine(temporary,"mode-isolation"), "classic");
+        string frontierRoot = PlayProfiles.NightlyGameRoot(Path.Combine(temporary,"mode-isolation"), "frontier");
+        Check(classicRoot == Path.Combine(temporary, "mode-isolation", "nightly", "minecraft"), "Classic retains the historic save path");
+        Check(frontierRoot != classicRoot && !frontierRoot.StartsWith(classicRoot + Path.DirectorySeparatorChar), "Frontier saves/mods/config are isolated");
+        try { PlayProfiles.Validate("frontier", "stable"); throw new Exception("Frontier Stable accepted"); } catch(InvalidDataException) { checks++; }
+        try { PlayProfiles.Validate("../classic", "nightly"); throw new Exception("Path mode accepted"); } catch(InvalidDataException) { checks++; }
+        PlayProfiles.Prepare(frontierRoot, "frontier");
+        Check(File.ReadAllText(Path.Combine(frontierRoot,"config","howl-play-mode.txt")).Trim()=="frontier", "Frontier enabled only in its own profile");
+        Check(!Directory.Exists(classicRoot), "Choosing Frontier leaves Classic files untouched");
+        string frontierVersion = "0.1.0-dev.1";
+        byte[] FrontierJar() {
+            using var bytes = new MemoryStream();
+            using(var z = new ZipArchive(bytes, ZipArchiveMode.Create, true)) {
+                using(var w = new StreamWriter(z.CreateEntry("coda.mod.json").Open())) w.Write(JsonSerializer.Serialize(new {
+                    schema=1,id="howl_frontier",name="H.O.W.L. Frontier",version=frontierVersion,minecraft="26.4-snapshot-3",entrypoint="dev.howlingwhispers.frontier.FrontierMod"
+                }));
+                z.CreateEntry("dev/howlingwhispers/frontier/FrontierMod.class").Open().Dispose();
+            } return bytes.ToArray();
+        }
+        byte[] candidate = FrontierJar(); bool badFrontierHash=false;
+        using var frontierHttp = new HttpClient(new Handler(request => {
+            string url=request.RequestUri!.ToString();
+            if(url==OfficialModsInstaller.FrontierManifestUrl) return new StringContent(JsonSerializer.Serialize(new {
+                schema=1,minecraft="26.4-snapshot-3",mods=new[]{new {
+                    slug="howl-frontier",modId="howl_frontier",name="H.O.W.L. Frontier",channel="nightly",minimumLoader="0.0.43",
+                    requiredLoaderClass="dev/howlingwhispers/codaloader/api/CodaLivingWorld.class"
+                }}
+            }));
+            string tag="frontier-v"+frontierVersion, filename="howl-frontier-"+frontierVersion+".jar";
+            string download="https://github.com/HowlingWhispers/HW-Mods/releases/download/"+tag+"/"+filename;
+            if(url.Contains("HW-CodaLoader/releases?"))return new StringContent("[]");
+            if(url.Contains("HW-Mods/releases?"))return new StringContent(JsonSerializer.Serialize(new[]{new {tag_name=tag,draft=false,assets=new[]{new {name=filename,browser_download_url=download}}}}));
+            if(url.EndsWith(".sha256"))return new StringContent((badFrontierHash?new string('0',64):Convert.ToHexString(SHA256.HashData(candidate)))+"  "+filename);
+            if(url==download)return new ByteArrayContent(candidate);
+            throw new Exception("Unexpected Frontier request: "+url);
+        }));
+        var frontierInstaller=new OfficialModsInstaller(frontierHttp);frontierInstaller.SetMode("frontier");
+        Loader("0.0.42");
+        try { await frontierInstaller.EnsureAsync(frontierRoot,loader,"nightly",messages.Add,CancellationToken.None);throw new Exception("Old Frontier loader accepted"); } catch(InvalidDataException) { checks++; }
+        Loader("0.0.43");
+        using(var zip=ZipFile.Open(loader,ZipArchiveMode.Update))zip.CreateEntry("dev/howlingwhispers/codaloader/api/CodaLivingWorld.class");
+        await frontierInstaller.EnsureAsync(frontierRoot,loader,"nightly",messages.Add,CancellationToken.None);
+        Check(File.Exists(Path.Combine(frontierRoot,"mods","howl-frontier-0.1.0-dev.1.jar")), "Nightly Play automatically installs the Frontier mod");
+        Check(!Directory.Exists(classicRoot), "Frontier installation never populates Classic");
+        Check(frontierInstaller.IsRequired("github:howl-frontier","nightly") && !frontierInstaller.IsRequired("github:howl-sorting-pipes","nightly"),"Frontier has its own complete required mod set");
+        frontierVersion="0.1.0-dev.2";candidate=FrontierJar();
+        await frontierInstaller.EnsureAsync(frontierRoot,loader,"nightly",messages.Add,CancellationToken.None);
+        string updated=Path.Combine(frontierRoot,"mods","howl-frontier-0.1.0-dev.2.jar");
+        Check(File.Exists(updated)&&!File.Exists(Path.Combine(frontierRoot,"mods","howl-frontier-0.1.0-dev.1.jar")), "Automatic Frontier upgrade retires only the checksum-owned previous JAR");
+        frontierVersion="0.1.0-dev.3";candidate=FrontierJar();badFrontierHash=true;
+        try { await frontierInstaller.EnsureAsync(frontierRoot,loader,"nightly",messages.Add,CancellationToken.None);throw new Exception("Corrupt Frontier accepted"); } catch(InvalidDataException) { checks++; }
+        Check(File.Exists(updated),"Failed Frontier update preserves the previous verified install");
+        PlayProfiles.Select("classic","nightly");frontierInstaller.SetMode("classic");
+        Check(!frontierInstaller.IsRequired("github:howl-frontier","nightly"),"Switching modes resets required catalog state");
+    }
     Console.WriteLine("PASS: "+checks+" automatic official-mod install/update and preservation checks");
 } finally {Directory.Delete(temporary,true);}
 internal sealed class Handler(Func<HttpRequestMessage,HttpContent> contents):HttpMessageHandler {

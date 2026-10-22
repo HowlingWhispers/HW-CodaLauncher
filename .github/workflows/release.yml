@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.31
-  CODA_TAG: v0.7.31
+  CODA_VERSION: 0.7.32
+  CODA_TAG: v0.7.32
 
 jobs:
   gate:
@@ -183,9 +183,9 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.31 (prerelease)
+          # CodaLauncher 0.7.32 (prerelease)
 
-          v0.7.31: Codex Nightly item-grid rollout and automatic mod upgrade validation.\n          Required official mod install/update support from the HW-Mods GitHub catalog.
+          v0.7.32: Codex Nightly item-grid rollout and automatic mod upgrade validation.\n          Required official mod install/update support from the HW-Mods GitHub catalog.
           Sorting Pipes is automatically maintained in Nightly after H.O.W.L. 0.0.38+ compatibility verification.
           Downloads require published SHA-256 checksums and valid Minecraft/mod identity before installation.
           Modified and duplicate manual mods are preserved. Offline reuse requires checksum-verified installed code.

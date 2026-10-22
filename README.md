@@ -1,5 +1,21 @@
 # CodaLauncher
 
+## Frontier play mode (0.7.32 source milestone)
+
+Windows Home adds a **Classic / Frontier** play-mode selector independent of the
+Stable/Nightly channel. Frontier selects Nightly and local singleplayer, uses
+`nightly/profiles/frontier/minecraft`, and reads its separate owner-controlled
+`mods/frontier-mods.json` catalog. Play / Install-Repair installs and verifies the
+complete Frontier mod set automatically after checking H.O.W.L. 0.0.43+ and its
+living-world API. Classic keeps all historical paths and its existing mod catalog.
+No world or existing mod is deleted or converted when switching modes.
+
+The Frontier profile marker enables settlement simulation only in that profile.
+The initial mode is Windows Nightly first; Linux/macOS refuse a Frontier selection
+rather than launching it against Stable. All executable versions are 0.7.32.
+Automatic profile isolation, prerequisite, install, update and integrity tests are
+included. **Not yet published or available through the launcher updater.**
+
 ## Nightly Codex automatic updates (v0.7.31)
 
 H.O.W.L. Codex updates are delivered through CodaLauncher Nightly on Play,

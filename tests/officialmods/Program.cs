@@ -43,7 +43,17 @@ if(args.Length==2 && args[0]=="--published-frontier") {
         byte[] verified=File.ReadAllBytes(installed);File.Delete(installed);
         await acceptance.EnsureAsync(game,Path.GetFullPath(args[1]),"nightly",Console.WriteLine,CancellationToken.None);
         Check(File.ReadAllBytes(installed).SequenceEqual(verified),"Actual published missing JAR is automatically repaired");
-        Console.WriteLine("PASS: actual published Frontier automatically installed, checksum verified and repaired in its isolated Nightly profile");
+        var start=new System.Diagnostics.ProcessStartInfo("java") { RedirectStandardOutput=true, RedirectStandardError=true, UseShellExecute=false };
+        start.ArgumentList.Add("-jar");start.ArgumentList.Add(Path.GetFullPath(args[1]));start.ArgumentList.Add("--loader-only");start.ArgumentList.Add(game);
+        using(var process=System.Diagnostics.Process.Start(start) ?? throw new IOException("Java did not start")) {
+            var output=process.StandardOutput.ReadToEndAsync();var errors=process.StandardError.ReadToEndAsync();
+            using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            try { await process.WaitForExitAsync(timeout.Token); }
+            catch { if(!process.HasExited)process.Kill(true);throw; }
+            string log=await output, stderr=await errors;Console.WriteLine(log);
+            Check(process.ExitCode==0 && log.Contains("[Frontier]") && log.Contains("mode=Frontier") && log.Contains("H.O.W.L. 0.0.43"),"Actual published loader and mod initialize together: "+stderr);
+        }
+        Console.WriteLine("PASS: actual published Frontier automatically installed, checksum verified, repaired and initialized with its published runtime in an isolated Nightly profile");
     } finally { if(Directory.Exists(root))Directory.Delete(root,true); }
     return;
 }

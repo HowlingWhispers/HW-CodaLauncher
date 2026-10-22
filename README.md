@@ -1,6 +1,6 @@
 # CodaLauncher
 
-## Frontier play mode (0.7.32 source milestone)
+## Frontier play mode (0.7.32)
 
 Windows Home adds a **Classic / Frontier** play-mode selector independent of the
 Stable/Nightly channel. Frontier selects Nightly and local singleplayer, uses
@@ -14,7 +14,7 @@ The Frontier profile marker enables settlement simulation only in that profile.
 The initial mode is Windows Nightly first; Linux/macOS refuse a Frontier selection
 rather than launching it against Stable. All executable versions are 0.7.32.
 Automatic profile isolation, prerequisite, install, update and integrity tests are
-included. **Not yet published or available through the launcher updater.**
+included. **Published as v0.7.32 and available through the normal launcher updater.** The actual published loader/mod pair passed automatic installation, checksum verification, repair and joint initialization before this launcher release was published.
 
 ## Nightly Codex automatic updates (v0.7.31)
 

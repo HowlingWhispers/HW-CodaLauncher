@@ -226,6 +226,8 @@ try {
         Check(frontierRoot != classicRoot && !frontierRoot.StartsWith(classicRoot + Path.DirectorySeparatorChar), "Frontier saves/mods/config are isolated");
         try { PlayProfiles.Validate("frontier", "stable"); throw new Exception("Frontier Stable accepted"); } catch(InvalidDataException) { checks++; }
         try { PlayProfiles.Validate("../classic", "nightly"); throw new Exception("Path mode accepted"); } catch(InvalidDataException) { checks++; }
+        Check(!PlayProfiles.CatalogVisible("classic","github:howl-frontier"), "Frontier is not advertised as an optional Classic add-on");
+        Check(!PlayProfiles.CatalogVisible("frontier","github:howl-sorting-pipes") && PlayProfiles.CatalogVisible("frontier","github:howl-frontier"), "Frontier catalog shows only its intended gameplay bundle");
         PlayProfiles.Prepare(frontierRoot, "frontier");
         Check(File.ReadAllText(Path.Combine(frontierRoot,"config","howl-play-mode.txt")).Trim()=="frontier", "Frontier enabled only in its own profile");
         Check(!Directory.Exists(classicRoot), "Choosing Frontier leaves Classic files untouched");

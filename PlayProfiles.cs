@@ -19,6 +19,11 @@ internal static class PlayProfiles
         return mode == "classic" ? Path.Combine(installRoot, "nightly", "minecraft")
             : Path.Combine(installRoot, "nightly", "profiles", "frontier", "minecraft");
     }
+    internal static bool CatalogVisible(string mode, string modId)
+    {
+        Validate(mode, "nightly");
+        return mode == "frontier" ? modId == "github:howl-frontier" : modId != "github:howl-frontier";
+    }
     internal static void Prepare(string gameRoot, string mode)
     {
         Validate(mode, "nightly");

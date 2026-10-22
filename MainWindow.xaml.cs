@@ -284,6 +284,7 @@ public partial class MainWindow : Window
     }
 
     private IReadOnlyList<GitHubModRelease> OfficialGitHubMods() => _githubMods.Cached
+        .Where(entry => PlayProfiles.CatalogVisible(_settings.PlayMode, entry.Id))
         .Select(entry => entry with { Required = _installer.OfficialMods.IsRequired(entry.Id, _settings.UpdateChannel) }).ToArray();
 
     private void SendMods()

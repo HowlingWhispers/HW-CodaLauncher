@@ -22,6 +22,31 @@ string Manifest(string channel = "nightly", string minimum = "0.0.38") => JsonSe
     schema = 1, minecraft="26.4-snapshot-3", mods = new[] {new {slug="howl-sorting-pipes", modId="howl_sorting_pipes", name="Sorting Pipes", channel, minimumLoader=minimum,
         requiredLoaderClass="dev/howlingwhispers/codaloader/api/CodaItemFilter.class"}}
 });
+// Optional release acceptance mode: exercise the production automatic installer with actual published files.
+// Only a newly allocated disposable profile is used; never accept a user's game directory.
+if(args.Length==2 && args[0]=="--published-frontier") {
+    string root=Path.Combine(Path.GetTempPath(),"howl-published-frontier-"+Guid.NewGuid().ToString("N"));
+    string game=PlayProfiles.NightlyGameRoot(root,"frontier");
+    try {
+        using var client=new HttpClient(new PublishedApiAuthentication()) { Timeout=TimeSpan.FromSeconds(60) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("CodaLauncher-Frontier-Release-Acceptance/0.7.32");
+        var acceptance=new OfficialModsInstaller(client);acceptance.SetMode("frontier");PlayProfiles.Prepare(game,"frontier");
+        await acceptance.EnsureAsync(game,Path.GetFullPath(args[1]),"nightly",Console.WriteLine,CancellationToken.None);
+        string installed=Directory.EnumerateFiles(Path.Combine(game,"mods"),"*.jar").Single();
+        using(var z=ZipFile.OpenRead(installed)) {
+            using var input=z.GetEntry("coda.mod.json")!.Open();using var metadata=JsonDocument.Parse(input);
+            Check(metadata.RootElement.GetProperty("id").GetString()=="howl_frontier","Published Frontier identity");
+            Check(metadata.RootElement.GetProperty("minecraft").GetString()=="26.4-snapshot-3","Published Frontier Minecraft target");
+            Check(z.GetEntry("dev/howlingwhispers/frontier/FrontierMod.class")!=null,"Published Frontier entrypoint");
+        }
+        Check(!Directory.Exists(PlayProfiles.NightlyGameRoot(root,"classic")),"Actual published installation leaves Classic absent and untouched");
+        byte[] verified=File.ReadAllBytes(installed);File.Delete(installed);
+        await acceptance.EnsureAsync(game,Path.GetFullPath(args[1]),"nightly",Console.WriteLine,CancellationToken.None);
+        Check(File.ReadAllBytes(installed).SequenceEqual(verified),"Actual published missing JAR is automatically repaired");
+        Console.WriteLine("PASS: actual published Frontier automatically installed, checksum verified and repaired in its isolated Nightly profile");
+    } finally { if(Directory.Exists(root))Directory.Delete(root,true); }
+    return;
+}
 string temporary=Path.Combine(Path.GetTempPath(),"howl-required-test-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(temporary);
 string loader=Path.Combine(temporary,"CodaLoader.jar");
 void Loader(string version, bool feature = true) {
@@ -281,4 +306,14 @@ try {
 } finally {Directory.Delete(temporary,true);}
 internal sealed class Handler(Func<HttpRequestMessage,HttpContent> contents):HttpMessageHandler {
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken ct)=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=contents(request)});
+}
+
+internal sealed class PublishedApiAuthentication : DelegatingHandler {
+    internal PublishedApiAuthentication() : base(new HttpClientHandler()) { }
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken ct) {
+        string? token=Environment.GetEnvironmentVariable("GH_TOKEN");
+        if(request.RequestUri?.Host=="api.github.com" && !string.IsNullOrEmpty(token))
+            request.Headers.Authorization=new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer",token);
+        return base.SendAsync(request,ct);
+    }
 }

@@ -175,6 +175,26 @@ jobs:
           pattern: release-*
           merge-multiple: true
           path: dist/release
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Verify real published Frontier automatic installation before shipping its selector
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-check
+          gh release download v0.0.43 --repo HowlingWhispers/HW-CodaLoader --pattern CodaLoader-v0.0.43-win64.zip --pattern update-manifest.json --dir runtime-check
+          python3 - <<'PYCODE'
+          import hashlib,json,pathlib,zipfile
+          root=pathlib.Path('runtime-check');m=json.loads((root/'update-manifest.json').read_text())
+          assert m['version']=='0.0.43' and m['bundle']=='CodaLoader-v0.0.43-win64.zip'
+          archive=root/m['bundle'];assert hashlib.sha256(archive.read_bytes()).hexdigest()==m['sha256']
+          with zipfile.ZipFile(archive) as z: jar=z.read('CodaLoader.jar')
+          assert hashlib.sha256(jar).hexdigest()==m['files']['CodaLoader.jar']
+          (root/'CodaLoader.jar').write_bytes(jar)
+          PYCODE
+          dotnet run --project tests/officialmods/OfficialModsTests.csproj -c Release -- --published-frontier runtime-check/CodaLoader.jar
       - name: Publish all platforms together
         env:
           # Some GitHub installations deny release creation to GITHUB_TOKEN
@@ -185,7 +205,12 @@ jobs:
           cat > release-notes.md <<'EOF'
           # CodaLauncher 0.7.32 (prerelease)
 
-          v0.7.32: Codex Nightly item-grid rollout and automatic mod upgrade validation.\n          Required official mod install/update support from the HW-Mods GitHub catalog.
+          v0.7.32: Classic / Frontier play modes. Frontier has its own worlds, mods and settings.
+          Select Frontier on Home to prepare its required mod automatically through Nightly Play / Install-Repair.
+          H.O.W.L. 0.0.43 and the published Frontier release are verified before this launcher is published.
+          Frontier is initially available on Windows Nightly for local singleplayer.
+          Classic keeps its existing paths and catalog. No existing world or mod is deleted.
+          Required official mod install/update support from the HW-Mods GitHub catalog.
           Sorting Pipes is automatically maintained in Nightly after H.O.W.L. 0.0.38+ compatibility verification.
           Downloads require published SHA-256 checksums and valid Minecraft/mod identity before installation.
           Modified and duplicate manual mods are preserved. Offline reuse requires checksum-verified installed code.

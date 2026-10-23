@@ -14,6 +14,12 @@ assert.ok(fs.existsSync('web/assets/fonts/Jersey15-Regular.ttf'), 'Pixel font mu
 assert.ok(fs.existsSync('web/assets/fonts/Jersey15-OFL.txt'), 'Pixel font licence must ship with the font');
 assert.doesNotMatch(css, /fonts\.googleapis|fonts\.gstatic/, 'Theme must not fetch fonts from the network');
 assert.match(css, /prefers-reduced-motion/, 'Frontier animations must respect reduced motion');
+// 0.8.2: no Classic flash on start. The host passes the saved theme, and the page applies it before painting.
+const host = fs.readFileSync('MainWindow.xaml.cs', 'utf8');
+assert.match(host, /index\.html" \+ \(frontierTheme \? "\?theme=frontier" : ""\)/, 'The launcher opens the page with the saved theme');
+assert.match(host, /DefaultBackgroundColor/, 'The WebView background matches the theme before the page loads');
+const early = html.indexOf('theme=frontier'), bodyAt = html.indexOf('<body>'), firstMarkup = html.indexOf('<div class="shell">');
+assert.ok(early > bodyAt && early < firstMarkup, 'The theme is applied before any launcher markup is painted');
 assert.doesNotMatch(code, /aria-valuenow|progress\.value\s*=/, 'Activity bar must not report a simulated percentage');
 
 const ids = new Map(), handlers = {}, bodyClasses = new Set();

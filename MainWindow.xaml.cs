@@ -81,6 +81,15 @@ public partial class MainWindow : Window
             _settings = _settingsStore.Load();
             _installer.OfficialMods.SetMode(_settings.PlayMode);
             _logs.Add("CodaLauncher starting.");
+            // Paint the saved profile's theme from the first frame: window, WebView and page agree
+            // before the first state message arrives, so Frontier never flashes the Classic look.
+            bool frontierTheme = _settings.UpdateChannel == "nightly" && _settings.PlayMode == "frontier";
+            Background = new System.Windows.Media.SolidColorBrush(frontierTheme
+                ? System.Windows.Media.Color.FromRgb(0x17, 0x13, 0x0e)
+                : System.Windows.Media.Color.FromRgb(0x07, 0x10, 0x14));
+            Browser.DefaultBackgroundColor = frontierTheme
+                ? System.Drawing.Color.FromArgb(0x17, 0x13, 0x0e)
+                : System.Drawing.Color.FromArgb(0x07, 0x0e, 0x15);
             Directory.CreateDirectory(AppPaths.WebViewData);
 
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: AppPaths.WebViewData);
@@ -98,7 +107,7 @@ public partial class MainWindow : Window
                 Path.Combine(AppContext.BaseDirectory, "web"),
                 CoreWebView2HostResourceAccessKind.Allow);
 
-            Browser.Source = new Uri("https://codalauncher.local/index.html");
+            Browser.Source = new Uri("https://codalauncher.local/index.html" + (frontierTheme ? "?theme=frontier" : ""));
         }
         catch (Exception ex)
         {

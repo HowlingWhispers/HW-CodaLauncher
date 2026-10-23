@@ -7,6 +7,15 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<script>
+// Before anything paints: the launcher passes the saved profile's theme in the address.
+// Without it (an older host), the last theme this page showed is used. render() corrects either.
+(function(){
+  var frontier=/[?&]theme=frontier(&|$)/.test(location.search);
+  if(!frontier&&location.search.indexOf('theme=')<0){try{frontier=localStorage.getItem('coda-theme')==='frontier';}catch(e){}}
+  if(frontier)document.body.classList.add('theme-frontier');
+})();
+</script>
 <div class="shell">
 <aside>
   <div class="brand"><div class="mark">🐺</div><div><b>CODA</b><small>Howling Whispers</small></div></div>

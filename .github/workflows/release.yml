@@ -185,22 +185,12 @@ jobs:
       - name: Verify real published Frontier automatic installation before shipping its selector
         env:
           GH_TOKEN: ${{ github.token }}
-          # Must satisfy minimumLoader in HW-Mods mods/frontier-mods.json.
-          HOWL_LOADER_VERSION: 0.0.46
         run: |
           set -euo pipefail
-          mkdir -p runtime-check
-          gh release download "v$HOWL_LOADER_VERSION" --repo HowlingWhispers/HW-CodaLoader --pattern "CodaLoader-v$HOWL_LOADER_VERSION-win64.zip" --pattern update-manifest.json --dir runtime-check
-          python3 - <<'PYCODE'
-          import hashlib,json,os,pathlib,zipfile
-          v=os.environ['HOWL_LOADER_VERSION']
-          root=pathlib.Path('runtime-check');m=json.loads((root/'update-manifest.json').read_text())
-          assert m['version']==v and m['bundle']==f'CodaLoader-v{v}-win64.zip'
-          archive=root/m['bundle'];assert hashlib.sha256(archive.read_bytes()).hexdigest()==m['sha256']
-          with zipfile.ZipFile(archive) as z: jar=z.read('CodaLoader.jar')
-          assert hashlib.sha256(jar).hexdigest()==m['files']['CodaLoader.jar']
-          (root/'CodaLoader.jar').write_bytes(jar)
-          PYCODE
+          # Test against the loader players actually get on Nightly (newest published
+          # release), and fail if it does not meet Frontier's live catalog minimum.
+          HOWL_LOADER_VERSION="$(python3 -I tests/resolve-release-loader.py runtime-check)"
+          export HOWL_LOADER_VERSION
           dotnet run --project tests/officialmods/OfficialModsTests.csproj -c Release -- --published-frontier runtime-check/CodaLoader.jar
       - name: Publish all platforms together
         env:
@@ -216,7 +206,7 @@ jobs:
           wooden panels, bevelled buttons, a camp scene on Home, a pixel moon and a parchment news board.
           Classic keeps its midnight look. Only the appearance changes; installs, paths and saves are untouched.
           The trust moon now notes when checksums matched; distribution is still not signed.
-          Release gate verified with H.O.W.L. 0.0.46 and the published Frontier 0.3.x before publishing.
+          Release gate now tests the newest published H.O.W.L. against Frontier's live catalog minimum.
 
           v0.7.32: Classic / Frontier play modes. Frontier has its own worlds, mods and settings.
           Select Frontier on Home to prepare its required mod automatically through Nightly Play / Install-Repair.

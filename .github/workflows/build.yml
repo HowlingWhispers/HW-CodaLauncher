@@ -97,6 +97,8 @@ jobs:
           dotnet-version: "8.0.x"
       - name: Test release version consistency
         run: node tests/release-version.test.cjs
+      - name: Test release-gate loader selection
+        run: python3 -I tests/resolve-release-loader.test.py
       - name: Test Settings save feedback
         run: |
           node --check web/app.js

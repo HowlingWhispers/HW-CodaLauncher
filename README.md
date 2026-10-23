@@ -1,5 +1,21 @@
 # CodaLauncher
 
+## Profiles and a clearer Home (0.8.1)
+
+- **Profile cards** in the sidebar: Classic (Stable), Classic (Nightly) and Frontier
+  (Nightly). One click sets channel and play mode together through the normal,
+  validated Settings save; locked while Minecraft runs or a save is pending.
+- **Play bar** under the hero: the Play button, the live status line, the activity
+  bar while working, and the three steps Play takes. **Open files** sits beside it.
+- **In this profile**: the active profile's mods as slots with name and version, from
+  the launcher's real scan. Unreadable JARs are marked; only readable ones are counted.
+- **Details fold away**: what Play does, safety and versions are one click away.
+- Wider content on wide windows; in Frontier, small text uses a readable face and the
+  hero label is compact so the camp stays visible. Library has one heading.
+- **Fixed:** in Nightly the hero said "Prepare H.O.W.L. to play" because it read
+  Stable's managed install. It now follows the active (Nightly) runtime, and so does
+  the "Checksums matched" note.
+
 ## Frontier look (0.8.0)
 
 Selecting **H.O.W.L. Frontier** on Home switches the Windows launcher to a

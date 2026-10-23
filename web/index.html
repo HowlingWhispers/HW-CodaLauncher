@@ -10,11 +10,17 @@
 <div class="shell">
 <aside>
   <div class="brand"><div class="mark">🐺</div><div><b>CODA</b><small>Howling Whispers</small></div></div>
-  <div class="channel-switch" role="group" aria-label="H.O.W.L. release channel">
+  <div class="profile-picker" role="radiogroup" aria-label="Profile">
+    <span class="picker-label">PROFILE</span>
+    <button type="button" class="profile-card" data-profile="classic-stable" role="radio" aria-checked="false"><i class="profile-icon moon" aria-hidden="true"></i><span>Classic<small>Stable · main saves</small></span></button>
+    <button type="button" class="profile-card" data-profile="classic-nightly" role="radio" aria-checked="false"><i class="profile-icon stars" aria-hidden="true"></i><span>Classic<small>Nightly · test saves</small></span></button>
+    <button type="button" class="profile-card" data-profile="frontier" role="radio" aria-checked="false"><i class="profile-icon tent" aria-hidden="true"></i><span>Frontier<small>Nightly · settlements</small></span></button>
+  </div>
+  <div class="channel-switch" role="group" aria-label="H.O.W.L. release channel" hidden>
     <button type="button" class="channel active" data-channel="stable" aria-pressed="true">Stable</button>
     <button type="button" class="channel" data-channel="nightly" aria-pressed="false">Nightly</button>
   </div>
-  <p class="channel-note" id="channel-note">Main profile and saves.</p>
+  <p class="channel-note" id="channel-note" hidden>Main profile and saves.</p>
   <nav aria-label="Main navigation">
     <button class="nav active" data-view="home">⌂ <span>Home</span></button>
     <button class="nav" data-view="addons">◇ <span>Library</span></button>
@@ -34,7 +40,7 @@
   <button id="update-launcher" class="save">UPDATE LAUNCHER</button>
 </div>
 <section class="view active" id="home">
-  <div class="play-mode-selector"><label for="play-mode">Play mode</label><select id="play-mode"><option value="classic">H.O.W.L. Classic</option><option value="frontier">H.O.W.L. Frontier (Nightly)</option></select><small id="play-mode-description">Your existing collection and worlds.</small></div>
+  <div class="play-mode-selector" hidden><label for="play-mode">Play mode</label><select id="play-mode"><option value="classic">H.O.W.L. Classic</option><option value="frontier">H.O.W.L. Frontier (Nightly)</option></select><small id="play-mode-description">Your existing collection and worlds.</small></div>
   <header><div><em>CODA CONTROL CENTER</em><h1 id="home-heading">Ready when you are.</h1></div><button id="refresh" class="quiet">↻ Refresh</button></header>
   <div class="hero">
     <!-- Frontier theme only: original pixel-art camp scene (no Mojang assets). -->
@@ -86,13 +92,25 @@
       <h2 id="hero-title">Checking your installation</h2>
       <p id="loader-summary">Coda is reading the local profile and release information.</p>
       <div class="chips"><span id="loader-chip">HOWL checking…</span><span id="pack-chip">BASE PACK checking…</span><span id="mod-chip">0 mods</span></div>
-      <div class="actions"><button id="play" class="play">INSTALL &amp; PLAY ▶</button><button id="open-loader" class="quiet">Open files</button></div>
-      <div id="play-progress" class="xp-bar" aria-hidden="true" hidden><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <div id="launch-message" role="status" aria-live="polite"></div>
       <p class="build-details" id="build-details">Minecraft 26.4 Snapshot 3</p>
     </div>
     <div class="coda"><img class="coda-face" src="assets/coda-headshot.png" alt="Coda"><b>Coda</b><small id="coda-status">clipboard online</small></div>
   </div>
+  <section class="play-bar" aria-label="Play">
+    <button id="play" class="play">INSTALL &amp; PLAY ▶</button>
+    <div class="play-status">
+      <div id="launch-message" role="status" aria-live="polite">Ready when you are.</div>
+      <div id="play-progress" class="xp-bar" aria-hidden="true" hidden><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <ol class="play-steps"><li>Check launcher</li><li>Prepare H.O.W.L. and mods</li><li>Start Minecraft</li></ol>
+    </div>
+    <button id="open-loader" class="quiet">Open files</button>
+  </section>
+  <section class="panel mods-hotbar" aria-labelledby="hotbar-title">
+    <div class="panel-head"><div><b id="hotbar-title">In this profile</b><small id="hotbar-note">Mods Coda found in the active profile.</small></div><span id="hotbar-count" class="pill"></span></div>
+    <div id="home-mods" class="hotbar" role="list"></div>
+  </section>
+  <details class="home-details">
+    <summary>What Play does, safety and versions</summary>
   <div class="status-columns">
     <div class="panel">
       <h3>When you press Play</h3>
@@ -111,19 +129,19 @@
       <div class="check-row"><b>Active profile</b><small id="safety-profile">Stable (main saves)</small></div>
     </div>
   </div>
+  </details>
   <div class="section-title"><div><em>FROM CODA'S DESK</em><h3>News</h3></div><small id="feed-note"></small></div>
   <div id="news" class="news"></div>
 </section>
 
 <section class="view" id="addons">
-  <header><div><em>CODA'S ADD-ON SHELF</em><h1>Add-ons</h1><small class="header-note">Mods, world data and resource packs, all in one place.</small></div></header>
+  <header><div><em>CODA'S ADD-ON SHELF</em><h1>Library</h1><small class="header-note">Mods, world data and resource packs, all in one place.</small></div></header>
   <div class="addon-tabs" role="tablist" aria-label="Add-on categories">
     <button class="addon-tab active" type="button" data-addon="mods" role="tab" aria-selected="true" aria-controls="mods">Mods</button>
     <button class="addon-tab" type="button" data-addon="datapacks" role="tab" aria-selected="false" aria-controls="datapacks">Data Packs</button>
     <button class="addon-tab" type="button" data-addon="resourcepacks" role="tab" aria-selected="false" aria-controls="resourcepacks">Resource Packs</button>
   </div>
   <div class="addon-panel active" id="mods" role="tabpanel">
-  <header><div><em>CODA'S MOD DRAWER</em><h1>Mods</h1><small class="header-note">Filed, checked, and ready to cause entirely responsible adventures.</small></div></header>
   <div class="panel"><div class="panel-head"><div><b>HOWL mod shelf</b><small>Coda reads the active Minecraft profile's single mods folder.</small></div><div class="actions"><button id="refresh-mods" class="quiet" type="button">↻ REFRESH MODS</button><button id="open-mods-folder" class="quiet" type="button">OPEN MODS FOLDER</button><span id="mods-count" class="pill"></span></div></div><p class="mod-help">H.O.W.L., Coda Companion, HW Essentials, required resources and declared official mods are managed automatically. Nightly also installs Sorting Pipes. Other mods install only when you choose them.</p><div id="optional-mods" class="optional-mods" aria-live="polite"></div><div id="mod-action-result" class="mod-action-result" role="status" aria-live="polite"></div><h3 class="installed-mod-heading">Installed JARs</h3><div id="mods-list"></div><small class="header-note">Recognized means the JAR metadata is readable, not that Minecraft confirmed loading it. Uninstalling a mod does not erase its world data.</small></div>
 </div>
 

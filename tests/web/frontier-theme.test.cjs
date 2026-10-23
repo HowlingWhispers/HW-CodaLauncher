@@ -44,7 +44,7 @@ function state(channel, playMode, managedCurrent) {
   return { type: 'state', data: {
     launcherVersion: '0.8.0', activeChannel: channel, gameRunning: false,
     accountBusy: false, localSingleplayer: true, managedCurrent, managedInstalled: true,
-    loaderCurrent: true, loaderReady: true, basePackReady: true,
+    loaderCurrent: managedCurrent, loaderReady: true, basePackReady: true,
     installedLoaderVersion: '0.0.43', latestLoaderVersion: '0.0.43',
     modCount: 0, mods: [], optionalMods: [], packs: [], resourcePacks: [], worlds: [],
     settings: { updateChannel: channel, localTestMode: true, playMode, feedUrl: '' },
@@ -71,4 +71,9 @@ assert.equal(el('play-progress').hidden, false, 'Activity bar shows while Play i
 handlers.message({ data: { type: 'installStatus', busy: false, ok: true, message: 'Ready.' } });
 assert.equal(el('play-progress').hidden, true, 'Activity bar hides when work finishes');
 
+// Nightly's hero follows the Nightly runtime, not Stable's managed install (0.8.1 fix).
+const nightlyCurrent = state('nightly', 'frontier', true);
+nightlyCurrent.data.managedCurrent = false; nightlyCurrent.data.managedInstalled = false;
+handlers.message({ data: nightlyCurrent });
+assert.equal(el('hero-title').textContent, 'Ready to play', 'A current Nightly runtime is ready even if Stable is not installed');
 console.log('PASS: Frontier theme follows play mode, bundles its font, and makes no simulated progress or trust claims');

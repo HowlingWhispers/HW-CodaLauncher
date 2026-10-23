@@ -120,3 +120,96 @@ h1{font-size:25px}
 @media(max-width:590px){.hero{grid-template-columns:1fr}.verification-moon{flex-direction:row;justify-content:flex-start;gap:8px}.verification-moon svg{width:70px;height:70px}.hero-copy{padding:0}.status-columns{gap:12px}}
 
 .play-mode-selector{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px;padding:16px 20px;border:1px solid #2a4555;border-radius:12px;background:#102431}.play-mode-selector label{font-weight:650;color:#d8edf4}.play-mode-selector select{padding:10px 14px;background:#172f3e;color:#eefcff;border:1px solid #476270;border-radius:8px;font:inherit}.play-mode-selector small{color:#9cb5c4}
+
+/* ===== H.O.W.L. Frontier theme (0.8.0) =====
+   Active only when the Frontier play mode is selected (body.theme-frontier).
+   Original pixel art and palette; no Mojang textures, fonts or logos.
+   Jersey 15 is bundled under the SIL Open Font License (assets/fonts/Jersey15-OFL.txt). */
+@font-face{font-family:"Jersey 15";src:url("assets/fonts/Jersey15-Regular.ttf") format("truetype");font-weight:400;font-display:swap}
+.frontier-scene,.moon-pixel{display:none}
+.xp-bar{display:none}
+.theme-frontier{--bg:#17130e;--panel:#2a2219;--line:#4a3a28;--text:#f3e6c8;--muted:#c2ad88;--cyan:#b8d68f;--px:"Jersey 15","Segoe UI",monospace;--wood:#2a2219;--wood-hi:#4a3a28;--wood-lo:#1b150f;--ink:#120e0a;--moss:#7fae4e;--fire:#e8913a}
+body.theme-frontier{background:var(--bg);color:var(--text);font-variant-ligatures:none}
+body.theme-frontier .shell{background:var(--bg)}
+body.theme-frontier aside{background:repeating-linear-gradient(180deg,#2a2219 0 37px,#1f1912 37px 40px);border-right:3px solid var(--ink)}
+body.theme-frontier .brand b{font-family:var(--px);font-size:25px;letter-spacing:.06em}
+body.theme-frontier .brand small,body.theme-frontier .channel-note{color:var(--muted)}
+body.theme-frontier .mark{border-radius:0;background:#3a2e20;border:2px solid var(--ink);box-shadow:inset 2px 2px 0 #5a4630}
+body.theme-frontier .channel-switch{border-radius:0;background:var(--ink);border:2px solid var(--ink);padding:2px}
+body.theme-frontier .channel{border-radius:0;color:var(--muted);font-family:var(--px);font-size:18px}
+body.theme-frontier .channel.active{background:#2f3a1f;color:var(--text);box-shadow:inset 0 0 0 2px var(--moss)}
+body.theme-frontier .nav{border-radius:0;color:#d9c7a3;font-family:var(--px);font-size:20px}
+body.theme-frontier .nav:hover{background:#3a2e20;color:var(--text)}
+body.theme-frontier .nav.active{background:var(--wood-hi);color:var(--text);box-shadow:inset 3px 3px 0 #6b5537,inset -3px -3px 0 #2b2117}
+body.theme-frontier .foot{border-top:2px solid var(--ink);color:#a8936d}
+body.theme-frontier .foot small{font-family:var(--px)}
+body.theme-frontier main{background:#1b1610}
+body.theme-frontier em{color:var(--cyan);font-family:var(--px);font-weight:400;font-size:16px;letter-spacing:.1em}
+body.theme-frontier h1,body.theme-frontier h2,body.theme-frontier h3{font-family:var(--px);font-weight:400;letter-spacing:.02em}
+body.theme-frontier h1{font-size:34px}body.theme-frontier h3{font-size:26px}
+body.theme-frontier .header-note,body.theme-frontier .panel-intro{color:var(--muted)}
+/* Blocky, bevelled controls */
+body.theme-frontier .quiet,body.theme-frontier .news-link{border-radius:0;background:#3a2e20;color:var(--text);border:2px solid var(--ink);box-shadow:inset 2px 2px 0 #5a4630,inset -2px -2px 0 #241b12;font-family:var(--px);font-size:18px}
+body.theme-frontier .quiet:hover,body.theme-frontier .news-link:hover{background:#463825;border-color:var(--ink);color:#fff}
+body.theme-frontier .save{border-radius:0;background:var(--moss);color:#14200b;border:2px solid var(--ink);box-shadow:inset 3px 3px 0 #b8d68f,inset -3px -3px 0 #4e7a35;font-family:var(--px);font-size:20px}
+body.theme-frontier .play,body.theme-frontier .hero .play{border-radius:0;background:var(--fire);color:#1b1209;border:3px solid var(--ink);box-shadow:inset 4px 4px 0 #f6b56a,inset -4px -4px 0 #a85d1c;font-family:var(--px);font-weight:400;font-size:29px;letter-spacing:.06em;padding:12px 28px}
+body.theme-frontier .play:active:not(:disabled),body.theme-frontier .quiet:active,body.theme-frontier .save:active{transform:translateY(1px);box-shadow:inset -2px -2px 0 #f6b56a,inset 2px 2px 0 #a85d1c}
+body.theme-frontier .pill,body.theme-frontier .chips span,body.theme-frontier .hero .chips span{border-radius:0;background:#1e1913;border:2px solid #3d3122;color:#d9c7a3;font-family:var(--px);font-size:14px}
+body.theme-frontier .chips .good,body.theme-frontier .pill.online{color:#b8d68f;border-color:#4e7a35}
+body.theme-frontier .chips .warn,body.theme-frontier .pill.update{color:#f6c453;border-color:#8a6a24}
+body.theme-frontier .chips .bad,body.theme-frontier .pill.offline{color:#f3a37a;border-color:#7a4b39}
+/* Panels: dark oak boards */
+body.theme-frontier .panel,body.theme-frontier .status-columns .panel,body.theme-frontier .packs-intro,body.theme-frontier .pack-card,body.theme-frontier .play-mode-selector,body.theme-frontier .addon-tabs,body.theme-frontier .cards article,body.theme-frontier .launcher-update-notice{border-radius:0;background:var(--wood);border:3px solid var(--ink);box-shadow:inset 2px 2px 0 var(--wood-hi),inset -2px -2px 0 var(--wood-lo)}
+body.theme-frontier .launcher-update-notice{background:#3a2a12}
+body.theme-frontier .check-row,body.theme-frontier .version-strip,body.theme-frontier .panel-head,body.theme-frontier .mod,body.theme-frontier .world-entry,body.theme-frontier .pack-meta{border-color:#3d3122}
+body.theme-frontier .check-row b,body.theme-frontier .version-strip b{font-family:var(--px);font-size:18px;font-weight:400}
+body.theme-frontier .check-row small,body.theme-frontier .version-strip small,body.theme-frontier .mod small,body.theme-frontier .world-entry small,body.theme-frontier .pack-card p{color:var(--muted)}
+body.theme-frontier .check-row .caution{color:#e0b46a}
+body.theme-frontier .play-mode-selector label{font-family:var(--px);font-size:21px;color:var(--text)}
+body.theme-frontier .play-mode-selector small{color:var(--muted)}
+body.theme-frontier select,body.theme-frontier .settings select,body.theme-frontier .settings input[type=text]{border-radius:0;background:#1e1913;color:var(--text);border:2px solid var(--ink);box-shadow:inset 2px 2px 0 #0c0906}
+body.theme-frontier .addon-tab{border-radius:0;font-family:var(--px);font-size:20px;color:#d9c7a3}
+body.theme-frontier .addon-tab:hover{background:#3a2e20}
+body.theme-frontier .addon-tab.active{background:var(--wood-hi);color:var(--text);box-shadow:inset 2px 2px 0 #6b5537,inset -2px -2px 0 #2b2117}
+body.theme-frontier .optional-mod{border-radius:0;background:#8a7a62;border:2px solid var(--ink);box-shadow:inset 2px 2px 0 #3f3529,inset -2px -2px 0 #c7b593;color:#1b1209}
+body.theme-frontier .optional-mod small{color:#2e2316}
+body.theme-frontier .managed-label,body.theme-frontier .coming,body.theme-frontier .contents-note span{border-radius:0;background:#1e1913;border-color:#3d3122;color:var(--muted)}
+body.theme-frontier .terminal{border-radius:0;background:#0f0c08;border:3px solid var(--ink);box-shadow:inset 2px 2px 0 #000}
+body.theme-frontier .terminal pre{color:#e6dcc2}
+/* Hero: the camp scene sits behind the copy */
+body.theme-frontier .hero{position:relative;min-height:300px;border-radius:0;border:3px solid var(--ink);box-shadow:inset 0 0 0 2px var(--wood-hi);background:#141a2e;grid-template-columns:minmax(0,460px) minmax(0,1fr) auto;align-items:start;padding:18px}
+body.theme-frontier .frontier-scene{display:block;position:absolute;inset:0;width:100%;height:100%;z-index:0}
+body.theme-frontier .hero>:not(.frontier-scene){position:relative;z-index:1}
+body.theme-frontier .hero-copy{grid-column:1;grid-row:1;background:rgba(20,16,12,.84);border:2px solid var(--wood-hi);padding:14px 18px 16px}
+body.theme-frontier .hero-copy h2{font-size:40px;color:var(--text)}
+body.theme-frontier .hero p{color:#d9c7a3}
+body.theme-frontier .hero .build-details{font-family:var(--px);color:#a8936d}
+body.theme-frontier .verification-moon{grid-column:3;grid-row:1;flex-direction:row;gap:10px;text-align:left;background:rgba(20,16,12,.84);border:2px solid var(--wood-hi);padding:9px 12px;align-items:center}
+body.theme-frontier .verification-moon .moon-classic{display:none}
+body.theme-frontier .verification-moon .moon-pixel{display:block;width:40px;height:40px}
+body.theme-frontier .verification-moon b{font-family:var(--px);font-size:18px;color:#e0b46a;display:block}
+body.theme-frontier .verification-moon small{color:#d9c7a3;max-width:180px;display:block}
+body.theme-frontier .hero .coda{display:none}
+body.theme-frontier #launch-message{color:#b8d68f}
+/* Activity bar in XP style: indeterminate, never a fake percentage */
+body.theme-frontier .xp-bar:not([hidden]){display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:3px;padding:3px;margin-top:14px;background:var(--ink);max-width:420px}
+body.theme-frontier .xp-bar i{height:10px;background:#2b3a1d;animation:frontier-xp 1.8s steps(1) infinite}
+body.theme-frontier .xp-bar i:nth-child(2){animation-delay:.15s}body.theme-frontier .xp-bar i:nth-child(3){animation-delay:.3s}body.theme-frontier .xp-bar i:nth-child(4){animation-delay:.45s}body.theme-frontier .xp-bar i:nth-child(5){animation-delay:.6s}body.theme-frontier .xp-bar i:nth-child(6){animation-delay:.75s}body.theme-frontier .xp-bar i:nth-child(7){animation-delay:.9s}body.theme-frontier .xp-bar i:nth-child(8){animation-delay:1.05s}body.theme-frontier .xp-bar i:nth-child(9){animation-delay:1.2s}body.theme-frontier .xp-bar i:nth-child(10){animation-delay:1.35s}body.theme-frontier .xp-bar i:nth-child(11){animation-delay:1.5s}body.theme-frontier .xp-bar i:nth-child(12){animation-delay:1.65s}
+@keyframes frontier-xp{0%{background:#7fae4e;box-shadow:inset 0 2px 0 #b8d68f}35%{background:#2b3a1d;box-shadow:none}}
+body.theme-frontier .frontier-flame{animation:frontier-flicker .9s steps(2) infinite}
+body.theme-frontier .frontier-fireflies{animation:frontier-glow 3.2s steps(4) infinite}
+@keyframes frontier-flicker{50%{transform:translateY(-.4px);opacity:.82}}
+@keyframes frontier-glow{50%{opacity:.25}}
+/* News: parchment notes on the Settlement Ledger */
+body.theme-frontier .news{background:repeating-linear-gradient(180deg,#6b4a2c 0 30px,#573b22 30px 32px);border:3px solid var(--ink);box-shadow:inset 2px 2px 0 #8a6440,inset -2px -2px 0 #3d2916;padding:16px;gap:16px}
+body.theme-frontier .news article{position:relative;border:0;border-radius:0;background:#efe0bd;color:#3a2a18;padding:16px 14px 14px;box-shadow:3px 3px 0 #2b1c0f;transform:rotate(-1deg)}
+body.theme-frontier .news article:nth-child(even){background:#e7d4a8;transform:rotate(1.2deg)}
+body.theme-frontier .news article::before{content:"";position:absolute;top:5px;left:50%;width:5px;height:5px;margin-left:-2px;background:#4a4a4a}
+body.theme-frontier .news article time{color:#6b5537;font-family:var(--px)}
+body.theme-frontier .news article b{font-family:var(--px);font-size:21px;color:#2b1d0f}
+body.theme-frontier .news article p{color:#3a2a18}
+body.theme-frontier .news-link{font-size:12px}
+@media (prefers-reduced-motion:reduce){body.theme-frontier .frontier-flame,body.theme-frontier .frontier-fireflies,body.theme-frontier .xp-bar i{animation:none}}
+@media(max-width:1100px){body.theme-frontier .hero{grid-template-columns:minmax(0,1fr)}body.theme-frontier .verification-moon{grid-column:1;grid-row:2;justify-self:start;margin-top:10px}}
+body.theme-frontier .play:disabled{filter:none;opacity:.7}
+.pill{white-space:nowrap}

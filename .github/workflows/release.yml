@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.7.32
-  CODA_TAG: v0.7.32
+  CODA_VERSION: 0.8.0
+  CODA_TAG: v0.8.0
 
 jobs:
   gate:
@@ -207,7 +207,12 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.7.32 (prerelease)
+          # CodaLauncher 0.8.0 (prerelease)
+
+          v0.8.0: Frontier look. Selecting Frontier turns the launcher into a pixel-art frontier camp:
+          wooden panels, bevelled buttons, a camp scene on Home, a pixel moon and a parchment news board.
+          Classic keeps its midnight look. Only the appearance changes; installs, paths and saves are untouched.
+          The trust moon now notes when checksums matched; distribution is still not signed.
 
           v0.7.32: Classic / Frontier play modes. Frontier has its own worlds, mods and settings.
           Select Frontier on Home to prepare its required mod automatically through Nightly Play / Install-Repair.

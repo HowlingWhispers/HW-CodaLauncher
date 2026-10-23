@@ -1,5 +1,21 @@
 # CodaLauncher
 
+## Frontier look (0.8.0)
+
+Selecting **H.O.W.L. Frontier** on Home switches the Windows launcher to a
+pixel-art frontier theme: plank sidebar, bevelled blocky buttons, an original
+camp-at-dusk scene behind the Home hero (tents, palisade, campfire, Coda), a
+pixel moon for distribution trust, an XP-style activity bar while Play is
+working, and news pinned as parchment notes. Classic keeps the midnight look.
+
+This is presentation only: channels, profiles, paths, installs, mods and saves
+behave exactly as in 0.7.32. The activity bar is indeterminate and never shows
+a simulated percentage. The trust panel adds "Checksums matched" only when the
+managed components match their published versions; distribution is still
+**not signed**. All art is original and uses no Mojang assets. The pixel font,
+Jersey 15, ships under the SIL Open Font License (`web/assets/fonts`).
+Frontier remains Windows Nightly only, so the Avalonia shell is unchanged.
+
 ## Frontier play mode (0.7.32)
 
 Windows Home adds a **Classic / Frontier** play-mode selector independent of the

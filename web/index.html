@@ -37,14 +37,49 @@
   <div class="play-mode-selector"><label for="play-mode">Play mode</label><select id="play-mode"><option value="classic">H.O.W.L. Classic</option><option value="frontier">H.O.W.L. Frontier (Nightly)</option></select><small id="play-mode-description">Your existing collection and worlds.</small></div>
   <header><div><em>CODA CONTROL CENTER</em><h1 id="home-heading">Ready when you are.</h1></div><button id="refresh" class="quiet">↻ Refresh</button></header>
   <div class="hero">
+    <!-- Frontier theme only: original pixel-art camp scene (no Mojang assets). -->
+    <svg class="frontier-scene" viewBox="0 0 240 70" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges" aria-hidden="true">
+      <rect width="240" height="22" fill="#141a2e"/><rect y="22" width="240" height="13" fill="#1d2440"/><rect y="35" width="240" height="9" fill="#2b2c4a"/><rect y="44" width="240" height="6" fill="#4a3346"/><rect y="50" width="240" height="8" fill="#7a4436"/>
+      <g fill="#efe6c8"><rect x="12" y="5" width="1" height="1"/><rect x="31" y="12" width="1" height="1"/><rect x="66" y="9" width="1" height="1"/><rect x="109" y="14" width="1" height="1"/><rect x="127" y="6" width="1" height="1"/><rect x="163" y="3" width="1" height="1"/><rect x="181" y="16" width="1" height="1"/><rect x="233" y="19" width="1" height="1"/><rect x="140" y="27" width="1" height="1"/><rect x="20" y="26" width="1" height="1"/></g>
+      <g fill="#c9d4f0"><rect x="48" y="3" width="1" height="1"/><rect x="84" y="4" width="1" height="1"/><rect x="146" y="11" width="1" height="1"/><rect x="226" y="7" width="1" height="1"/><rect x="95" y="24" width="1" height="1"/></g>
+      <g fill="#2a2338"><rect y="48" width="30" height="10"/><rect x="18" y="45" width="34" height="13"/><rect x="44" y="47" width="40" height="11"/><rect x="118" y="46" width="44" height="12"/><rect x="190" y="44" width="50" height="14"/><rect x="205" y="42" width="22" height="2"/></g>
+      <g fill="#1b2a24">
+        <rect x="6" y="44" width="1" height="2"/><rect x="5" y="46" width="3" height="2"/><rect x="4" y="48" width="5" height="3"/><rect x="3" y="51" width="7" height="4"/><rect x="6" y="55" width="1" height="3"/>
+        <rect x="16" y="41" width="1" height="2"/><rect x="15" y="43" width="3" height="3"/><rect x="14" y="46" width="5" height="3"/><rect x="13" y="49" width="7" height="3"/><rect x="12" y="52" width="9" height="3"/><rect x="16" y="55" width="1" height="3"/>
+        <rect x="29" y="45" width="1" height="2"/><rect x="28" y="47" width="3" height="2"/><rect x="27" y="49" width="5" height="3"/><rect x="26" y="52" width="7" height="3"/><rect x="29" y="55" width="1" height="3"/>
+        <rect x="218" y="42" width="1" height="2"/><rect x="217" y="44" width="3" height="3"/><rect x="216" y="47" width="5" height="3"/><rect x="215" y="50" width="7" height="3"/><rect x="214" y="53" width="9" height="2"/><rect x="218" y="55" width="1" height="3"/>
+        <rect x="232" y="45" width="1" height="2"/><rect x="231" y="47" width="3" height="2"/><rect x="230" y="49" width="5" height="3"/><rect x="229" y="52" width="7" height="3"/><rect x="232" y="55" width="1" height="3"/>
+      </g>
+      <g transform="translate(55 0)"><g fill="#6b4a2c"><rect x="150" y="50" width="2" height="8"/><rect x="153" y="49" width="2" height="9"/><rect x="156" y="50" width="2" height="8"/><rect x="159" y="49" width="2" height="9"/><rect x="162" y="50" width="2" height="8"/><rect x="165" y="49" width="2" height="9"/><rect x="168" y="50" width="2" height="8"/><rect x="171" y="49" width="2" height="9"/><rect x="174" y="50" width="2" height="8"/><rect x="177" y="49" width="2" height="9"/><rect x="180" y="50" width="2" height="8"/><rect x="183" y="49" width="2" height="9"/></g>
+      <rect x="149" y="53" width="37" height="1" fill="#4a321d"/></g>
+      <g transform="translate(82 0)">
+      <rect x="64" y="47" width="2" height="1" fill="#c9b48a"/><rect x="63" y="48" width="4" height="2" fill="#c9b48a"/><rect x="61" y="50" width="8" height="2" fill="#c9b48a"/><rect x="59" y="52" width="12" height="3" fill="#c9b48a"/><rect x="57" y="55" width="16" height="3" fill="#c9b48a"/>
+      <g fill="#a8935f"><rect x="65" y="48" width="2" height="10"/><rect x="67" y="50" width="2" height="8"/><rect x="69" y="52" width="2" height="6"/><rect x="71" y="55" width="2" height="3"/></g>
+      <rect x="64" y="53" width="2" height="5" fill="#3a2c1c"/>
+      <rect x="112" y="49" width="2" height="1" fill="#b7a173"/><rect x="111" y="50" width="4" height="2" fill="#b7a173"/><rect x="109" y="52" width="8" height="3" fill="#b7a173"/><rect x="107" y="55" width="12" height="3" fill="#b7a173"/>
+      <g fill="#96814f"><rect x="113" y="50" width="2" height="8"/><rect x="115" y="52" width="2" height="6"/><rect x="117" y="55" width="2" height="3"/></g><rect x="112" y="54" width="2" height="4" fill="#3a2c1c"/>
+      <rect x="80" y="48" width="22" height="10" fill="#e8913a" opacity=".1"/><rect x="84" y="51" width="14" height="7" fill="#e8913a" opacity=".12"/>
+      <rect x="87" y="57" width="7" height="1" fill="#5a3a20"/><rect x="88" y="56" width="5" height="1" fill="#6e4628"/>
+      <g class="frontier-flame"><rect x="89" y="53" width="3" height="3" fill="#e8913a"/><rect x="90" y="51" width="1" height="2" fill="#e8913a"/><rect x="88" y="54" width="1" height="2" fill="#d4652a"/><rect x="92" y="54" width="1" height="2" fill="#d4652a"/><rect x="90" y="54" width="1" height="2" fill="#f6c453"/></g>
+      <rect x="96" y="56" width="6" height="2" fill="#e6eef2"/><rect x="102" y="55" width="3" height="2" fill="#e6eef2"/><rect x="103" y="54" width="1" height="1" fill="#e6eef2"/><rect x="105" y="56" width="1" height="1" fill="#e6eef2"/><rect x="96" y="56" width="3" height="1" fill="#9fb0bb"/><rect x="94" y="57" width="2" height="1" fill="#b9c6cf"/><rect x="103" y="55" width="1" height="1" fill="#2b6fb0"/>
+      <g class="frontier-fireflies" fill="#f6e27a"><rect x="78" y="44" width="1" height="1"/><rect x="123" y="47" width="1" height="1"/><rect x="140" y="42" width="1" height="1"/><rect x="47" y="49" width="1" height="1"/></g>
+      </g>
+      <rect y="58" width="240" height="1" fill="#6a9c45"/><rect y="59" width="240" height="2" fill="#4e7a35"/><rect y="61" width="240" height="9" fill="#5a3f27"/><rect y="61" width="240" height="1" fill="#46301e"/>
+      <g fill="#6e4e30"><rect x="7" y="63" width="2" height="1"/><rect x="74" y="65" width="1" height="1"/><rect x="101" y="63" width="2" height="1"/><rect x="151" y="64" width="2" height="1"/><rect x="199" y="66" width="2" height="1"/></g>
+      <g fill="#46301e"><rect x="29" y="66" width="1" height="1"/><rect x="52" y="62" width="2" height="1"/><rect x="126" y="67" width="1" height="1"/><rect x="176" y="62" width="1" height="1"/><rect x="222" y="63" width="1" height="1"/></g>
+    </svg>
     <div class="verification-moon" role="img" aria-label="Verified distribution status unavailable until the signed manifest system ships">
-      <svg viewBox="0 0 140 140" aria-hidden="true">
+      <svg class="moon-classic" viewBox="0 0 140 140" aria-hidden="true">
         <circle cx="70" cy="70" r="54" fill="none" stroke="#335165" stroke-width="3"/>
         <circle cx="70" cy="70" r="50" fill="#172b3c"/>
         <path d="M70 21 A49 49 0 1 1 70 119 A35 49 0 1 0 70 21" fill="#eefcff" opacity=".78"/>
       </svg>
+      <svg class="moon-pixel" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="4" width="4" height="1" fill="#efe6c8"/><rect x="2" y="1" width="8" height="1" fill="#efe6c8"/><rect x="1" y="2" width="10" height="2" fill="#efe6c8"/><rect y="4" width="12" height="4" fill="#efe6c8"/><rect x="1" y="8" width="10" height="2" fill="#efe6c8"/><rect x="2" y="10" width="8" height="1" fill="#efe6c8"/><rect x="4" y="11" width="4" height="1" fill="#efe6c8"/>
+        <g fill="#3a4266"><rect y="4" width="3" height="4"/><rect x="1" y="2" width="2" height="2"/><rect x="1" y="8" width="2" height="2"/><rect x="2" y="1" width="2" height="1"/><rect x="2" y="10" width="2" height="1"/></g>
+      </svg>
       <b id="verification-label">NOT SIGNED</b>
-      <small>Distribution trust</small>
+      <small id="verification-detail">Distribution trust</small>
     </div>
     <div class="hero-copy">
       <em>H.O.W.L.  /  MINECRAFT</em>
@@ -52,8 +87,9 @@
       <p id="loader-summary">Coda is reading the local profile and release information.</p>
       <div class="chips"><span id="loader-chip">HOWL checking…</span><span id="pack-chip">BASE PACK checking…</span><span id="mod-chip">0 mods</span></div>
       <div class="actions"><button id="play" class="play">INSTALL &amp; PLAY ▶</button><button id="open-loader" class="quiet">Open files</button></div>
+      <div id="play-progress" class="xp-bar" aria-hidden="true" hidden><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <div id="launch-message" role="status" aria-live="polite"></div>
-      <p class="build-details">Minecraft 26.4 Snapshot 3 · Stable / Nightly profiles</p>
+      <p class="build-details" id="build-details">Minecraft 26.4 Snapshot 3</p>
     </div>
     <div class="coda"><img class="coda-face" src="assets/coda-headshot.png" alt="Coda"><b>Coda</b><small id="coda-status">clipboard online</small></div>
   </div>

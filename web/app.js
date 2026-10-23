@@ -30,6 +30,9 @@ $('update-launcher').onclick=()=>{
 function setInstallBusy(busy,message=''){
   installBusy=busy;
   renderLauncherUpdateNotice();
+  // Indeterminate activity bar: it shows work is happening, never a fake percentage.
+  const progress=$('play-progress');
+  if(progress) progress.hidden=!busy;
   const home=$('play');
   if(home){
     home.disabled=busy;
@@ -251,6 +254,13 @@ function render(){
   $('home-heading').textContent=state.gameRunning?'World session active.':'Ready when you are.';
   $('coda-status').textContent=state.gameRunning?'on standby':'clipboard online';
   const nightly=state.activeChannel==='nightly';
+  // Frontier gets its own pixel-camp look; Classic keeps the midnight theme.
+  const frontier=nightly&&state.settings.playMode==='frontier';
+  document.body?.classList?.toggle('theme-frontier',frontier);
+  $('verification-detail').textContent=state.managedCurrent
+    ?'Checksums matched · signature not yet available'
+    :'Distribution trust';
+  $('build-details').textContent='Minecraft 26.4 Snapshot 3 · '+(frontier?'Frontier Nightly':nightly?'Classic Nightly':'Classic Stable')+' profile';
   document.querySelectorAll('.channel').forEach(btn=>{
     const active=btn.dataset.channel===state.activeChannel;
     btn.classList.toggle('active',active);

@@ -51,7 +51,7 @@ if(args.Length==2 && args[0]=="--published-frontier") {
             try { await process.WaitForExitAsync(timeout.Token); }
             catch { if(!process.HasExited)process.Kill(true);throw; }
             string log=await output, stderr=await errors;Console.WriteLine(log);
-            Check(process.ExitCode==0 && log.Contains("[Frontier]") && log.Contains("mode=Frontier") && log.Contains("H.O.W.L. 0.0.43"),"Actual published loader and mod initialize together: "+stderr);
+            Check(process.ExitCode==0 && log.Contains("[Frontier]") && log.Contains("mode=Frontier") && log.Contains("H.O.W.L. "+(Environment.GetEnvironmentVariable("HOWL_LOADER_VERSION") ?? "0.0.46")),"Actual published loader and mod initialize together: "+stderr);
         }
         Console.WriteLine("PASS: actual published Frontier automatically installed, checksum verified, repaired and initialized with its published runtime in an isolated Nightly profile");
     } finally { if(Directory.Exists(root))Directory.Delete(root,true); }

@@ -29,7 +29,7 @@ if(args.Length==2 && args[0]=="--published-frontier") {
     string game=PlayProfiles.NightlyGameRoot(root,"frontier");
     try {
         using var client=new HttpClient(new PublishedApiAuthentication()) { Timeout=TimeSpan.FromSeconds(60) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("CodaLauncher-Frontier-Release-Acceptance/0.8.0");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("CodaLauncher-Frontier-Release-Acceptance/0.8.1");
         var acceptance=new OfficialModsInstaller(client);acceptance.SetMode("frontier");PlayProfiles.Prepare(game,"frontier");
         await acceptance.EnsureAsync(game,Path.GetFullPath(args[1]),"nightly",Console.WriteLine,CancellationToken.None);
         string installed=Directory.EnumerateFiles(Path.Combine(game,"mods"),"*.jar").Single();

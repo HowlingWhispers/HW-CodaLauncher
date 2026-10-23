@@ -213,3 +213,82 @@ body.theme-frontier .news-link{font-size:12px}
 @media(max-width:1100px){body.theme-frontier .hero{grid-template-columns:minmax(0,1fr)}body.theme-frontier .verification-moon{grid-column:1;grid-row:2;justify-self:start;margin-top:10px}}
 body.theme-frontier .play:disabled{filter:none;opacity:.7}
 .pill{white-space:nowrap}
+
+/* ===== 0.8.1 layout: profile picker, Play bar, mods hotbar, collapsible details ===== */
+.view{max-width:1360px}
+.profile-picker{display:grid;gap:6px;margin:0 2px 18px}
+.picker-label{font-size:10px;letter-spacing:.14em;color:var(--muted);padding:0 4px 2px;font-weight:700}
+.profile-card{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 10px;text-align:left;cursor:pointer;border:1px solid #2a4555;border-radius:9px;background:#12222e;color:#a9c0cf;font:inherit}
+.profile-card span{font-weight:650;font-size:14px;line-height:1.2}
+.profile-card small{display:block;font-weight:400;font-size:11px;color:var(--muted);margin-top:2px}
+.profile-card:hover{border-color:#4c93ae;color:#fff}
+.profile-card.active{border-color:var(--cyan);background:#1d3d4c;color:var(--text);box-shadow:inset 3px 0 var(--cyan)}
+.profile-card:disabled{opacity:.45;cursor:not-allowed}
+.profile-icon{flex:none;width:18px;height:18px;display:inline-block}
+.profile-icon.moon{border-radius:50%;box-shadow:inset -6px 0 0 #cfe6f2}
+.profile-icon.stars{border-radius:4px;background:radial-gradient(circle at 30% 35%,#f6c453 0 2px,transparent 2.6px),radial-gradient(circle at 70% 70%,#f6c453 0 2px,transparent 2.6px),#55688c}
+.profile-icon.tent{background:#efe0bd;clip-path:polygon(50% 4%,96% 96%,4% 96%)}
+.play-bar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:18px;align-items:center;margin:16px 0;padding:16px 18px;border:1px solid #2b4559;border-radius:12px;background:#142938}
+.play-bar .play{padding:14px 30px;font-size:16px;border-radius:10px;background:#7ed8e6;color:#06222a;letter-spacing:.06em;box-shadow:none}
+.play-status{min-width:0}
+#launch-message{margin:0;font-size:14px;color:var(--text);min-height:20px;overflow-wrap:anywhere}
+.play-steps{list-style:none;display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 0;padding:0;font-size:12px;color:var(--muted);counter-reset:step}
+.play-steps li{counter-increment:step}
+.play-steps li::before{content:counter(step) " · ";color:var(--cyan)}
+.xp-bar:not([hidden]){display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:3px;padding:3px;margin-top:10px;background:#0b1620;border-radius:4px;max-width:520px}
+.xp-bar i{height:8px;background:#1d3442;border-radius:2px;animation:classic-xp 1.8s steps(1) infinite}
+.xp-bar i:nth-child(2){animation-delay:.15s}.xp-bar i:nth-child(3){animation-delay:.3s}.xp-bar i:nth-child(4){animation-delay:.45s}.xp-bar i:nth-child(5){animation-delay:.6s}.xp-bar i:nth-child(6){animation-delay:.75s}.xp-bar i:nth-child(7){animation-delay:.9s}.xp-bar i:nth-child(8){animation-delay:1.05s}.xp-bar i:nth-child(9){animation-delay:1.2s}.xp-bar i:nth-child(10){animation-delay:1.35s}.xp-bar i:nth-child(11){animation-delay:1.5s}.xp-bar i:nth-child(12){animation-delay:1.65s}
+@keyframes classic-xp{0%{background:#7ed8e6}35%{background:#1d3442}}
+.mods-hotbar{margin:0 0 16px}
+.hotbar{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-top:14px}
+.slot{position:relative;display:grid;grid-template-columns:38px minmax(0,1fr);column-gap:10px;align-items:center;padding:8px 10px;border:1px solid #2a4658;border-radius:9px;background:#10212e;outline:none}
+.slot:focus-visible{border-color:var(--cyan)}
+.slot.bad{border-color:#7a4b39}
+.slot-icon{grid-row:span 2;width:38px;height:38px;display:grid;place-items:center;border-radius:7px;background:#1d3d4c;color:#e7f0f6;font-weight:800;font-size:13px}
+.slot-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot-version{font-size:11px;color:var(--muted)}
+.slot:hover::after,.slot:focus-visible::after{content:attr(data-tip);position:absolute;left:0;bottom:calc(100% + 6px);z-index:5;white-space:nowrap;padding:6px 10px;background:#0b1620;border:1px solid #3a5a6e;border-radius:6px;font-size:12px;color:#e7f0f6;pointer-events:none}
+.home-details{margin:0 0 6px}
+.home-details>summary{cursor:pointer;list-style:none;padding:12px 16px;border:1px solid #27475a;border-radius:10px;background:#122636;font-weight:650;font-size:14px;color:#c6d7e3}
+.home-details>summary::-webkit-details-marker{display:none}
+.home-details>summary::before{content:"▸ ";color:var(--cyan)}
+.home-details[open]>summary::before{content:"▾ "}
+.home-details[open]>summary{margin-bottom:12px}
+.home-details .status-columns{margin-top:0}
+@media(max-width:900px){.profile-card small,.picker-label{display:none}.profile-card{justify-content:center;padding:8px 4px}.profile-card span{font-size:0}.profile-card span small{display:none}.play-bar{grid-template-columns:1fr}.play-bar #open-loader{justify-self:start}}
+
+/* Frontier versions of the same pieces */
+body.theme-frontier .profile-card{border-radius:0;background:#1e1913;border:2px solid #3d3122;color:#d9c7a3}
+body.theme-frontier .profile-card span{font-family:var(--px);font-size:19px;font-weight:400;letter-spacing:.02em}
+body.theme-frontier .profile-card small{font-family:Inter,"Segoe UI",sans-serif;font-size:11px;color:#a8936d;letter-spacing:0}
+body.theme-frontier .profile-card:hover{background:#2a2219;color:var(--text)}
+body.theme-frontier .profile-card.active{background:#2f3a1f;border-color:var(--moss);box-shadow:inset 0 0 0 1px #17130e;color:var(--text)}
+body.theme-frontier .profile-card.active small{color:#b8d68f}
+body.theme-frontier .picker-label{font-family:var(--px);font-size:15px;font-weight:400;color:#c2ad88;letter-spacing:.1em}
+body.theme-frontier .play-bar{border-radius:0;background:var(--wood);border:3px solid var(--ink);box-shadow:inset 2px 2px 0 var(--wood-hi),inset -2px -2px 0 var(--wood-lo)}
+body.theme-frontier .play-bar .play{font-size:28px;padding:10px 32px}
+body.theme-frontier #launch-message{font-family:var(--px);font-size:20px;color:var(--text)}
+body.theme-frontier .play-steps{font-size:12px;color:#c2ad88}
+body.theme-frontier .play-steps li::before{color:#b8d68f}
+body.theme-frontier .xp-bar:not([hidden]){border-radius:0;background:var(--ink)}
+body.theme-frontier .xp-bar i{border-radius:0}
+body.theme-frontier .hotbar{background:#8b8b8b;padding:6px;border:2px solid var(--ink);box-shadow:inset 2px 2px 0 #c6c6c6,inset -2px -2px 0 #555}
+body.theme-frontier .slot{border:0;border-radius:0;background:#8a7a62;box-shadow:inset 2px 2px 0 #3f3529,inset -2px -2px 0 #c7b593}
+body.theme-frontier .slot:focus-visible{box-shadow:inset 0 0 0 2px #f3e6c8}
+body.theme-frontier .slot.bad{background:#8a5a4a}
+body.theme-frontier .slot-icon{border-radius:0;background:#3a2e20;color:#efe0bd;font-family:var(--px);font-size:20px;font-weight:400;box-shadow:inset 2px 2px 0 #5a4630}
+body.theme-frontier .slot-name{color:#1b1209}
+body.theme-frontier .slot-version{color:#2e2316}
+body.theme-frontier .slot:hover::after,body.theme-frontier .slot:focus-visible::after{background:#170f22;border:2px solid #3c2468;border-radius:0;color:#f3e6c8}
+body.theme-frontier .home-details>summary{border-radius:0;background:var(--wood);border:2px solid var(--ink);box-shadow:inset 2px 2px 0 var(--wood-hi);font-family:var(--px);font-size:18px;font-weight:400;color:var(--text)}
+body.theme-frontier .home-details>summary::before{color:#b8d68f}
+/* Small text stays in a readable face; the pixel font is for headings, labels and buttons only. */
+body.theme-frontier .pill,body.theme-frontier .chips span,body.theme-frontier .hero .chips span{font-family:Inter,"Segoe UI",sans-serif;font-size:11px;font-weight:600;letter-spacing:.04em}
+body.theme-frontier .hero .build-details,body.theme-frontier .foot small,body.theme-frontier .verification-moon small{font-family:Inter,"Segoe UI",sans-serif;font-size:12px}
+/* A compact label in the corner, so the camp stays visible */
+body.theme-frontier .hero{grid-template-columns:minmax(0,420px) minmax(0,1fr) auto;min-height:280px}
+body.theme-frontier .hero-copy{padding:12px 16px 14px}
+body.theme-frontier .hero-copy h2{font-size:36px;margin:4px 0}
+body.theme-frontier #loader-summary{font-size:13px;line-height:1.45;margin:4px 0 10px}
+.channel-switch[hidden],.play-mode-selector[hidden],.channel-note[hidden]{display:none!important}
+body.theme-frontier .panel-head b{font-family:var(--px);font-size:22px;font-weight:400}

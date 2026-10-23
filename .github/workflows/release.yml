@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.8.0
-  CODA_TAG: v0.8.0
+  CODA_VERSION: 0.8.1
+  CODA_TAG: v0.8.1
 
 jobs:
   gate:
@@ -200,7 +200,13 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.8.0 (prerelease)
+          # CodaLauncher 0.8.1 (prerelease)
+
+          v0.8.1: Profiles and a clearer Home.
+          Pick Classic Stable, Classic Nightly or Frontier from cards in the sidebar.
+          Play has its own bar with live status; your profile's mods show as slots with versions.
+          Details (what Play does, safety, versions) fold away. Wider layout, readable small text.
+          Fixed: Nightly showed "Prepare H.O.W.L. to play" even when its runtime was current.
 
           v0.8.0: Frontier look. Selecting Frontier turns the launcher into a pixel-art frontier camp:
           wooden panels, bevelled buttons, a camp scene on Home, a pixel moon and a parchment news board.

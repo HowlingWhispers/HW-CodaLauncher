@@ -108,6 +108,23 @@ document.querySelectorAll('.channel').forEach(btn=>btn.addEventListener('click',
   $('save').click();
 }));
 $('open-worlds-folder').onclick=()=>post('openWorldsFolder');
+// Profile cards: one choice sets channel and play mode together, through the same validated Settings save.
+function activeProfile(){
+  if(!state) return null;
+  if(state.activeChannel!=='nightly') return 'classic-stable';
+  return state.settings.playMode==='frontier'?'frontier':'classic-nightly';
+}
+document.querySelectorAll('.profile-card').forEach(card=>card.addEventListener('click',()=>{
+  if(!state||installBusy||settingsSaving||state.gameRunning||state.accountBusy) return;
+  const profile=card.dataset.profile;
+  if(profile===activeProfile()) return;
+  const nightly=profile!=='classic-stable';
+  $('update-channel').value=nightly?'nightly':'stable';
+  $('play-mode').value=profile==='frontier'?'frontier':'classic';
+  $('nightly-warning').hidden=!nightly;
+  if(nightly) $('local-test-mode').checked=true;
+  $('save').click();
+}));
 $('play-mode').onchange=()=>{
   if($('play-mode').value==='frontier'){
     $('update-channel').value='nightly';
@@ -237,7 +254,7 @@ window.chrome.webview.addEventListener('message',e=>{
     installBusy=false;
     const box=$('launch-message');
     box.textContent=m.message;
-    box.style.color=m.crashed?'#ffb28a':'#8df0bb';
+    box.style.color=m.crashed?'#ffb28a':'';
     render();
   }
   if(m.type==='launchStatus'){
@@ -257,7 +274,7 @@ function render(){
   // Frontier gets its own pixel-camp look; Classic keeps the midnight theme.
   const frontier=nightly&&state.settings.playMode==='frontier';
   document.body?.classList?.toggle('theme-frontier',frontier);
-  $('verification-detail').textContent=state.managedCurrent
+  $('verification-detail').textContent=(nightly?(state.loaderReady&&state.loaderCurrent):state.managedCurrent)
     ?'Checksums matched · signature not yet available'
     :'Distribution trust';
   $('build-details').textContent='Minecraft 26.4 Snapshot 3 · '+(frontier?'Frontier Nightly':nightly?'Classic Nightly':'Classic Stable')+' profile';
@@ -271,9 +288,12 @@ function render(){
     ? 'Experiments use a separate test world directory.'
     : 'Main profile and saves.';
   $('verification-label').textContent='NOT SIGNED';
+  // In Nightly the active runtime is the Nightly one; Stable's managed install says nothing about it.
+  const activeCurrent=nightly?!!(state.loaderReady&&state.loaderCurrent):!!state.managedCurrent;
+  const activeInstalled=nightly?!!state.loaderReady:!!state.managedInstalled;
   $('hero-title').textContent=state.gameRunning?'Minecraft is running'
-    :state.managedCurrent?'Ready to play'
-    :state.managedInstalled?'An update before you play':'Prepare H.O.W.L. to play';
+    :activeCurrent?'Ready to play'
+    :activeInstalled?'An update before you play':'Prepare H.O.W.L. to play';
   $('step-launcher').textContent=launcherUpdateVersion
     ?'CodaLauncher '+launcherUpdateVersion+' available: verified update and restart offered.'
     :'Checks for new launcher releases when launched or Play is pressed.';
@@ -407,6 +427,37 @@ function render(){
   $('p-cml').textContent=state.profile.cmlAccount;$('p-mc').textContent=state.localSingleplayer?'Unverified (local test)':'Handled by Minecraft Launcher';$('p-discord').textContent=state.profile.discord;
   $('log-output').textContent=(state.logs||[]).join('\n')||'Nothing interesting has happened yet.';
   renderWorlds();
+  renderProfiles();
+  renderHotbar();
+}
+function renderProfiles(){
+  const active=activeProfile();
+  const locked=installBusy||settingsSaving||state.gameRunning||state.accountBusy;
+  document.querySelectorAll('.profile-card').forEach(card=>{
+    const on=card.dataset.profile===active;
+    card.classList.toggle('active',on);
+    card.setAttribute('aria-checked',String(on));
+    card.disabled=locked&&!on;
+  });
+}
+// The active profile's mods as inventory slots. Real scan results only: name, version, status.
+function renderHotbar(){
+  const mods=(state.mods||[]);
+  const valid=mods.filter(m=>m.valid);
+  $('hotbar-count').textContent=valid.length+' mod'+(valid.length===1?'':'s');
+  $('hotbar-note').textContent=mods.length
+    ?'Hover or focus a slot for its version. Recognized means readable, not yet loaded by Minecraft.'
+    :'No mods in this profile yet. PLAY installs the required ones.';
+  $('home-mods').innerHTML=mods.map(m=>{
+    const name=m.name||m.id||m.fileName||'Unknown mod';
+    const status=!m.valid?'Unreadable':m.releaseStatus==='Modified'?'Modified':'Recognized';
+    const tip=name+(m.version?' · v'+m.version:'')+' · '+status;
+    const letters=String(name).replace(/[^A-Za-z0-9 ]/g,'').split(' ').filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?';
+    return '<div class="slot'+(m.valid?'':' bad')+'" role="listitem" tabindex="0" aria-label="'+escAttr(tip)+'" data-tip="'+escAttr(tip)+'">'
+      +'<span class="slot-icon" aria-hidden="true">'+esc(letters)+'</span>'
+      +'<span class="slot-name">'+esc(name)+'</span>'
+      +'<span class="slot-version">'+esc(m.version?'v'+m.version:status)+'</span></div>';
+  }).join('');
 }
 function renderWorlds(){
   if(!state) return;

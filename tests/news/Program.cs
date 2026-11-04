@@ -13,7 +13,7 @@ void Check(bool ok, string description)
 string root = Directory.GetCurrentDirectory();
 var local = BundledNews.Load(root);
 Check(local.Count >= 2, "Player-facing news must be included in repository release assets");
-Check(local.Any(x => x.Id == "coda-companion-playtest"), "Coda Companion testing news included");
+Check(local.Any(x => x.Id == "howl-0046-coda-companion"), "Coda Companion news included");
 Check(local.All(x => !string.IsNullOrEmpty(x.Title) && !string.IsNullOrEmpty(x.Text)),
     "No empty news entries");
 
@@ -74,7 +74,7 @@ File.Copy(Path.Combine(root, "web", "news.json"), Path.Combine(fallbackRoot, "ne
 var unavailable = new FeedService(down, fallbackRoot);
 var fallback = await unavailable.FetchAsync("https://example.com/launcher", CancellationToken.None);
 Check(!fallback.Online && fallback.Error != null, "HTTP error is preserved for pack metadata");
-Check(fallback.NewsSource == "Bundled" && fallback.News.Any(x => x.Id == "coda-companion-playtest"),
+Check(fallback.NewsSource == "Bundled" && fallback.News.Any(x => x.Id == "howl-0046-coda-companion"),
     "News displays offline from bundled copy");
 await unavailable.FetchAsync("https://example.com/launcher", CancellationToken.None);
 Check(offlineCalls == 2, "Repeated outages do not spam news or metadata services");

@@ -274,6 +274,7 @@ function render(){
   // Frontier gets its own pixel-camp look; Classic keeps the midnight theme.
   const frontier=nightly&&state.settings.playMode==='frontier';
   document.body?.classList?.toggle('theme-frontier',frontier);
+  try{ localStorage.setItem('coda-theme',frontier?'frontier':'classic'); }catch(e){}
   $('verification-detail').textContent=(nightly?(state.loaderReady&&state.loaderCurrent):state.managedCurrent)
     ?'Checksums matched · signature not yet available'
     :'Distribution trust';

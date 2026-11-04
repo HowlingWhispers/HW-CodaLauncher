@@ -1,5 +1,13 @@
 # CodaLauncher
 
+## No theme flash on start (0.8.2)
+
+With Frontier selected, the launcher used to show the Classic look for a moment until the
+first state message arrived. The window, the WebView background and the page now use the
+saved profile's theme from the first frame: the launcher opens the page with
+`?theme=frontier`, and an inline script applies it before any markup paints (falling back
+to the last theme the page showed). The first state message still decides.
+
 ## Profiles and a clearer Home (0.8.1)
 
 - **Profile cards** in the sidebar: Classic (Stable), Classic (Nightly) and Frontier

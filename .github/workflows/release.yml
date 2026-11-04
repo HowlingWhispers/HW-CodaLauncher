@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.8.1
-  CODA_TAG: v0.8.1
+  CODA_VERSION: 0.8.2
+  CODA_TAG: v0.8.2
 
 jobs:
   gate:
@@ -200,7 +200,9 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.8.1 (prerelease)
+          # CodaLauncher 0.8.2 (prerelease)
+
+          v0.8.2: Frontier opens in the Frontier look from the first frame, without a flash of the Classic theme.
 
           v0.8.1: Profiles and a clearer Home.
           Pick Classic Stable, Classic Nightly or Frontier from cards in the sidebar.

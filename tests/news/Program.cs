@@ -74,7 +74,7 @@ File.Copy(Path.Combine(root, "web", "news.json"), Path.Combine(fallbackRoot, "ne
 var unavailable = new FeedService(down, fallbackRoot);
 var fallback = await unavailable.FetchAsync("https://example.com/launcher", CancellationToken.None);
 Check(!fallback.Online && fallback.Error != null, "HTTP error is preserved for pack metadata");
-Check(fallback.NewsSource == "Bundled" && fallback.News.Any(x => x.Id == "coda-companion-playtest"),
+Check(fallback.NewsSource == "Bundled" && fallback.News.Any(x => x.Id == "howl-0046-coda-companion"),
     "News displays offline from bundled copy");
 await unavailable.FetchAsync("https://example.com/launcher", CancellationToken.None);
 Check(offlineCalls == 2, "Repeated outages do not spam news or metadata services");

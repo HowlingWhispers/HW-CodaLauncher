@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CODA_VERSION: 0.8.2
-  CODA_TAG: v0.8.2
+  CODA_VERSION: 0.9.0
+  CODA_TAG: v0.9.0
 
 jobs:
   gate:
@@ -200,7 +200,13 @@ jobs:
           GH_TOKEN: ${{ secrets.CODALAUNCHER_RELEASE_TOKEN || github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          # CodaLauncher 0.8.2 (prerelease)
+          # CodaLauncher 0.9.0 (prerelease)
+
+          v0.9.0: A new look. Home now shows a pixel-art scene for each profile: an aurora night by a frozen lake
+          for Classic, and the settlers' camp by the fire for Frontier. Coda greets you on Classic, mods show
+          pixel icons, and the technical details (signature, versions, build) moved into Details.
+          Classic has a new "Frostlight" style: frosted panels, aurora colours and pixel headings.
+          Frontier keeps its own wood-and-camp style. Only the appearance changed; installs, paths and saves are untouched.
 
           v0.8.2: Frontier opens in the Frontier look from the first frame, without a flash of the Classic theme.
 

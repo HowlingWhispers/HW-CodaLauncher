@@ -1,5 +1,19 @@
 [
   {
+    "id": "codalauncher-090",
+    "date": "2026-11-04",
+    "title": "CodaLauncher 0.9.0: a whole new look",
+    "text": "Home now opens on a pixel-art scene for your profile: an aurora night for Classic and the settlers' camp for Frontier. Coda greets you, mods have pixel icons, and the technical details fold away. Launchers update themselves.",
+    "link": "https://github.com/HowlingWhispers/HW-CodaLauncher/releases/tag/v0.9.0"
+  },
+  {
+    "id": "frontier-045",
+    "date": "2026-11-04",
+    "title": "H.O.W.L. Frontier 0.4.4 and 0.4.5: settlers craft",
+    "text": "Settlers now build plank houses and craft the planks and doors themselves. With /frontier ask you can have a settler craft something for you or come over. Choose Frontier, then Nightly Play.",
+    "link": "https://github.com/HowlingWhispers/HW-Mods/releases/tag/frontier-v0.4.5"
+  },
+  {
     "id": "codalauncher-082",
     "date": "2026-11-04",
     "title": "CodaLauncher 0.8.2: Frontier from the first frame",
@@ -58,11 +72,5 @@
     "date": "2026-10-07",
     "title": "Packs and menu scenes",
     "text": "CodaLauncher now includes Packs and Resourcepacks (CML Base and CML Base Resources required). CodaLoader adds classic and experimental Banner Sweep menu scenes that rotate randomly on each title screen visit."
-  },
-  {
-    "id": "codalauncher-begins",
-    "date": "2026-10-07",
-    "title": "CodaLauncher begins",
-    "text": "A dedicated Howling Whispers launcher is taking shape: news, updates, mods, profiles, settings and logs in one Coda-flavored home."
   }
 ]

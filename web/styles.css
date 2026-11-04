@@ -292,3 +292,91 @@ body.theme-frontier .hero-copy h2{font-size:36px;margin:4px 0}
 body.theme-frontier #loader-summary{font-size:13px;line-height:1.45;margin:4px 0 10px}
 .channel-switch[hidden],.play-mode-selector[hidden],.channel-note[hidden]{display:none!important}
 body.theme-frontier .panel-head b{font-family:var(--px);font-size:22px;font-weight:400}
+
+/* ===== 0.9.0: pixel-art scenes, Coda as host, a calmer Home =====
+   Both themes: the hero is a painted pixel scene (web/assets/art, made for CodaLauncher, no Mojang assets)
+   with the title on top. Technical details (signature, chips, build) live in the Details panel.
+   Classic gets a new look, "Frostlight": aurora night, frosted glass panels, Coda's ice colours.
+   Frontier keeps its wood-and-camp look; only its scene became real pixel art. */
+.mark{overflow:hidden;padding:0}
+.mark img{width:100%;height:auto;image-rendering:pixelated;margin-top:4px}
+.shell .hero{position:relative;display:block;min-height:380px;padding:0;overflow:hidden;isolation:isolate}
+.scene{position:absolute;inset:0;z-index:0;pointer-events:none}
+.scene-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated;display:none}
+.scene i{position:absolute;inset:0;display:block}
+.shell .hero>.hero-copy{position:absolute;z-index:2;left:22px;top:22px;max-width:min(460px,calc(100% - 44px));padding:16px 20px 14px}
+.shell .hero>.coda{position:absolute;z-index:2;left:18px;bottom:0;display:flex;align-items:flex-end;gap:10px;background:none}
+.shell .hero .coda-face{width:118px;height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 0 #0006)}
+.coda-says{margin-bottom:22px;padding:8px 12px;max-width:230px}
+.coda-says b,.coda-says small{display:block}
+.coda-says small{margin-top:2px}
+.trust-panel{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.trust-panel .verification-moon{flex-direction:row;gap:12px;text-align:left}
+.trust-panel .verification-moon svg{width:56px;height:56px}
+.trust-panel .verification-moon small{display:block;max-width:220px}
+.trust-copy{min-width:0;flex:1}
+.trust-copy .build-details{margin:10px 0 0;font:11px/1.6 Consolas,monospace;color:var(--muted)}
+.slot-icon img{width:32px;height:32px;image-rendering:pixelated}
+
+/* --- Classic: Frostlight --- */
+body:not(.theme-frontier){--bg:#0a1228;--panel:#111d3a;--line:#2a3f6e;--text:#eaf2ff;--muted:#9db0d6;--cyan:#7ff0d0;--ice:#9fe3ff;--glass:rgba(13,24,52,.7);--px:"Jersey 15","Segoe UI",monospace}
+body:not(.theme-frontier) .shell{background:var(--bg)}
+body:not(.theme-frontier) aside{background:linear-gradient(180deg,#0f1b3b,#0a1228 70%);border-right:1px solid var(--line)}
+body:not(.theme-frontier) main{background:radial-gradient(ellipse at 85% -10%,#1d3a6b66,transparent 55%),radial-gradient(ellipse at 10% 0,#1f5a5233,transparent 45%),var(--bg)}
+body:not(.theme-frontier) .brand b{font-family:var(--px);font-size:26px;font-weight:400;letter-spacing:.08em;color:var(--ice)}
+body:not(.theme-frontier) .mark{border:2px solid #3a5a96;border-radius:10px;background:#16244a}
+body:not(.theme-frontier) h1,body:not(.theme-frontier) h2,body:not(.theme-frontier) h3{font-family:var(--px);font-weight:400;letter-spacing:.02em}
+body:not(.theme-frontier) h1{font-size:34px}
+body:not(.theme-frontier) h3{font-size:25px}
+body:not(.theme-frontier) em{color:var(--cyan);letter-spacing:.16em}
+body:not(.theme-frontier) .picker-label{color:var(--muted)}
+body:not(.theme-frontier) .profile-card{background:#13214a99;border:1px solid var(--line);border-radius:10px;color:#c5d3f0}
+body:not(.theme-frontier) .profile-card:hover{border-color:#4f74b8;color:#fff}
+body:not(.theme-frontier) .profile-card.active{background:linear-gradient(90deg,#1b3a5c,#162a52);border-color:var(--cyan);box-shadow:inset 3px 0 var(--cyan);color:#fff}
+body:not(.theme-frontier) .nav{border-radius:9px;color:#a9b9dc}
+body:not(.theme-frontier) .nav:hover{background:#17284f;color:#fff}
+body:not(.theme-frontier) .nav.active{background:#1b2f5c;color:#fff;box-shadow:inset 3px 0 var(--ice)}
+body:not(.theme-frontier) .foot{border-top:1px solid var(--line)}
+body:not(.theme-frontier) .panel,body:not(.theme-frontier) .status-columns .panel,body:not(.theme-frontier) .play-bar,body:not(.theme-frontier) .packs-intro,body:not(.theme-frontier) .pack-card,body:not(.theme-frontier) .cards article,body:not(.theme-frontier) .news article,body:not(.theme-frontier) .addon-tabs{background:var(--glass);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 0 #ffffff0d inset}
+body:not(.theme-frontier) .panel-head,body:not(.theme-frontier) .check-row,body:not(.theme-frontier) .version-strip,body:not(.theme-frontier) .mod,body:not(.theme-frontier) .world-entry,body:not(.theme-frontier) .pack-meta{border-color:#22365f}
+body:not(.theme-frontier) .panel-head b{font-family:var(--px);font-size:23px;font-weight:400}
+body:not(.theme-frontier) .quiet,body:not(.theme-frontier) .news-link{background:#14244a;border:1px solid #34508a;border-radius:9px;color:#d5e2fb}
+body:not(.theme-frontier) .quiet:hover,body:not(.theme-frontier) .news-link:hover{border-color:var(--ice);color:#fff}
+body:not(.theme-frontier) .save{background:var(--cyan);color:#062a24;border-radius:9px}
+body:not(.theme-frontier) .pill,body:not(.theme-frontier) .chips span{background:#0f1c3d;border:1px solid #34508a;color:#c5d3f0}
+body:not(.theme-frontier) .pill.online,body:not(.theme-frontier) .chips .good{border-color:#2f8a72;color:var(--cyan)}
+body:not(.theme-frontier) .shell .hero{border:2px solid #2c4a86;border-radius:16px;background:#0b1430;box-shadow:0 18px 50px #02061866}
+body:not(.theme-frontier) .classic-scene{display:block;object-position:50% 62%}
+body:not(.theme-frontier) .scene-glow{background:linear-gradient(105deg,transparent 15%,#7ff0d02e 35%,transparent 55%,#9fe3ff1f 72%,transparent 90%);background-size:220% 100%;mix-blend-mode:screen;-webkit-mask-image:linear-gradient(180deg,#000 0,#000 45%,transparent 70%);mask-image:linear-gradient(180deg,#000 0,#000 45%,transparent 70%);animation:frost-aurora 14s ease-in-out infinite alternate}
+body:not(.theme-frontier) .scene-snow{background-image:radial-gradient(#ffffffd0 1px,transparent 1.6px),radial-gradient(#ffffff90 1px,transparent 1.6px);background-size:120px 120px,70px 70px;background-position:0 0,35px 20px;opacity:.55;animation:frost-snow 22s linear infinite}
+@keyframes frost-aurora{to{background-position:100% 0}}
+@keyframes frost-snow{to{background-position:60px 240px,95px 160px}}
+body:not(.theme-frontier) .shell .hero>.hero-copy{background:linear-gradient(135deg,#0b1634e0,#0e1d40c0);border:1px solid #9fe3ff40;border-radius:12px;backdrop-filter:blur(4px)}
+body:not(.theme-frontier) .hero-copy h2{font-size:40px;margin:4px 0 6px;color:#fff;text-shadow:0 2px 0 #0a1228}
+body:not(.theme-frontier) .hero p{color:#c9d6f2;margin:0}
+body:not(.theme-frontier) .coda-says{background:#0b1634e6;border:1px solid #9fe3ff55;border-radius:10px 10px 10px 2px}
+body:not(.theme-frontier) .coda-says b{font-family:var(--px);font-size:20px;font-weight:400;color:var(--ice)}
+body:not(.theme-frontier) .coda-says small{color:#c9d6f2}
+body:not(.theme-frontier) .play-bar .play{font-family:var(--px);font-weight:400;font-size:30px;letter-spacing:.06em;padding:8px 34px;border-radius:12px;background:linear-gradient(180deg,#9ff7dc,#5fd8c9 55%,#3fb6d8);color:#04201f;box-shadow:0 5px 0 #1f6f86,0 10px 24px #3fb6d833}
+body:not(.theme-frontier) .play-bar .play:hover:not(:disabled){filter:brightness(1.08)}
+body:not(.theme-frontier) .play-bar .play:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 #1f6f86}
+body:not(.theme-frontier) .play-steps li::before{color:var(--cyan)}
+body:not(.theme-frontier) .slot{background:#0f1c3d;border:1px solid var(--line);border-radius:10px}
+body:not(.theme-frontier) .slot-icon{background:#1a2c58;border-radius:8px}
+body:not(.theme-frontier) .home-details>summary{background:var(--glass);border:1px solid var(--line);border-radius:12px}
+body:not(.theme-frontier) .news article time{color:var(--cyan)}
+body:not(.theme-frontier) .news article b{font-family:var(--px);font-size:21px;font-weight:400}
+body:not(.theme-frontier) .launcher-update-notice{border-radius:14px}
+
+/* --- Frontier: same look as before, now with the painted camp --- */
+body.theme-frontier .hero>.hero-copy{position:absolute;z-index:2}
+body.theme-frontier .hero>.coda{display:none}
+body.theme-frontier .hero>.scene{position:absolute;z-index:0}
+body.theme-frontier .shell .hero{display:block;padding:0;min-height:380px}
+body.theme-frontier .frontier-scene{object-position:50% 72%}
+body.theme-frontier .scene-glow{background:radial-gradient(ellipse 22% 30% at 50% 88%,#e8913a55,transparent 70%);mix-blend-mode:screen;animation:frontier-fire 1.6s steps(3) infinite}
+@keyframes frontier-fire{33%{opacity:.7}66%{opacity:1}}
+body.theme-frontier .trust-panel .verification-moon{background:none;border:0;padding:0}
+body.theme-frontier .trust-panel .verification-moon b{font-family:var(--px);font-size:20px;color:#e0b46a}
+@media (prefers-reduced-motion:reduce){.scene-glow,.scene-snow{animation:none!important}}
+@media(max-width:900px){.shell .hero{min-height:300px}.shell .hero>.coda{display:none}}

@@ -9,7 +9,17 @@ const code = fs.readFileSync('web/app.js', 'utf8');
 
 for (const id of ['play-progress', 'verification-detail', 'build-details'])
   assert.ok(html.includes('id="' + id + '"'), 'Missing Frontier control ' + id);
-assert.ok(html.includes('class="frontier-scene"'), 'Missing Frontier camp scene');
+// 0.9.0: each profile has a bundled pixel-art scene; Classic also shows Coda, and first-party mods have icons.
+assert.ok(html.includes('class="scene-art frontier-scene" src="assets/art/frontier-scene.png"'), 'Missing Frontier camp scene');
+assert.ok(html.includes('class="scene-art classic-scene" src="assets/art/classic-scene.png"'), 'Missing Classic scene');
+for (const art of ['classic-scene', 'frontier-scene', 'coda'])
+  assert.ok(fs.existsSync('web/assets/art/' + art + '.png'), 'Scene art must be bundled for offline use: ' + art);
+for (const icon of code.match(/MOD_ICONS=new Set\(\[([^\]]+)\]/)[1].match(/[a-z_]+/g))
+  assert.ok(fs.existsSync('web/assets/art/mods/' + icon + '.png'), 'Missing mod icon ' + icon);
+assert.doesNotMatch(html + css, /https?:\/\/[^"')\s]+\.(png|webp|jpg|gif)/, 'Art must never load from the network');
+assert.match(css, /image-rendering:pixelated/, 'Pixel art must stay crisp when scaled');
+for (const id of ['verification-label', 'loader-chip', 'pack-chip', 'mod-chip'])
+  assert.ok(html.indexOf('id="' + id + '"') > html.indexOf('class="home-details"'), 'Technical detail ' + id + ' belongs in Details, not the hero');
 assert.ok(fs.existsSync('web/assets/fonts/Jersey15-Regular.ttf'), 'Pixel font must be bundled for offline use');
 assert.ok(fs.existsSync('web/assets/fonts/Jersey15-OFL.txt'), 'Pixel font licence must ship with the font');
 assert.doesNotMatch(css, /fonts\.googleapis|fonts\.gstatic/, 'Theme must not fetch fonts from the network');

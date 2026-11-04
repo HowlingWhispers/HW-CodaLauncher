@@ -442,6 +442,8 @@ function renderProfiles(){
   });
 }
 // The active profile's mods as inventory slots. Real scan results only: name, version, status.
+// First-party mods have a pixel icon (web/assets/art/mods/<id>.png); others show their initials.
+const MOD_ICONS=new Set(['coda_wolf','howl_frontier','hw_essentials','howl_sorting_pipes','hw_waypoints','howl_codex','hw_quiet_underground']);
 function renderHotbar(){
   const mods=(state.mods||[]);
   const valid=mods.filter(m=>m.valid);
@@ -455,7 +457,7 @@ function renderHotbar(){
     const tip=name+(m.version?' · v'+m.version:'')+' · '+status;
     const letters=String(name).replace(/[^A-Za-z0-9 ]/g,'').split(' ').filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?';
     return '<div class="slot'+(m.valid?'':' bad')+'" role="listitem" tabindex="0" aria-label="'+escAttr(tip)+'" data-tip="'+escAttr(tip)+'">'
-      +'<span class="slot-icon" aria-hidden="true">'+esc(letters)+'</span>'
+      +'<span class="slot-icon" aria-hidden="true">'+(MOD_ICONS.has(m.id)?'<img src="assets/art/mods/'+m.id+'.png" alt="">':esc(letters))+'</span>'
       +'<span class="slot-name">'+esc(name)+'</span>'
       +'<span class="slot-version">'+esc(m.version?'v'+m.version:status)+'</span></div>';
   }).join('');

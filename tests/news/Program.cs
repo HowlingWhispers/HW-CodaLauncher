@@ -13,7 +13,7 @@ void Check(bool ok, string description)
 string root = Directory.GetCurrentDirectory();
 var local = BundledNews.Load(root);
 Check(local.Count >= 2, "Player-facing news must be included in repository release assets");
-Check(local.Any(x => x.Id == "coda-companion-playtest"), "Coda Companion testing news included");
+Check(local.Any(x => x.Id == "howl-0046-coda-companion"), "Coda Companion news included");
 Check(local.All(x => !string.IsNullOrEmpty(x.Title) && !string.IsNullOrEmpty(x.Text)),
     "No empty news entries");
 

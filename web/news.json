@@ -1,20 +1,68 @@
 [
   {
+    "id": "codalauncher-082",
+    "date": "2026-11-04",
+    "title": "CodaLauncher 0.8.2: Frontier from the first frame",
+    "text": "With Frontier selected, the launcher now opens straight into the camp look instead of flashing the blue Classic screen first. Nightly launchers update themselves.",
+    "link": "https://github.com/HowlingWhispers/HW-CodaLauncher/releases/tag/v0.8.2"
+  },
+  {
+    "id": "frontier-043",
+    "date": "2026-10-23",
+    "title": "H.O.W.L. Frontier 0.4.3: houses in the ground",
+    "text": "Settlers now dig their houses into the ground on a real foundation, miners keep digging on their own, and a bed that cannot be claimed tells you why. New settings in the Frontier profile set how fast settlers place and break blocks.",
+    "link": "https://github.com/HowlingWhispers/HW-Mods/releases/tag/frontier-v0.4.3"
+  },
+  {
+    "id": "howl-0046-coda-companion",
+    "date": "2026-10-23",
+    "title": "Coda Companion comes with H.O.W.L.",
+    "text": "H.O.W.L. 0.0.46 bundles Coda's wolf companion with her icy-white fur in both Stable and Nightly. No separate download needed.",
+    "link": "https://github.com/HowlingWhispers/HW-CodaLoader/releases/tag/v0.0.46"
+  },
+  {
+    "id": "frontier-play-mode",
+    "date": "2026-10-22",
+    "title": "Frontier play mode",
+    "text": "Pick Frontier on Home in CodaLauncher (Windows, Nightly) to play a settlement world with its own worlds, mods and settings, and a pixel-art camp look. Classic stays exactly as it was.",
+    "link": "https://github.com/HowlingWhispers/HW-CodaLauncher/releases/tag/v0.8.0"
+  },
+  {
     "id": "welcome-to-howl",
     "date": "2026-10-08",
     "title": "Welcome to Coda's workshop",
     "text": "H.O.W.L. is our home for community-made Minecraft mods. Stable keeps things familiar; Nightly is where new experiments take their first steps."
   },
   {
-    "id": "coda-companion-playtest",
+    "id": "codalauncher-060",
     "date": "2026-10-08",
-    "title": "Coda Wolf is in testing",
-    "text": "Coda's wolf companion is being tested in Nightly. She is still experimental. If she does not appear, use /codawolf diagnose and send us your launcher logs."
+    "title": "CodaLauncher is now available for Windows, Linux and macOS",
+    "text": "Download the launcher and play on Windows (x64), Linux (x64/ARM64) or macOS (Intel/Apple Silicon). The Mac build is not Apple-notarized yet, so approve it once in System Settings, Privacy & Security, on first run.",
+    "link": "https://github.com/HowlingWhispers/HW-CodaLauncher/releases"
+  },
+  {
+    "id": "hw-essentials-homes-back",
+    "date": "2026-10-08",
+    "title": "HW Essentials adds saved homes and /back, installed automatically",
+    "text": "Set homes with /sethome, list them with /homes, teleport with /home, and use /back to return to your last location. Ten home slots by default (configurable 1 to 100). Homes are saved per world and persist across sessions. Click Play in CodaLauncher, and the mod installs itself.",
+    "link": "https://github.com/HowlingWhispers/HW-Mods/releases/tag/v0.2.0"
   },
   {
     "id": "quiet-underground",
     "date": "2026-10-08",
     "title": "A quieter underground",
     "text": "New Nightly worlds can use Quiet Underground to make enormous caves and ravines less common. Existing worlds stay as they are."
+  },
+  {
+    "id": "cml-packs-scenes",
+    "date": "2026-10-07",
+    "title": "Packs and menu scenes",
+    "text": "CodaLauncher now includes Packs and Resourcepacks (CML Base and CML Base Resources required). CodaLoader adds classic and experimental Banner Sweep menu scenes that rotate randomly on each title screen visit."
+  },
+  {
+    "id": "codalauncher-begins",
+    "date": "2026-10-07",
+    "title": "CodaLauncher begins",
+    "text": "A dedicated Howling Whispers launcher is taking shape: news, updates, mods, profiles, settings and logs in one Coda-flavored home."
   }
 ]
